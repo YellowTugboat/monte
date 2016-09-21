@@ -1,0 +1,53 @@
+{
+  "name": "monte",
+  "version": "0.0.0-alpha0",
+  "description": "A set of common charts based on D3 built for extension and modification.",
+  "main": "index.js",
+  "scripts": {
+    "test": "browserify test/**/*-test.js | tape-run",
+    "lint": "eslint src/**",
+    "package-umd": "rollup --config config/rollup.config.umd.js",
+    "watch": "nodemon -e js -w *.js -w src -x \"npm run build\"",
+    "build": "npm run package-umd"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YellowTugboat/monte.git"
+  },
+  "keywords": [
+    "D3",
+    "chart",
+    "charts",
+    "Monte",
+    "line",
+    "scatter",
+    "bar",
+    "pie",
+    "donut",
+    "doughnut"
+  ],
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/YellowTugboat/monte/issues"
+  },
+  "homepage": "https://github.com/YellowTugboat/monte#readme",
+  "devDependencies": {
+    "babel-cli": "^6.14.0",
+    "babel-preset-es2015-rollup": "^1.1.1",
+    "browser-run": "^3.2.0",
+    "browserify": "^13.1.0",
+    "d3": "^4.2.2",
+    "eslint-config-yellow-tugboat": "^0.1.0",
+    "http-server": "^0.9.0",
+    "lodash-es": "^4.15.0",
+    "nodemon": "^1.9.2",
+    "rollup": "^0.31",
+    "rollup-plugin-babel": "2",
+    "rollup-plugin-node-resolve": "^2.0.0",
+    "tape": "^4.6.0",
+    "tape-run": "^2.1.4"
+  },
+  "peerDependencies": {
+    "d3": "^4.2"
+  }
+}
