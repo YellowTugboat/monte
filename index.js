@@ -24,6 +24,8 @@ export {
 } from './src/support/EventWatcher';
 
 // Extensions
+export { Extension } from './src/extension/Extension';
+
 export {
   Grid as ExtGrid,
   HorizontalLines as ExtHorizontalLines,
@@ -37,19 +39,12 @@ export { PolarTicks as ExtPolarTicks } from './src/extension/PolarTicks';
 export { Frame as ExtFrame } from './src/extension/Frame';
 
 export {
-  D3Tip as ExtD3Tip,
-  D3TipAnnotate as ExtD3TipAnnotate,
- } from './src/extension/D3Tip';
-
-export {
   BarBg as ExtBarBg,
   HorizontalBarBg as ExtHorizontalBarBg,
 } from './src/extension/BarBg';
 
 // Tools
-export { readTransforms } from './src/tools/transform';
-export { mergeOptions } from './src/tools/mergeOptions';
-export { compose } from './src/tools/compose';
+export { tools } from './src/tools/';
 
 // Util
 export {
