@@ -5730,6 +5730,23 @@ var WedgeChart = function (_ArcChart) {
   return WedgeChart;
 }(ArcChart);
 
+var MonteOptionError = function (_MonteError) {
+  inherits(MonteOptionError, _MonteError);
+
+  function MonteOptionError() {
+    classCallCheck(this, MonteOptionError);
+    return possibleConstructorReturn(this, (MonteOptionError.__proto__ || Object.getPrototypeOf(MonteOptionError)).apply(this, arguments));
+  }
+
+  createClass(MonteOptionError, null, [{
+    key: 'RequiredOption',
+    value: function RequiredOption(optionName) {
+      return new MonteError('Option "' + optionName + '" is required.');
+    }
+  }]);
+  return MonteOptionError;
+}(MonteError);
+
 var DEFAULTS$2 = {
   // The layer for drawing operations
   layer: 'bg',
@@ -5839,11 +5856,6 @@ var VERTICAL = 'vertical';
 // axis alignments.
 var AXIS_SHIFT = 0.5;
 
-// import { AxesChart } from '../chart/AxesChart';
-// import { readTransforms } from '../tools/transform';
-// import { MonteOptionError } from '../support/MonteOptionError';
-// import { mergeOptions } from '../tools/mergeOptions';
-
 var GRID_DEFAULTS = {
   scalePrefixes: ['x', 'y'],
   prefixCssMap: {
@@ -5854,12 +5866,6 @@ var GRID_DEFAULTS = {
   layer: 'bg',
   binding: ['axisRendered']
 };
-
-// const HORIZONTAL = 'h';
-// const VERTICAL = 'v';
-
-// In d3-axis, there are hard coded shifts of 0.5, here the same is used for grid alignment.
-// const AXIS_SHIFT = 0.5;
 
 // BG Grid
 var Grid = function (_Extension) {
@@ -5872,12 +5878,6 @@ var Grid = function (_Extension) {
 
   createClass(Grid, [{
     key: '_initOptions',
-
-    // constructor(...options) {
-    //   // this.opts = _.defaultsDeep({}, ...options, GRID_DEFAULTS);
-    //   this.opts = mergeOptions(...options, GRID_DEFAULTS);
-    // }
-
     value: function _initOptions() {
       var _babelHelpers$get;
 
@@ -5886,32 +5886,6 @@ var Grid = function (_Extension) {
       }
 
       (_babelHelpers$get = get$2(Grid.prototype.__proto__ || Object.getPrototypeOf(Grid.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [GRID_DEFAULTS]));
-    }
-
-    // option(prop, value) {
-    //   const currentVal = this.opts[prop];
-    //
-    //   if (value === undefined) { return currentVal; }
-    //
-    //   this.opts[prop] = value;
-    //   if (prop === 'chart') {
-    //     if (!(value instanceof AxesChart)) {
-    //       throw new MonteOptionError('Grid backgrounds require charts extended from `AxesChart`');
-    //     }
-    //   }
-    //   else if (prop !== 'binding') {
-    //     // Clear all & redraw
-    //     this.clear();
-    //     this.update();
-    //   }
-    //
-    //   return this;
-    // }
-
-  }, {
-    key: 'clear',
-    value: function clear() {
-      // TODO: Remove all elements
     }
   }, {
     key: '_update',
@@ -6220,30 +6194,6 @@ var Frame = function (_Extension) {
 
       (_babelHelpers$get = get$2(Frame.prototype.__proto__ || Object.getPrototypeOf(Frame.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [FRAME_DEFAULTS]));
     }
-
-    // constructor(...options) {
-    //   this.opts = mergeOptions(...options, FRAME_DEFAULTS);
-    // }
-    //
-    // option(prop, value) {
-    //   const currentVal = this.opts[prop];
-    //
-    //   if (value === undefined) { return currentVal; }
-    //
-    //   this.opts[prop] = value;
-    //   if (prop === 'edges') {
-    //     // Clear all and redraw.
-    //     this.clear();
-    //     this.update();
-    //   }
-    //   else if (prop !== 'binding' && prop !== 'chart') {
-    //     // Redraw
-    //     this.update();
-    //   }
-    //
-    //   return this;
-    // }
-
   }, {
     key: '_shouldOptionUpdate',
     value: function _shouldOptionUpdate(prop) {
@@ -6272,9 +6222,7 @@ var Frame = function (_Extension) {
         left: [[0 + shift, 0 + shift], [0 + shift, chart.height + shift]]
       };
 
-      edges.enter().append('line').attr('class', css)
-      // .merge(edges)
-      .attr('x1', function (d) {
+      edges.enter().append('line').attr('class', css).attr('x1', function (d) {
         return coords[d][0][0];
       }).attr('y1', function (d) {
         return coords[d][0][1];
@@ -6478,14 +6426,34 @@ function compose() {
   };
 }
 
-// export { readTransforms } from './transform';
+function readTransforms(t) {
+  var transformPattern = /(.*?)\((.*?)\)\s*/g;
+  var matches = transformPattern.exec(t);
+  var transforms = {};
+
+  if (matches) {
+    for (var i = 1; i < matches.length; i += 2) {
+      var k = matches[i];
+      var v = matches[i + 1].trim();
+
+      if (v.indexOf(' ') > -1 || v.indexOf(',') > -1) {
+        v = v.split(/,\s*|\s+/);
+      }
+
+      transforms[k] = v;
+    }
+  }
+
+  return transforms;
+}
 
 var tools = {
   compose: compose,
   isNumeric: isNumeric, isObject: isObject$2, isArray: isArray$2, isFunc: isFunc,
   mergeOptions: mergeOptions,
   noop: noop,
-  resetScaleDomain: resetScaleDomain
+  resetScaleDomain: resetScaleDomain,
+  readTransforms: readTransforms
 };
 
 // import isFunc from '../tools/is';
@@ -6637,6 +6605,8 @@ exports.GaugeChart = GaugeChart;
 exports.SegmentChart = SegmentChart;
 exports.WedgeChart = WedgeChart;
 exports.EventWatcher = EventWatcher;
+exports.MonteError = MonteError;
+exports.MonteOptionError = MonteOptionError;
 exports.Extension = Extension;
 exports.ExtGrid = Grid;
 exports.ExtHorizontalLines = HorizontalLines;

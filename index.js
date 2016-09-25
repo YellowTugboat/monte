@@ -23,7 +23,7 @@ export {
   EventWatcher,
   MonteError,
   MonteOptionError,
-} from './src/support/EventWatcher';
+} from './src/support/';
 
 // Extensions
 export { Extension } from './src/extension/Extension';
