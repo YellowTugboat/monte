@@ -6478,6 +6478,8 @@ function compose() {
   };
 }
 
+// export { readTransforms } from './transform';
+
 var tools = {
   compose: compose,
   isNumeric: isNumeric, isObject: isObject$2, isArray: isArray$2, isFunc: isFunc,

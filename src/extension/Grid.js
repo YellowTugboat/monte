@@ -2,11 +2,6 @@ import { HORIZONTAL, VERTICAL } from '../const/direction';
 import { AXIS_SHIFT } from '../const/d3';
 import { Extension } from './Extension';
 
-// import { AxesChart } from '../chart/AxesChart';
-// import { readTransforms } from '../tools/transform';
-// import { MonteOptionError } from '../support/MonteOptionError';
-// import { mergeOptions } from '../tools/mergeOptions';
-
 const GRID_DEFAULTS = {
   scalePrefixes: ['x', 'y'],
   prefixCssMap: {
@@ -18,45 +13,11 @@ const GRID_DEFAULTS = {
   binding: ['axisRendered'],
 };
 
-// const HORIZONTAL = 'h';
-// const VERTICAL = 'v';
-
-// In d3-axis, there are hard coded shifts of 0.5, here the same is used for grid alignment.
-// const AXIS_SHIFT = 0.5;
-
 // BG Grid
 export class Grid extends Extension {
-  // constructor(...options) {
-  //   // this.opts = _.defaultsDeep({}, ...options, GRID_DEFAULTS);
-  //   this.opts = mergeOptions(...options, GRID_DEFAULTS);
-  // }
 
   _initOptions(...options) {
     super._initOptions(...options, GRID_DEFAULTS);
-  }
-
-  // option(prop, value) {
-  //   const currentVal = this.opts[prop];
-  //
-  //   if (value === undefined) { return currentVal; }
-  //
-  //   this.opts[prop] = value;
-  //   if (prop === 'chart') {
-  //     if (!(value instanceof AxesChart)) {
-  //       throw new MonteOptionError('Grid backgrounds require charts extended from `AxesChart`');
-  //     }
-  //   }
-  //   else if (prop !== 'binding') {
-  //     // Clear all & redraw
-  //     this.clear();
-  //     this.update();
-  //   }
-  //
-  //   return this;
-  // }
-
-  clear() {
-    // TODO: Remove all elements
   }
 
   _update(binding, axesChart, axisTransition) {

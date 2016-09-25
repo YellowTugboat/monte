@@ -21,6 +21,8 @@ export { WedgeChart } from './src/chart/polarChart/WedgeChart';
 // Support
 export {
   EventWatcher,
+  MonteError,
+  MonteOptionError,
 } from './src/support/EventWatcher';
 
 // Extensions

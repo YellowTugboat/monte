@@ -2,8 +2,8 @@ import { isArray, isFunc, isNumeric, isObject } from './is';
 import { compose } from './compose';
 import { mergeOptions } from './mergeOptions';
 import { noop } from './noop';
+import { readTransforms } from './transform';
 import { resetScaleDomain } from './resetScaleDomain';
-// export { readTransforms } from './transform';
 
 export const tools = {
   compose,
@@ -11,5 +11,5 @@ export const tools = {
   mergeOptions,
   noop,
   resetScaleDomain,
-  //readTransforms,
+  readTransforms,
 };

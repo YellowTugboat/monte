@@ -15,29 +15,6 @@ export class Frame extends Extension {
     super._initOptions(...options, FRAME_DEFAULTS);
   }
 
-  // constructor(...options) {
-  //   this.opts = mergeOptions(...options, FRAME_DEFAULTS);
-  // }
-  //
-  // option(prop, value) {
-  //   const currentVal = this.opts[prop];
-  //
-  //   if (value === undefined) { return currentVal; }
-  //
-  //   this.opts[prop] = value;
-  //   if (prop === 'edges') {
-  //     // Clear all and redraw.
-  //     this.clear();
-  //     this.update();
-  //   }
-  //   else if (prop !== 'binding' && prop !== 'chart') {
-  //     // Redraw
-  //     this.update();
-  //   }
-  //
-  //   return this;
-  // }
-
   _shouldOptionUpdate(prop) {
     return prop === 'edges' || prop === 'alignmentShift';
   }
@@ -64,7 +41,6 @@ export class Frame extends Extension {
 
     edges.enter().append('line')
         .attr('class', css)
-      // .merge(edges)
         .attr('x1', (d) => coords[d][0][0])
         .attr('y1', (d) => coords[d][0][1])
         .attr('x2', (d) => coords[d][1][0])
