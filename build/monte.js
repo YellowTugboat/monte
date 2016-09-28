@@ -3123,6 +3123,28 @@ var defaultsDeep = defaultsDeep$1;
 var set = set$2;
 var get = get$1;
 
+var undef = void 0;
+
+function isNumeric(v) {
+  return typeof v === 'number' && isFinite(v);
+}
+
+function isFunc(v) {
+  return typeof v === 'function';
+}
+
+function isObject$2(v) {
+  return v !== null && (typeof v === 'undefined' ? 'undefined' : _typeof(v)) === 'object';
+}
+
+function isArray$2(v) {
+  return Array.isArray(v);
+}
+
+function isDefined(v) {
+  return v !== null && v !== undef;
+}
+
 var OptionValueWrap = function OptionValueWrap(value) {
   classCallCheck(this, OptionValueWrap);
 
@@ -3242,13 +3264,13 @@ var EventWatcher = function () {
 
     if (this.opts.documentLoadRun) {
       (function () {
-        var ready = function ready() {
+        var ready = function () {
           document.removeEventListener('DOMContentLoaded', ready);
           window.removeEventListener('load', ready);
 
           _this.documentReady = true;
           _this.runCallbacks();
-        };
+        }.bind(_this); // Work around for proper binding.
 
         _this.documentReady = false;
         document.addEventListener('DOMContentLoaded', ready);
@@ -3393,21 +3415,22 @@ var MonteError = function (_Error) {
   return MonteError;
 }(Error);
 
-function isNumeric(v) {
-  return typeof v === 'number' && isFinite(v);
-}
+var MonteOptionError = function (_MonteError) {
+  inherits(MonteOptionError, _MonteError);
 
-function isFunc(v) {
-  return typeof v === 'function';
-}
+  function MonteOptionError() {
+    classCallCheck(this, MonteOptionError);
+    return possibleConstructorReturn(this, (MonteOptionError.__proto__ || Object.getPrototypeOf(MonteOptionError)).apply(this, arguments));
+  }
 
-function isObject$2(v) {
-  return v !== null && (typeof v === 'undefined' ? 'undefined' : _typeof(v)) === 'object';
-}
-
-function isArray$2(v) {
-  return Array.isArray(v);
-}
+  createClass(MonteOptionError, null, [{
+    key: 'RequiredOption',
+    value: function RequiredOption(optionName) {
+      return new MonteError('Option "' + optionName + '" is required.');
+    }
+  }]);
+  return MonteOptionError;
+}(MonteError);
 
 var global$1 = window ? window.MonteGlobals = {} : {};
 
@@ -3729,6 +3752,10 @@ var Chart = function () {
   }, {
     key: 'optInvoke',
     value: function optInvoke(value) {
+      if (value == null) {
+        throw new MonteOptionError('Option not initialized.');
+      }
+
       try {
         for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
           args[_key3 - 1] = arguments[_key3];
@@ -3773,7 +3800,9 @@ var Chart = function () {
       var sources = Array.isArray(cssSources) ? cssSources : [cssSources];
 
       sources.forEach(function (source) {
-        cssClasses.push(_this2.optInvoke(source, d && d.id || i));
+        if (isDefined(source)) {
+          cssClasses.push(_this2.optInvoke(source, d && d.id || i));
+        }
       });
 
       return cssClasses.join(' ');
@@ -3844,9 +3873,8 @@ var Chart = function () {
       // Bind extension to this chart instance.
       exts.forEach(function (ext) {
         if (ext.opts.binding) {
-          var _extensions;
-
-          (_extensions = _this3.extensions).push.apply(_extensions, toConsumableArray(exts));
+          ext.setChart(_this3);
+          _this3.extensions.push(ext);
         } else {
           _this3.__notify('suppressedError', 'Extensions must have the `binding` option specified.');
         }
@@ -3930,16 +3958,6 @@ var Chart = function () {
       (_dispatch = this.dispatch).apply.apply(_dispatch, [eventName, this].concat(args));
     }
   }, {
-    key: '__handleEvent',
-    value: function __handleEvent(eventName, node) {
-      for (var _len7 = arguments.length, tail = Array(_len7 > 2 ? _len7 - 2 : 0), _key7 = 2; _key7 < _len7; _key7++) {
-        tail[_key7 - 2] = arguments[_key7];
-      }
-
-      this.__updateExt(eventName, this, node, tail); // NOTE: Subtle difference so that extensions always have a chart reference.
-      this.dispatch.apply(eventName, node, tail);
-    }
-  }, {
     key: '__elemEvent',
     value: function __elemEvent(eventType, eventNameFull, d, i, nodes) {
       var node = nodes[i];
@@ -3953,7 +3971,7 @@ var Chart = function () {
         }
       }
 
-      this.__handleEvent(eventNameFull, node, d, i, nodes);
+      this.__notify(eventNameFull, node, d, i, nodes);
     }
   }]);
   return Chart;
@@ -5154,6 +5172,16 @@ var ARC_CHART_DEFAULTS = {
   arcWedgeFillScale: noop,
   arcWedgeStrokeScale: noop,
 
+  arcWedgeEnter: function arcWedgeEnter(d) {
+    return {
+      startAngle: d.endAngle,
+      endAngle: d.endAngle,
+      value: d.value,
+      padAngle: d.padAngle,
+      index: d.index
+    };
+  },
+
   // Background css and fill scales.
   arcBgWedgeCssScale: noop,
   arcBgWedgeFillScale: noop,
@@ -5249,13 +5277,7 @@ var ArcChart = function (_PolarChart) {
       arcs.enter().append('g').attr('class', 'monte-arc ' + this.opts.arcCss).append('path').attr('class', function (d, i) {
         return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScale, d.data.css], d, i);
       }).call(this.__bindCommonEvents('wedge')).transition().delay(this.opts.transitionDuration).duration(this.opts.transitionDuration).attrTween('d', function (d) {
-        var start = {
-          startAngle: d.endAngle,
-          endAngle: d.endAngle,
-          value: d.value,
-          padAngle: d.padAngle,
-          index: d.index
-        };
+        var start = _this3.optInvoke(_this3.opts.arcWedgeEnter, d);
         return arcTween(arc, start, d);
       }).attr('fill', function (d, i) {
         return _this3.opts.arcWedgeFillScale(d.id || i);
@@ -5641,8 +5663,18 @@ var SegmentChart = function (_ArcChart) {
 
 var WEDGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-wedge-chart',
-  piePadAngle: 0
+  piePadAngle: 0,
 
+  // NOTE: Wedge's use startAngle for the preset angle positions. (ArcChart uses endAngle)
+  arcWedgeEnter: function arcWedgeEnter(d) {
+    return {
+      startAngle: d.startAngle,
+      endAngle: d.startAngle,
+      value: d.value,
+      padAngle: d.padAngle,
+      index: d.index
+    };
+  }
 };
 
 var WedgeChart = function (_ArcChart) {
@@ -5730,23 +5762,6 @@ var WedgeChart = function (_ArcChart) {
   return WedgeChart;
 }(ArcChart);
 
-var MonteOptionError = function (_MonteError) {
-  inherits(MonteOptionError, _MonteError);
-
-  function MonteOptionError() {
-    classCallCheck(this, MonteOptionError);
-    return possibleConstructorReturn(this, (MonteOptionError.__proto__ || Object.getPrototypeOf(MonteOptionError)).apply(this, arguments));
-  }
-
-  createClass(MonteOptionError, null, [{
-    key: 'RequiredOption',
-    value: function RequiredOption(optionName) {
-      return new MonteError('Option "' + optionName + '" is required.');
-    }
-  }]);
-  return MonteOptionError;
-}(MonteError);
-
 var DEFAULTS$2 = {
   // The layer for drawing operations
   layer: 'bg',
@@ -5777,6 +5792,12 @@ var Extension = function () {
       this.opts = mergeOptions.apply(undefined, options.concat([DEFAULTS$2]));
     }
   }, {
+    key: 'setChart',
+    value: function setChart(chart) {
+      this.chart = chart;
+      this.layer = chart[this.opts.layer];
+    }
+  }, {
     key: 'option',
     value: function option(prop, value) {
       if (value === undefined) {
@@ -5801,9 +5822,18 @@ var Extension = function () {
   }, {
     key: 'update',
     value: function update() {
-      // Cache chart for use on  option update.
-      this.cachedChart = arguments.length <= 1 ? undefined : arguments[1];
-      this._update.apply(this, arguments);
+      // Cache chart for use on option update.
+      var event = arguments.length <= 0 ? undefined : arguments[0];
+
+      if (!this.layer) {
+        this.layer = this.chart[this.opts.layer];
+      }
+
+      if (event === 'destroy') {
+        this._destroy();
+      } else {
+        this._update.apply(this, arguments);
+      }
     }
   }, {
     key: '_update',
@@ -5845,6 +5875,12 @@ var Extension = function () {
 
       return cssClasses.join(' ');
     }
+
+    // Clean up if necessary.
+
+  }, {
+    key: '_destroy',
+    value: function _destroy() {}
   }]);
   return Extension;
 }();
@@ -5863,8 +5899,11 @@ var GRID_DEFAULTS = {
     'y': 'h-line'
   },
   lineCss: 'monte-grid-line',
-  layer: 'bg',
-  binding: ['axisRendered']
+  binding: ['axisRendered'],
+  x1Adjust: 0,
+  x2Adjust: 0,
+  y1Adjust: 0,
+  y2Adjust: 0
 };
 
 // BG Grid
@@ -5889,10 +5928,10 @@ var Grid = function (_Extension) {
     }
   }, {
     key: '_update',
-    value: function _update(binding, axesChart, axisTransition) {
+    value: function _update(binding, axisTransition) {
       var _this2 = this;
 
-      var layer = axesChart[this.opts.layer];
+      var axesChart = this.chart;
 
       // Draw all axis
       axesChart.forEachAxisScale(function (scaleName) {
@@ -5908,7 +5947,7 @@ var Grid = function (_Extension) {
           var tickArguments = axis.tickArguments();
           var values = tickValues == null ? scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain() : tickValues;
 
-          var ticks = layer.selectAll('.' + css).data(values /* , scale */).order();
+          var ticks = _this2.layer.selectAll('.' + css).data(values /* , scale */).order();
 
           _this2._updateTicks(ticks, axisTransition, {
             axesChart: axesChart, axis: axis, axisTransition: axisTransition, css: css, orient: orient, scale: scale, scaleName: scaleName,
@@ -5921,24 +5960,28 @@ var Grid = function (_Extension) {
     key: '_updateTicks',
     value: function _updateTicks(ticks, axisTransition, cfg) {
       var fullCss = [cfg.lineCss, cfg.css].join(' ');
+      var x1 = this.optInvoke(this.opts.x1Adjust);
+      var x2 = this.optInvoke(this.opts.x2Adjust);
+      var y1 = this.optInvoke(this.opts.y1Adjust);
+      var y2 = this.optInvoke(this.opts.y2Adjust);
 
       if (cfg.orient === HORIZONTAL) {
-        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0).attr('y1', AXIS_SHIFT).attr('x2', cfg.axesChart.width).attr('y2', AXIS_SHIFT).attr('transform', function (d) {
+        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0 + x1).attr('y1', AXIS_SHIFT + y1).attr('x2', cfg.axesChart.width + x2).attr('y2', AXIS_SHIFT + y2).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
         });
 
         ticks.transition(axisTransition).attr('x2', function () {
-          return cfg.axesChart.width;
+          return cfg.axesChart.width + x2;
         }).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
         });
       } else if (cfg.orient === VERTICAL) {
-        ticks.enter().append('line').attr('class', fullCss).attr('x1', AXIS_SHIFT).attr('y1', 0).attr('x2', AXIS_SHIFT).attr('y2', cfg.axesChart.height).attr('transform', function (d) {
+        ticks.enter().append('line').attr('class', fullCss).attr('x1', AXIS_SHIFT + x1).attr('y1', 0 + y1).attr('x2', AXIS_SHIFT + x2).attr('y2', cfg.axesChart.height + y2).attr('transform', function (d) {
           return 'translate(' + cfg.scale(d) + ', 0)';
         });
 
         ticks.transition(axisTransition).attr('y2', function () {
-          return cfg.axesChart.height;
+          return cfg.axesChart.height + y2;
         }).attr('transform', function (d) {
           return 'translate(' + cfg.scale(d) + ', 0)';
         });
@@ -6035,10 +6078,9 @@ var PolarGrid = function (_Extension) {
     }
   }, {
     key: '_update',
-    value: function _update(binding, polarChart) {
-      var layer = polarChart[this.opts.layer];
+    value: function _update() {
       var data = this.opts.ringRadii.sort(this.opts.ringSort);
-      var rings = layer.selectAll('.' + this.opts.ringCss).data(data);
+      var rings = this.layer.selectAll('.' + this.opts.ringCss).data(data);
 
       rings.enter().append('circle').merge(rings).attr('class', this.opts.ringCss).attr('r', function (d) {
         return d;
@@ -6153,26 +6195,21 @@ var PolarTicks$$1 = function (_Extension) {
     }
   }, {
     key: '_update',
-    value: function _update(binding, polarChart) {
+    value: function _update() {
       if (!this.polarTicksDraw) {
         this.polarTicksDraw = new PolarTicks$1(this.opts);
       }
 
-      var layer = polarChart[this.opts.layer];
-      this.polarTicksDraw.update(layer);
+      this.polarTicksDraw.update(this.layer);
     }
   }]);
   return PolarTicks$$1;
 }(Extension);
 
-// import { mergeOptions } from '../tools/mergeOptions';
-
 var FRAME_DEFAULTS = {
   frameLineCss: 'monte-frame-line',
-  // layer: 'bg',
-  // binding: ['rendered', 'updateBounds'],
   edges: ['top', 'right', 'bottom', 'left'],
-  alignmentShift: 0.5 };
+  alignmentShift: AXIS_SHIFT };
 
 // BG Frame (drawn by edges) and observes the "Margin Convention".
 var Frame = function (_Extension) {
@@ -6203,17 +6240,16 @@ var Frame = function (_Extension) {
     key: 'clear',
     value: function clear() {
       // Remove all elements
-      var layer = this.cachedChart[this.opts.layer];
       var css = this.opts.frameLineCss;
-      var edges = layer.selectAll('.' + css);
+      var edges = this.layer.selectAll('.' + css);
       edges.remove();
     }
   }, {
     key: '_update',
-    value: function _update(binding, chart) {
-      var layer = chart[this.opts.layer];
+    value: function _update() {
+      var chart = this.chart;
       var css = this.opts.frameLineCss;
-      var edges = layer.selectAll('.' + css).data(this.opts.edges).order();
+      var edges = this.layer.selectAll('.' + css).data(this.opts.edges).order();
       var shift = this.opts.alignmentShift;
       var coords = {
         top: [[0 + shift, 0 + shift], [chart.width + shift, 0 + shift]],
@@ -6279,10 +6315,10 @@ var BarBg = function (_Extension) {
     }
   }, {
     key: '_update',
-    value: function _update(binding, barChart) {
+    value: function _update() {
       var _this2 = this;
 
-      var layer = barChart[this.opts.layer];
+      var barChart = this.chart;
       var chartData = barChart.data() || [];
       var data = void 0;
 
@@ -6292,7 +6328,7 @@ var BarBg = function (_Extension) {
         data = this._buildData(barChart, chartData);
       }
 
-      var bgs = layer.selectAll('.' + this.opts.barBgCss).data(data);
+      var bgs = this.layer.selectAll('.' + this.opts.barBgCss).data(data);
       var sizeAdjust = this._sizeAdjust(barChart);
 
       bgs.enter().append('rect').merge(bgs).attr('class', this.opts.barBgCss).attr('x', function () {
@@ -6410,6 +6446,122 @@ var HorizontalBarBg = function (_BarBg) {
   return HorizontalBarBg;
 }(BarBg);
 
+var REF_LINE_DEFAULTS = {
+  css: 'monte-ref-line-grp',
+  data: noop,
+  layer: 'overlay',
+  labelPlacement: 'nw',
+  textAnchor: 'start',
+  textProp: 'text',
+  x1Prop: 'x1',
+  x2Prop: 'x2',
+  y1Prop: 'y1',
+  y2Prop: 'y2'
+};
+
+// Strategies for placing labels.
+var LABEL_PLACEMENT = {
+  'nw': function nw(text, d) {
+    text.attr('dy', '-0.35em').attr('x', d.x1).attr('y', d.y1);
+  },
+
+  'n': function n(text, d) {
+    text.attr('dy', '-0.35em').attr('x', (d.x2 - d.x1) / 2 + d.x1).attr('y', d.y2);
+  },
+
+  'ne': function ne(text, d) {
+    text.attr('dy', '-0.35em').attr('x', d.x2).attr('y', d.y2);
+  },
+
+  'w': function w(text, d) {
+    text.attr('dy', '0.35em').attr('x', d.x1).attr('y', d.y1);
+  },
+
+  'e': function e(text, d) {
+    text.attr('dy', '0.35em').attr('x', d.x2).attr('y', d.y2);
+  },
+
+  'sw': function sw(text, d) {
+    text.attr('dy', '1em').attr('x', d.x1).attr('y', d.y1);
+  },
+
+  's': function s(text, d) {
+    text.attr('dy', '1em').attr('x', (d.x2 - d.x1) / 2 + d.x1).attr('y', d.y2);
+  },
+
+  'se': function se(text, d) {
+    text.attr('dy', '1em').attr('x', d.x2).attr('y', d.y2);
+  }
+};
+
+// A static line with an optional label.
+var ReferenceLine = function (_Extension) {
+  inherits(ReferenceLine, _Extension);
+
+  function ReferenceLine() {
+    classCallCheck(this, ReferenceLine);
+    return possibleConstructorReturn(this, (ReferenceLine.__proto__ || Object.getPrototypeOf(ReferenceLine)).apply(this, arguments));
+  }
+
+  createClass(ReferenceLine, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get$2(ReferenceLine.prototype.__proto__ || Object.getPrototypeOf(ReferenceLine.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [REF_LINE_DEFAULTS]));
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var _this2 = this;
+
+      var lineData = this.optInvoke(this.opts.data, this.chart.data());
+
+      if (!isArray$2(lineData)) {
+        lineData = [lineData];
+      }
+
+      var lines = this.layer.selectAll('.' + this.opts.css).data(lineData);
+
+      // Enter
+      var enter = lines.enter().append('g').attr('class', this.opts.css);
+      enter.append('text');
+      enter.append('line');
+
+      // Update + Enter
+      var update = enter.merge(lines);
+      update.select('line').attr('x1', function (d) {
+        return d[_this2.opts.x1Prop];
+      }).attr('x2', function (d) {
+        return d[_this2.opts.x2Prop];
+      }).attr('y1', function (d) {
+        return d[_this2.opts.y1Prop];
+      }).attr('y2', function (d) {
+        return d[_this2.opts.y2Prop];
+      });
+
+      update.select('text').attr('text-anchor', this.opts.textAnchor).text(function (d) {
+        return d[_this2.opts.textProp];
+      }).each(this._placeLabel.bind(this));
+
+      // Exit
+      lines.exit().remove();
+    }
+  }, {
+    key: '_placeLabel',
+    value: function _placeLabel(d, i, nodes) {
+      var text = d3.select(nodes[i]);
+      var placement = LABEL_PLACEMENT[this.opts.labelPlacement];
+      placement(text, d);
+    }
+  }]);
+  return ReferenceLine;
+}(Extension);
+
 function compose() {
   for (var _len = arguments.length, funcs = Array(_len), _key = 0; _key < _len; _key++) {
     funcs[_key] = arguments[_key];
@@ -6447,14 +6599,20 @@ function readTransforms(t) {
   return transforms;
 }
 
-var tools = {
-  compose: compose,
-  isNumeric: isNumeric, isObject: isObject$2, isArray: isArray$2, isFunc: isFunc,
-  mergeOptions: mergeOptions,
-  noop: noop,
-  resetScaleDomain: resetScaleDomain,
-  readTransforms: readTransforms
-};
+
+
+var index = Object.freeze({
+	isArray: isArray$2,
+	isDefined: isDefined,
+	isFunc: isFunc,
+	isNumeric: isNumeric,
+	isObject: isObject$2,
+	compose: compose,
+	mergeOptions: mergeOptions,
+	noop: noop,
+	readTransforms: readTransforms,
+	resetScaleDomain: resetScaleDomain
+});
 
 // import isFunc from '../tools/is';
 
@@ -6500,7 +6658,6 @@ var Resizer = function () {
   }, {
     key: 'resize',
     value: function resize() {
-      // throw new MonteError('Resize (`resize`) needs to be defined in order for the resizer to be useful.');
       throw MonteError.UnimplementedMethod('Resize', 'resize');
     }
   }]);
@@ -6590,7 +6747,9 @@ var VerticalResizer = function (_Resizer4) {
 }(Resizer);
 
 // Abstract charts
+// Tools
 
+exports.tools = index;
 exports.Chart = Chart;
 exports.AxesChart = AxesChart;
 exports.PolarChart = PolarChart;
@@ -6616,7 +6775,7 @@ exports.ExtPolarTicks = PolarTicks$$1;
 exports.ExtFrame = Frame;
 exports.ExtBarBg = BarBg;
 exports.ExtHorizontalBarBg = HorizontalBarBg;
-exports.tools = tools;
+exports.ExtReferenceLine = ReferenceLine;
 exports.axisNoTicks = axisNoTicks;
 exports.axisWholeNumberFormat = axisWholeNumberFormat;
 exports.needleRoundedEnd = needleRoundedEnd;

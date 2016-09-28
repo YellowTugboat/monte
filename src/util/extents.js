@@ -1,4 +1,6 @@
-export function extentFromZero(extent) { return [0, extent[1]]; }
+export function extentFromZero(extent) {
+  return [0, extent[1]];
+}
 
 export function extentBalanced(extent) {
   const min = extent[0];

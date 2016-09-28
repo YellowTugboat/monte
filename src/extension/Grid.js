@@ -9,8 +9,11 @@ const GRID_DEFAULTS = {
     'y': 'h-line',
   },
   lineCss: 'monte-grid-line',
-  layer: 'bg',
   binding: ['axisRendered'],
+  x1Adjust: 0,
+  x2Adjust: 0,
+  y1Adjust: 0,
+  y2Adjust: 0,
 };
 
 // BG Grid
@@ -20,8 +23,8 @@ export class Grid extends Extension {
     super._initOptions(...options, GRID_DEFAULTS);
   }
 
-  _update(binding, axesChart, axisTransition) {
-    const layer = axesChart[this.opts.layer];
+  _update(binding, axisTransition) {
+    const axesChart = this.chart;
 
     // Draw all axis
     axesChart.forEachAxisScale((scaleName) => {
@@ -39,7 +42,7 @@ export class Grid extends Extension {
           (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) :
           tickValues;
 
-        const ticks = layer.selectAll(`.${css}`).data(values/* , scale */).order();
+        const ticks = this.layer.selectAll(`.${css}`).data(values/* , scale */).order();
 
         this._updateTicks(ticks, axisTransition, {
           axesChart, axis, axisTransition, css, orient, scale, scaleName,
@@ -51,31 +54,35 @@ export class Grid extends Extension {
 
   _updateTicks(ticks, axisTransition, cfg) {
     const fullCss = [cfg.lineCss, cfg.css].join(' ');
+    const x1 = this.optInvoke(this.opts.x1Adjust);
+    const x2 = this.optInvoke(this.opts.x2Adjust);
+    const y1 = this.optInvoke(this.opts.y1Adjust);
+    const y2 = this.optInvoke(this.opts.y2Adjust);
 
     if (cfg.orient === HORIZONTAL) {
       ticks.enter().append('line')
         .attr('class', fullCss)
-        .attr('x1', 0)
-        .attr('y1', AXIS_SHIFT)
-        .attr('x2', cfg.axesChart.width)
-        .attr('y2', AXIS_SHIFT)
+        .attr('x1', 0 + x1)
+        .attr('y1', AXIS_SHIFT + y1)
+        .attr('x2', cfg.axesChart.width + x2)
+        .attr('y2', AXIS_SHIFT + y2)
         .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
 
       ticks.transition(axisTransition)
-        .attr('x2', () => cfg.axesChart.width)
+        .attr('x2', () => cfg.axesChart.width + x2)
         .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
     }
     else if (cfg.orient === VERTICAL) {
       ticks.enter().append('line')
         .attr('class', fullCss)
-        .attr('x1', AXIS_SHIFT)
-        .attr('y1', 0)
-        .attr('x2', AXIS_SHIFT)
-        .attr('y2', cfg.axesChart.height)
+        .attr('x1', AXIS_SHIFT + x1)
+        .attr('y1', 0 + y1)
+        .attr('x2', AXIS_SHIFT + x2)
+        .attr('y2', cfg.axesChart.height + y2)
         .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
 
       ticks.transition(axisTransition)
-        .attr('y2', () => cfg.axesChart.height)
+        .attr('y2', () => cfg.axesChart.height + y2)
         .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
     }
 

@@ -24,6 +24,11 @@ export class Extension {
     this.opts = mergeOptions(...options, DEFAULTS);
   }
 
+  setChart(chart) {
+    this.chart = chart;
+    this.layer = chart[this.opts.layer];
+  }
+
   option(prop, value) {
     if (value === undefined) {
       return this.opts[prop];
@@ -41,9 +46,17 @@ export class Extension {
   _shouldOptionUpdate() { return this.opts.optionsTriggerUpdate; }
 
   update(...args) {
-    // Cache chart for use on  option update.
-    this.cachedChart = args[1];
-    this._update(...args);
+    // Cache chart for use on option update.
+    const event = args[0];
+
+    if (!this.layer) { this.layer = this.chart[this.opts.layer]; }
+
+    if (event === 'destroy') {
+      this._destroy();
+    }
+    else {
+      this._update(...args);
+    }
   }
 
   _update(binding, chart) { // eslint-disable-line no-unused-vars
@@ -72,4 +85,7 @@ export class Extension {
 
     return cssClasses.join(' ');
   }
+
+  // Clean up if necessary.
+  _destroy() {}
 }

@@ -1,7 +1,8 @@
 import { get as getOpt, set as setOpt } from '../external/lodash';
+import { isDefined, isFunc } from '../tools/is';
 import { EventWatcher } from '../support/EventWatcher';
 import { MonteError } from '../support/MonteError';
-import { isFunc } from '../tools/is';
+import { MonteOptionError } from '../support/MonteOptionError';
 import { mergeOptions } from '../tools/mergeOptions';
 
 const global = window ? window.MonteGlobals = {} : {};
@@ -269,6 +270,10 @@ export class Chart {
   }
 
   optInvoke(value, ...args) {
+    if (value == null) {
+      throw new MonteOptionError('Option not initialized.');
+    }
+
     try {
       return isFunc(value) ? value.call(this, ...args) : value;
     }
@@ -301,7 +306,9 @@ export class Chart {
     const sources = Array.isArray(cssSources) ? cssSources : [cssSources];
 
     sources.forEach((source) => {
-      cssClasses.push(this.optInvoke(source, (d && d.id) || i));
+      if (isDefined(source)) {
+        cssClasses.push(this.optInvoke(source, (d && d.id) || i));
+      }
     });
 
     return cssClasses.join(' ');
@@ -348,7 +355,8 @@ export class Chart {
     // Bind extension to this chart instance.
     exts.forEach((ext) => {
       if (ext.opts.binding) {
-        this.extensions.push(...exts);
+        ext.setChart(this);
+        this.extensions.push(ext);
       }
       else {
         this.__notify('suppressedError', 'Extensions must have the `binding` option specified.');
@@ -407,11 +415,6 @@ export class Chart {
     this.dispatch.apply(eventName, this, ...args);
   }
 
-  __handleEvent(eventName, node, ...tail) {
-    this.__updateExt(eventName, this, node, tail);  // NOTE: Subtle difference so that extensions always have a chart reference.
-    this.dispatch.apply(eventName, node, tail);
-  }
-
   __elemEvent(eventType, eventNameFull, d, i, nodes) {
     const node = nodes[i];
     const cssAction = EVENT_CSS_MAP[eventType];
@@ -425,6 +428,6 @@ export class Chart {
       }
     }
 
-    this.__handleEvent(eventNameFull, node, d, i, nodes);
+    this.__notify(eventNameFull, node, d, i, nodes);
   }
 }

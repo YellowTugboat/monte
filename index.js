@@ -45,8 +45,11 @@ export {
   HorizontalBarBg as ExtHorizontalBarBg,
 } from './src/extension/BarBg';
 
+export { ReferenceLine as ExtReferenceLine } from './src/extension/ReferenceLine';
+
 // Tools
-export { tools } from './src/tools/';
+import * as tools from './src/tools/';
+export { tools };
 
 // Util
 export {

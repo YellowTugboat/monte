@@ -1,15 +1,6 @@
-import { isArray, isFunc, isNumeric, isObject } from './is';
-import { compose } from './compose';
-import { mergeOptions } from './mergeOptions';
-import { noop } from './noop';
-import { readTransforms } from './transform';
-import { resetScaleDomain } from './resetScaleDomain';
-
-export const tools = {
-  compose,
-  isNumeric, isObject, isArray, isFunc,
-  mergeOptions,
-  noop,
-  resetScaleDomain,
-  readTransforms,
-};
+export { isArray, isDefined, isFunc, isNumeric, isObject } from './is';
+export { compose } from './compose';
+export { mergeOptions } from './mergeOptions';
+export { noop } from './noop';
+export { readTransforms } from './transform';
+export { resetScaleDomain } from './resetScaleDomain';

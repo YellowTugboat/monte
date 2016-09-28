@@ -21,6 +21,14 @@ const ARC_CHART_DEFAULTS = {
   arcWedgeFillScale: noop,
   arcWedgeStrokeScale: noop,
 
+  arcWedgeEnter: (d) => ({
+    startAngle: d.endAngle,
+    endAngle: d.endAngle,
+    value: d.value,
+    padAngle: d.padAngle,
+    index: d.index,
+  }),
+
   // Background css and fill scales.
   arcBgWedgeCssScale: noop,
   arcBgWedgeFillScale: noop,
@@ -95,13 +103,7 @@ export class ArcChart extends PolarChart {
             .delay(this.opts.transitionDuration)
             .duration(this.opts.transitionDuration)
             .attrTween('d', (d) => {
-              const start = {
-                startAngle: d.endAngle,
-                endAngle: d.endAngle,
-                value: d.value,
-                padAngle: d.padAngle,
-                index: d.index,
-              };
+              const start = this.optInvoke(this.opts.arcWedgeEnter, d);
               return arcTween(arc, start, d);
             })
             .attr('fill', (d, i) => this.opts.arcWedgeFillScale(d.id || i));

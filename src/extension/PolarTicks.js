@@ -16,12 +16,11 @@ export class PolarTicks extends Extension {
     super._initOptions(...options, POLAR_TICKS_DEFAULTS);
   }
 
-  _update(binding, polarChart) {
+  _update() {
     if (!this.polarTicksDraw) {
       this.polarTicksDraw = new PolarTicksDraw(this.opts);
     }
 
-    const layer = polarChart[this.opts.layer];
-    this.polarTicksDraw.update(layer);
+    this.polarTicksDraw.update(this.layer);
   }
 }

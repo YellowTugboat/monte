@@ -5,9 +5,14 @@ const WEDGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-wedge-chart',
   piePadAngle: 0,
 
-  // // Background css and fill scales.
-  // arcBgWedgeCssScale: noop,
-  // arcBgWedgeFillScale: noop,
+  // NOTE: Wedge's use startAngle for the preset angle positions. (ArcChart uses endAngle)
+  arcWedgeEnter: (d) => ({
+    startAngle: d.startAngle,
+    endAngle: d.startAngle,
+    value: d.value,
+    padAngle: d.padAngle,
+    index: d.index,
+  }),
 };
 
 export class WedgeChart extends ArcChart {

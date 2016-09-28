@@ -27,7 +27,6 @@ export class Resizer {
   }
 
   resize() {
-    // throw new MonteError('Resize (`resize`) needs to be defined in order for the resizer to be useful.');
     throw MonteError.UnimplementedMethod('Resize', 'resize');
   }
 }

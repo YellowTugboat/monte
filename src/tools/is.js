@@ -1,3 +1,5 @@
+export const undef = void 0;
+
 export function isNumeric(v) {
   return typeof v === 'number' &&
     isFinite(v);
@@ -13,4 +15,8 @@ export function isObject(v) {
 
 export function isArray(v) {
   return Array.isArray(v);
+}
+
+export function isDefined(v) {
+  return v !== null && v !== undef;
 }

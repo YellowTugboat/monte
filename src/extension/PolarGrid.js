@@ -15,10 +15,9 @@ export class PolarGrid extends Extension {
     super._initOptions(...options, POLAR_GRID_DEFAULTS);
   }
 
-  _update(binding, polarChart) {
-    const layer = polarChart[this.opts.layer];
+  _update() {
     const data = this.opts.ringRadii.sort(this.opts.ringSort);
-    const rings = layer.selectAll(`.${this.opts.ringCss}`).data(data);
+    const rings = this.layer.selectAll(`.${this.opts.ringCss}`).data(data);
 
     rings.enter().append('circle')
       .merge(rings)

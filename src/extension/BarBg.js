@@ -14,8 +14,8 @@ export class BarBg extends Extension {
     super._initOptions(...options, BAR_BG_DEFAULTS);
   }
 
-  _update(binding, barChart) {
-    const layer = barChart[this.opts.layer];
+  _update() {
+    const barChart = this.chart;
     const chartData = barChart.data() || [];
     let data;
 
@@ -26,7 +26,7 @@ export class BarBg extends Extension {
       data = this._buildData(barChart, chartData);
     }
 
-    const bgs = layer.selectAll(`.${this.opts.barBgCss}`).data(data);
+    const bgs = this.layer.selectAll(`.${this.opts.barBgCss}`).data(data);
     const sizeAdjust = this._sizeAdjust(barChart);
 
     bgs.enter().append('rect')
