@@ -3955,7 +3955,7 @@ var Chart = function () {
       }
 
       this.__updateExt.apply(this, [eventName, this].concat(args));
-      (_dispatch = this.dispatch).apply.apply(_dispatch, [eventName, this].concat(args));
+      (_dispatch = this.dispatch).call.apply(_dispatch, [eventName, this].concat(args));
     }
   }, {
     key: '__elemEvent',
@@ -6627,7 +6627,8 @@ function axisWholeNumberFormat(axis) {
 }
 
 function readStyleProp(style, prop) {
-  return parseFloat(style.getPropertyValue(prop), 10);
+  var val = parseFloat(style.getPropertyValue(prop), 10);
+  return isNaN(val) ? 0 : val;
 }
 
 function getStyle(el) {

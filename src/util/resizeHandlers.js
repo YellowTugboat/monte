@@ -1,7 +1,8 @@
 import { MonteError } from '../support/MonteError';
 
 function readStyleProp(style, prop) {
-  return parseFloat(style.getPropertyValue(prop), 10);
+  const val = parseFloat(style.getPropertyValue(prop), 10);
+  return isNaN(val) ? 0 : val;
 }
 
 function getStyle(el) {
