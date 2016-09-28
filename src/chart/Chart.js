@@ -412,7 +412,7 @@ export class Chart {
   // Using notify ensures that extensions are notified before outside listeners are.
   __notify(eventName, ...args) {
     this.__updateExt(eventName, this, ...args);
-    this.dispatch.apply(eventName, this, ...args);
+    this.dispatch.call(eventName, this, ...args);
   }
 
   __elemEvent(eventType, eventNameFull, d, i, nodes) {
