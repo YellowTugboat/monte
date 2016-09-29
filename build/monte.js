@@ -3672,6 +3672,16 @@ var Chart = function () {
         update: update
       };
     }
+
+    // Manually invoke the resize strategy (if any).
+
+  }, {
+    key: 'checkSize',
+    value: function checkSize() {
+      if (this._resizeHandler) {
+        this._resizeHandler();
+      }
+    }
   }, {
     key: 'destroy',
     value: function destroy() {

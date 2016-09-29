@@ -203,6 +203,13 @@ export class Chart {
     };
   }
 
+  // Manually invoke the resize strategy (if any).
+  checkSize() {
+    if (this._resizeHandler) {
+      this._resizeHandler();
+    }
+  }
+
   destroy() {
     if (this._resizeHandler) {
       global.resizeWatch.remove(this._resizeHandler);
