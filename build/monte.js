@@ -3681,6 +3681,8 @@ var Chart = function () {
       if (this._resizeHandler) {
         this._resizeHandler();
       }
+
+      return this;
     }
   }, {
     key: 'destroy',
@@ -3917,6 +3919,9 @@ var Chart = function () {
   }, {
     key: 'update',
     value: function update() {
+      if (this.data()) {
+        return;
+      }
       this._update();
 
       // Notify if first rendered

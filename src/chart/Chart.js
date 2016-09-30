@@ -208,6 +208,8 @@ export class Chart {
     if (this._resizeHandler) {
       this._resizeHandler();
     }
+
+    return this;
   }
 
   destroy() {
@@ -387,6 +389,7 @@ export class Chart {
 
   // Render the vis.
   update() {
+    if (this.data()) { return; }
     this._update();
 
     // Notify if first rendered
