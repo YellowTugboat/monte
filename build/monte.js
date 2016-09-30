@@ -3919,7 +3919,7 @@ var Chart = function () {
   }, {
     key: 'update',
     value: function update() {
-      if (this.data()) {
+      if (!this.data()) {
         return;
       }
       this._update();

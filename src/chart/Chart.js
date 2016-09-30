@@ -389,7 +389,7 @@ export class Chart {
 
   // Render the vis.
   update() {
-    if (this.data()) { return; }
+    if (!this.data()) { return; }
     this._update();
 
     // Notify if first rendered
