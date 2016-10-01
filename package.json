@@ -1,0 +1,23 @@
+{
+  "name": "yellowtugboat.github.io__monte",
+  "version": "1.0.0",
+  "description": "GitHub project page for Monte",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server -a localhost -p 8042 -c0",
+    "build-css": "node-sass --source-map stylesheets --output-style compressed --precision 8 stylesheets/main.scss stylesheets/main.css",
+    "build": "npm run build-css",
+    "watch-css": "node-sass --watch --source-map stylesheets --output-style compressed --precision 8 stylesheets/main.scss stylesheets/main.css",
+    "watch": "npm run build && npm run watch-css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YellowTugboat/monte.git"
+  },
+  "author": "Yellow Tugboat",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/YellowTugboat/monte/issues"
+  },
+  "homepage": "https://github.com/YellowTugboat/monte#readme"
+}

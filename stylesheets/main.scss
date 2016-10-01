@@ -1,0 +1,73 @@
+@import '_vars';
+@import 'skeleton';
+
+.inline {
+  display: inline-block;
+}
+
+body {
+  background-color: $footer;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: lighter;
+  font-family: 'Lato', sans-serif;
+}
+
+a {
+  color: $monteAccent;
+}
+
+h1.monte {
+  color: $montePrimary;
+}
+
+.logo-grp {
+  margin-bottom: 20px;
+}
+
+.main-content {
+  background-color: $bg;
+  padding: 50px 10px;
+  min-height: 300px;
+}
+
+.page-header {
+  background-color: $header;
+  color: #ccc;
+  padding: 50px 10px;
+  text-align: center;
+
+  .logo {
+    vertical-align: middle;
+    margin-right: 10px;
+  }
+
+  .monte {
+    margin: 0;
+    vertical-align: middle;
+    font-size: 68px;
+    line-height: 100px;
+  }
+
+  p {
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    color: $headerText;
+  }
+}
+
+footer {
+  background-color: $footer;
+  text-align: center;
+  line-height: 50px;
+}
+
+.grp {
+  margin-bottom: 100px;
+}
+
+.subtle {
+  opacity: 0.65;
+}
