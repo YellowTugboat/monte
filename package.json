@@ -5,9 +5,9 @@
   "main": "index.html",
   "scripts": {
     "start": "http-server -a localhost -p 8042 -c0",
-    "build-css": "node-sass --source-map stylesheets --output-style compressed --precision 8 stylesheets/main.scss stylesheets/main.css",
+    "build-css": "node-sass --include-path ./node_modules/boostrap/scss/ --source-map stylesheets --output-style compressed --precision 8 stylesheets/main.scss stylesheets/main.css",
     "build": "npm run build-css",
-    "watch-css": "node-sass --watch --source-map stylesheets --output-style compressed --precision 8 stylesheets/main.scss stylesheets/main.css",
+    "watch-css": "node-sass --include-path ./node_modules/boostrap/scss/ --watch --source-map stylesheets --output-style compressed --precision 8 stylesheets/main.scss stylesheets/main.css",
     "watch": "npm run build && npm run watch-css"
   },
   "repository": {
@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/YellowTugboat/monte/issues"
   },
-  "homepage": "https://github.com/YellowTugboat/monte#readme"
+  "homepage": "https://github.com/YellowTugboat/monte#readme",
+  "devDependencies": {
+    "bootstrap": "^4.0.0-alpha.4"
+  }
 }

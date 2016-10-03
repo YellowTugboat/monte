@@ -1,5 +1,6 @@
 @import '_vars';
-@import 'skeleton';
+@import 'node_modules/bootstrap/scss/variables';
+@import 'node_modules/bootstrap/scss/mixins/breakpoints';
 
 .inline {
   display: inline-block;
@@ -11,14 +12,35 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-weight: lighter;
-  font-family: 'Lato', sans-serif;
+  font-weight: 200;
+}
+
+section {
+  position: relative;;
+
+  .row h1 {
+    //text-align: center;
+    font-size: 3rem;
+    margin-bottom: 10px;
+  }
+
+  .row h2 {
+    margin-top: 20px;
+  }
 }
 
 a {
   color: $monteAccent;
+  text-decoration: none;
+
+  &:hover {
+    color: $montePrimary;
+    text-decoration: underline;
+  }
 }
 
 h1.monte {
+  font-family: 'Lato', sans-serif;
   color: $montePrimary;
 }
 
@@ -28,15 +50,15 @@ h1.monte {
 
 .main-content {
   background-color: $bg;
-  padding: 50px 10px;
+  padding: 70px 10px;
   min-height: 300px;
 }
 
 .page-header {
   background-color: $header;
   color: #ccc;
-  padding: 50px 10px;
-  text-align: center;
+  padding: 100px 10px;
+  // text-align: center;
 
   .logo {
     vertical-align: middle;
@@ -52,8 +74,8 @@ h1.monte {
 
   p {
     max-width: 400px;
-    margin-left: auto;
-    margin-right: auto;
+    // margin-left: auto;
+    // margin-right: auto;
     color: $headerText;
   }
 }
@@ -62,6 +84,7 @@ footer {
   background-color: $footer;
   text-align: center;
   line-height: 50px;
+  padding-bottom: 20px;
 }
 
 .grp {
@@ -70,4 +93,15 @@ footer {
 
 .subtle {
   opacity: 0.65;
+}
+
+code {
+  color: $monteAccent2;
+  background-color: $codeGrey;
+}
+
+@include media-breakpoint-down(sm) {
+  .page-header {
+    text-align: center;
+  }
 }
