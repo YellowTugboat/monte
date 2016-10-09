@@ -1,6 +1,7 @@
 .DS_Store
-node_modules
+node_modules/
 build/*.zip
+build/*.gz
 npm-debug.log*
 *.todo
-_*
+__*

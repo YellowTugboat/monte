@@ -4,6 +4,8 @@
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
+var version = "0.0.0-alpha10";
+
 /**
  * Checks if `value` is classified as an `Array` object.
  *
@@ -1007,7 +1009,7 @@ function baseToString(value) {
  * _.toString([1, 2, 3]);
  * // => '1,2,3'
  */
-function toString(value) {
+function toString$1(value) {
   return value == null ? '' : baseToString(value);
 }
 
@@ -1026,7 +1028,7 @@ var reEscapeChar = /\\(\\)?/g;
  * @returns {Array} Returns the property path array.
  */
 var stringToPath = memoizeCapped(function (string) {
-  string = toString(string);
+  string = toString$1(string);
 
   var result = [];
   if (reLeadingDot.test(string)) {
@@ -3384,6 +3386,8 @@ var EventWatcher = function () {
   return EventWatcher;
 }();
 
+var INTERACTION_EVENTS = ['click', 'touchstart', 'touchend', 'mouseover', 'mouseout'];
+
 // Based on `ExtendableError` from
 // http://stackoverflow.com/questions/31089801/extending-error-in-javascript-with-es6-syntax
 
@@ -3445,6 +3449,7 @@ var DEFAULTS = {
     left: 0
   },
 
+  customEvents: [],
   extensions: [],
 
   transitionDuration: 250,
@@ -3470,7 +3475,8 @@ var DEFAULTS = {
 var EVENT_CSS_MAP = {
   'mouseover': { action: 'add', css: 'over' },
   'mouseout': { action: 'remove', css: 'over' },
-  'touchstart': { action: 'add', css: 'touch' }
+  'touchstart': { action: 'add', css: 'touch' },
+  'touchend': { action: 'remove', css: 'touch' }
 };
 
 /*
@@ -3502,7 +3508,17 @@ var Chart = function () {
     this._initOptions(options);
 
     // Setup the Public events.
-    this._initPublicEvents('rendered', 'updated', 'updateBounds', 'click', 'cssDomainsReset', 'suppressedError', 'destroy');
+    this._initPublicEvents.apply(this, toConsumableArray(INTERACTION_EVENTS).concat([
+
+    // Support events
+    'suppressedError', 'extension',
+
+    // Lifecycle event pairs
+    'rendering', 'rendered', 'updating', 'updated', 'updatingBounds', 'updatedBounds', 'cssDomainsReseting', 'cssDomainsReset', 'destroying', 'destroyed'], toConsumableArray(this.opts.customEvents)));
+
+    if (this.opts.developerMode || global$1.developerMode) {
+      this._initDeveloperMode();
+    }
 
     // Bind initial extensions to this chart instance.
     this._bindExt(this.opts.extensions);
@@ -3556,6 +3572,8 @@ var Chart = function () {
   }, {
     key: '_initCore',
     value: function _initCore() {
+      var _this = this;
+
       // Create SVG element and drawing area setup
       var parent = d3.select(this.parentSelector);
       if (parent.node().tagName.toLowerCase() === 'svg') {
@@ -3587,14 +3605,15 @@ var Chart = function () {
       this.addLayer('overlay');
 
       var chart = this;
-      this.bound.on('click', function () {
-        var svg = this;
 
-        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-          args[_key2] = arguments[_key2];
-        }
+      INTERACTION_EVENTS.forEach(function (ev) {
+        _this.bound.on(ev, function () {
+          for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+            args[_key2] = arguments[_key2];
+          }
 
-        chart.__notify.apply(chart, ['click', svg].concat(args));
+          chart.__notify.apply(chart, [ev, this].concat(args));
+        });
       });
 
       if (this.opts.resize) {
@@ -3603,7 +3622,6 @@ var Chart = function () {
         }
 
         var resizer = this.opts.resize;
-        // resizer.option('chart', this);
         this._resizeHandler = resizer.resize.bind(resizer, this);
         global$1.resizeWatch.add(this._resizeHandler);
       }
@@ -3613,7 +3631,40 @@ var Chart = function () {
     value: function _initPublicEvents() {
       var _d;
 
-      this.dispatch = (_d = d3).dispatch.apply(_d, arguments);
+      for (var _len3 = arguments.length, events = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+        events[_key3] = arguments[_key3];
+      }
+
+      this._events = events;
+      this.dispatch = (_d = d3).dispatch.apply(_d, events);
+    }
+  }, {
+    key: '_initDeveloperMode',
+    value: function _initDeveloperMode() {
+      var _this2 = this;
+
+      var echo = function echo(eventName) {
+        for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+          args[_key4 - 1] = arguments[_key4];
+        }
+
+        //const t = this.constructor.name;
+        var a = '(no arguments)';
+
+        if (args && args.length > 0) {
+          a = '\n';
+
+          args.forEach(function (v, i) {
+            return a += '\t' + i + ': ' + v + '\n';
+          });
+        }
+
+        console.log('[' + _this2 + '] "' + eventName + '": ' + a); // eslint-disable-line no-console
+      };
+
+      this._events.forEach(function (eventName) {
+        return _this2.on(eventName, echo.bind(_this2, eventName));
+      });
     }
   }, {
     key: '_initCustomize',
@@ -3624,19 +3675,21 @@ var Chart = function () {
   }, {
     key: '_updateBounds',
     value: function _updateBounds() {
-      var _this = this;
+      var _this3 = this;
 
       var suppressNotify = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
       var suppressUpdate = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+      this.__notify('updatingBounds');
 
       // Margin Convention and calculate drawing area size
       this.margin = this.opts.margin;
       this.width = this.opts.boundingWidth - this.margin.left - this.margin.right;
       this.height = this.opts.boundingHeight - this.margin.top - this.margin.bottom;
 
-      // Apply margins to bg and draw area
+      // Apply margins to layers
       this.layers.forEach(function (l) {
-        return l.attr('transform', _this._getLayerTranslate());
+        return l.attr('transform', _this3._getLayerTranslate());
       });
 
       // Update sizing attributes
@@ -3650,13 +3703,13 @@ var Chart = function () {
       }
 
       var notify = function notify() {
-        if (_this._constructed) {
-          _this.__notify('updateBounds');
+        if (_this3._constructed) {
+          _this3.__notify('updatedBounds');
         }
       };
       var update = function update() {
-        if (_this.hasRendered) {
-          _this.update();
+        if (_this3.hasRendered) {
+          _this3.update();
         }
       };
 
@@ -3687,14 +3740,18 @@ var Chart = function () {
   }, {
     key: 'destroy',
     value: function destroy() {
+      this.__notify('destroying');
+
       if (this._resizeHandler) {
         global$1.resizeWatch.remove(this._resizeHandler);
       }
 
-      this.__notify('destroy');
+      this._destroy();
 
       // TODO: Handle case where parentSelector and bound are the same and only remove internal elements.
       this.bound.remove();
+
+      this.__notify('destroyed');
     }
   }, {
     key: '_destroy',
@@ -3712,6 +3769,13 @@ var Chart = function () {
     value: function _getLayerTranslate() {
       return 'translate(' + this.margin.left + ', ' + this.margin.top + ')';
     }
+
+    /**
+     * Sets the external dimensions on the SVG element.
+     *
+     * @Chainable
+     */
+
   }, {
     key: 'boundingRect',
     value: function boundingRect(width, height) {
@@ -3729,6 +3793,13 @@ var Chart = function () {
 
       return this;
     }
+
+    /**
+     * Binds an event to a given `callback`. If no `callback` is provided it returns the callback.
+     *
+     * @Chainable <setter>
+     */
+
   }, {
     key: 'on',
     value: function on(typenames, callback) {
@@ -3739,6 +3810,44 @@ var Chart = function () {
 
       return this.dispatch.on(typenames);
     }
+
+    /**
+     * Force the triggering of an event with the given arguments. The `on` callbacks are invoked in
+     * the context of the chart.
+     *
+     * Uses:
+     *  + Trigger event for listeners as needed such as force an extension to update.
+     *
+     * @Chainable
+     */
+
+  }, {
+    key: 'emit',
+    value: function emit(eventName) {
+      if (!eventName) {
+        return;
+      } else if (!this.dispatch._[eventName]) {
+        // Check that dispatch has a registered event
+        throw new MonteError('Unknown event ' + eventName + '. Double check the spelling or register the event. Custom events must registered at chart creation.');
+      }
+
+      for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+        args[_key5 - 1] = arguments[_key5];
+      }
+
+      this.__notify.apply(this, [eventName].concat(args));
+
+      return this;
+    }
+
+    /**
+     * Get or set a chart option.
+     *
+     * NOTE: Does not invoke the "Update cycle". To apply option changes call `update`.
+     *
+     * @Chainable
+     */
+
   }, {
     key: 'option',
     value: function option(prop, value) {
@@ -3761,6 +3870,12 @@ var Chart = function () {
 
       return this;
     }
+
+    /**
+     * Invoke a `value` (generally from the chart options) with the given arguments. Static values
+     * are returned directly.
+     */
+
   }, {
     key: 'optInvoke',
     value: function optInvoke(value) {
@@ -3769,8 +3884,8 @@ var Chart = function () {
       }
 
       try {
-        for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
-          args[_key3 - 1] = arguments[_key3];
+        for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
+          args[_key6 - 1] = arguments[_key6];
         }
 
         return isFunc(value) ? value.call.apply(value, [this].concat(args)) : value;
@@ -3782,6 +3897,11 @@ var Chart = function () {
   }, {
     key: '_clearDataElements',
     value: function _clearDataElements() {}
+
+    /**
+     * Remove the data, remove the data elements, and clear the CSS domains.
+     */
+
   }, {
     key: 'clear',
     value: function clear() {
@@ -3792,9 +3912,18 @@ var Chart = function () {
         this.resetCssDomains();
       }
     }
+
+    /**
+     * Resets domains related to CSS scales.
+     *
+     * @Chainable
+     */
+
   }, {
     key: 'resetCssDomains',
     value: function resetCssDomains() {
+      this.__notify('cssDomainsReseting');
+
       this._resetCssDomains();
 
       this.__notify('cssDomainsReset');
@@ -3806,19 +3935,26 @@ var Chart = function () {
   }, {
     key: '_buildCss',
     value: function _buildCss(cssSources, d, i) {
-      var _this2 = this;
+      var _this4 = this;
 
       var cssClasses = [];
       var sources = Array.isArray(cssSources) ? cssSources : [cssSources];
 
       sources.forEach(function (source) {
         if (isDefined(source)) {
-          cssClasses.push(_this2.optInvoke(source, d && d.id || i));
+          cssClasses.push(_this4.optInvoke(source, d && d.id || i));
         }
       });
 
       return cssClasses.join(' ');
     }
+
+    /**
+     * Set the CSS classes on the SVG element.
+     *
+     * @Chainable
+     */
+
   }, {
     key: 'classed',
     value: function classed() {
@@ -3826,22 +3962,54 @@ var Chart = function () {
 
       (_bound = this.bound).classed.apply(_bound, arguments);
 
+      if (arguments.length <= 0 ? undefined : arguments[0]) {
+        alert();
+      }
+      if (arguments.length <= 1 ? undefined : arguments[1]) {
+        alert();
+      }
+
       return this;
     }
+
+    /**
+     * Invokes a function in the context of the chart with the given arguments.
+     *
+     * @Chainable
+     */
+
   }, {
     key: 'call',
-    value: function call() {
-      var _bound2;
+    value: function call(f) {
+      for (var _len7 = arguments.length, args = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
+        args[_key7 - 1] = arguments[_key7];
+      }
 
-      (_bound2 = this.bound).call.apply(_bound2, arguments);
+      f.call.apply(f, [this].concat(args));
 
       return this;
     }
+
+    /**
+     * Update the existing data of the chart to display and trigger the "Update cycle".
+     *
+     * @Chainable
+     */
+
   }, {
     key: 'updateData',
     value: function updateData(data) {
       this.data(data, true);
+
+      return this;
     }
+
+    /**
+     * Set the data for the chart to display and trigger the "Updtate cycle".
+     *
+     * @Chainable
+     */
+
   }, {
     key: 'data',
     value: function data(_data) {
@@ -3868,35 +4036,49 @@ var Chart = function () {
     value: function _data(data) {
       this.displayData = data;
     }
+
+    /**
+     * Add an extension instance to the chart instance.
+     */
+
   }, {
     key: 'addExt',
     value: function addExt() {
-      for (var _len4 = arguments.length, exts = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-        exts[_key4] = arguments[_key4];
+      for (var _len8 = arguments.length, exts = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
+        exts[_key8] = arguments[_key8];
       }
 
       this._bindExt(exts);
     }
+
+    /**
+     * Binds a given extension instance to the chart instance.
+     */
+
   }, {
     key: '_bindExt',
     value: function _bindExt(exts) {
-      var _this3 = this;
+      var _this5 = this;
 
-      // Bind extension to this chart instance.
       exts.forEach(function (ext) {
         if (ext.opts.binding) {
-          ext.setChart(_this3);
-          _this3.extensions.push(ext);
+          ext.setChart(_this5);
+          _this5.extensions.push(ext);
         } else {
-          _this3.__notify('suppressedError', 'Extensions must have the `binding` option specified.');
+          _this5.__notify('suppressedError', 'Extensions must have the `binding` option specified.');
         }
       });
     }
+
+    /**
+     * Invokes all extensions "Update Cycle" if bound to the given event (binding) name.
+     */
+
   }, {
     key: '__updateExt',
     value: function __updateExt(bindingName) {
-      for (var _len5 = arguments.length, extArgs = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
-        extArgs[_key5 - 1] = arguments[_key5];
+      for (var _len9 = arguments.length, extArgs = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
+        extArgs[_key9 - 1] = arguments[_key9];
       }
 
       this.extensions.forEach(function (ext) {
@@ -3905,6 +4087,14 @@ var Chart = function () {
         }
       });
     }
+
+    /**
+     * Replaces one scale with another. The new scale `range` and `domain` are set to match the
+     * previous scale.
+     *
+     * For example: changing between a linear and logarithmic scale to allow users to identify trends.
+     */
+
   }, {
     key: 'replaceScale',
     value: function replaceScale(scaleName, newScaleConstructor) {
@@ -3914,14 +4104,22 @@ var Chart = function () {
       this.update();
     }
 
-    // Render the vis.
+    /**
+     * (Re)renders the chart by invoking the "Update cycle" which is consistent with the D3
+     * "Enter-Update-Exit" pattern.
+     */
 
   }, {
     key: 'update',
     value: function update() {
       if (!this.data()) {
         return;
+      } // Don't allow update if data has not been set.
+      if (!this.hasRendered) {
+        this.__notify('rendering');
       }
+
+      this.__notify('updating');
       this._update();
 
       // Notify if first rendered
@@ -3932,46 +4130,66 @@ var Chart = function () {
 
       this.__notify('updated');
     }
+
+    /**
+     * A specific charts implementation of the "Update cycle"
+     */
+
   }, {
     key: '_update',
     value: function _update() {
       if (!this.opts.directUse) {
-        // throw new MonteError('Update (`_update`) needs to be defined in order for the chart to be useful.');
         throw MonteError.UnimplementedMethod('Update', '_update');
       }
     }
+
+    /**
+     * Generates a function to bind the "common" element events to an event handler.
+     */
+
   }, {
     key: '__bindCommonEvents',
     value: function __bindCommonEvents(lead) {
       var chart = this;
 
+      // return function(sel) {
+      //   sel.on('mouseover', (d, i, nodes) => chart.__elemEvent('mouseover', `${lead}:mouseover`, d, i, nodes))
+      //     .on('mouseout', (d, i, nodes) => chart.__elemEvent('mouseout', `${lead}:mouseout`, d, i, nodes))
+      //     .on('click', (d, i, nodes) => chart.__elemEvent('click', `${lead}:click`, d, i, nodes))
+      //     .on('touchstart', (d, i, nodes) => chart.__elemEvent('touchstart', `${lead}:touchstart`, d, i, nodes));
+      // };
+
       return function (sel) {
-        sel.on('mouseover', function (d, i, nodes) {
-          return chart.__elemEvent('mouseover', lead + ':mouseover', d, i, nodes);
-        }).on('mouseout', function (d, i, nodes) {
-          return chart.__elemEvent('mouseout', lead + ':mouseout', d, i, nodes);
-        }).on('click', function (d, i, nodes) {
-          return chart.__elemEvent('click', lead + ':click', d, i, nodes);
-        }).on('touchstart', function (d, i, nodes) {
-          return chart.__elemEvent('touchstart', lead + ':touchstart', d, i, nodes);
+        INTERACTION_EVENTS.forEach(function (ev) {
+          return sel.on(ev, function (d, i, nodes) {
+            return chart.__elemEvent(ev, lead + ':' + ev, d, i, nodes);
+          });
         });
       };
     }
 
-    // Using notify ensures that extensions are notified before outside listeners are.
+    /**
+     * Notify all listeners, extensions and those bound through `on`, of an event.
+     * Using notify ensures that extensions are notified before outside listeners are.
+     */
 
   }, {
     key: '__notify',
     value: function __notify(eventName) {
       var _dispatch;
 
-      for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-        args[_key6 - 1] = arguments[_key6];
+      for (var _len10 = arguments.length, args = Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
+        args[_key10 - 1] = arguments[_key10];
       }
 
       this.__updateExt.apply(this, [eventName, this].concat(args));
       (_dispatch = this.dispatch).call.apply(_dispatch, [eventName, this].concat(args));
     }
+
+    /**
+     * Handles an event generated through element interaction (i.e. click, mouseover, etc...).
+     */
+
   }, {
     key: '__elemEvent',
     value: function __elemEvent(eventType, eventNameFull, d, i, nodes) {
@@ -3986,7 +4204,17 @@ var Chart = function () {
         }
       }
 
-      this.__notify(eventNameFull, node, d, i, nodes);
+      this.__notify(eventNameFull, d, i, nodes);
+    }
+
+    /**
+     * Give the chart type name as the identifier.
+     */
+
+  }, {
+    key: 'toString',
+    value: function toString() {
+      return this.constructor.name;
     }
   }]);
   return Chart;
@@ -4072,7 +4300,8 @@ var AxesChart = function (_Chart) {
   }, {
     key: '_initOptions',
     value: function _initOptions() {
-      var _babelHelpers$get;
+      var _babelHelpers$get,
+          _this2 = this;
 
       for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
         options[_key] = arguments[_key];
@@ -4080,8 +4309,29 @@ var AxesChart = function (_Chart) {
 
       (_babelHelpers$get = get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [AXES_CHART_DEFAULTS]));
 
-      if (this.opts.axes === null) {
+      if (!isDefined(this.opts.axes)) {
+        // Set empty array to ease assumptions (i.e. avoid null checks) in later code.
         this.opts.axes = [];
+      } else {
+        // Create convenient axes acessors.
+        // A compromise is used for attaching the accessors: If 'x' or 'y' are given they are attached
+        // to the prototype because they are so ubiquitous. Others are attached to the objects
+        // directly to avoid touching class definitions globally.
+        this.forEachAxisScale(function (scaleName) {
+          var obj = void 0;
+
+          if (scaleName === 'x' || scaleName === 'y') {
+            obj = AxesChart.prototype;
+          } else {
+            obj = _this2;
+          }
+
+          if (!obj[scaleName + 'Get']) {
+            obj[scaleName + 'Get'] = function scaleGetWrap(d) {
+              return this.scaleGet(scaleName, d);
+            };
+          }
+        });
       }
     }
   }, {
@@ -4099,40 +4349,48 @@ var AxesChart = function (_Chart) {
   }, {
     key: '_initCore',
     value: function _initCore() {
-      var _this2 = this;
+      var _this3 = this;
 
       get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initCore', this).call(this);
 
       this.forEachAxisScale(function (scaleName) {
         // Create scale
-        var range = _this2.__axisOpt(scaleName, 'Range')(_this2.width, _this2.height);
-        var scale = _this2.__axisOpt(scaleName, 'Scale')().range(range);
-        _this2[scaleName] = scale;
+        var range = _this3.__axisOpt(scaleName, 'Range')(_this3.width, _this3.height);
+        var scale = _this3.__axisOpt(scaleName, 'Scale')().range(range);
+        _this3[scaleName] = scale;
 
         // Setup axes
-        _this2[scaleName + 'Axis'] = _this2.__axisOpt(scaleName, 'AxisConstructor')(scale);
+        _this3[scaleName + 'Axis'] = _this3.__axisOpt(scaleName, 'AxisConstructor')(scale);
       });
     }
   }, {
     key: '_initCustomize',
     value: function _initCustomize() {
-      var _this3 = this;
+      var _this4 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var customize = _this3.__axisOpt(scaleName, 'AxisCustomize');
-        if (customize) {
-          customize(_this3[scaleName + 'Axis']);
+        var customize = _this4.__axisOpt(scaleName, 'AxisCustomize');
+
+        if (isArray$2(customize)) {
+          (function () {
+            var axis = _this4[scaleName + 'Axis'];
+            customize.forEach(function (customFunc) {
+              return customFunc(axis);
+            });
+          })();
+        } else if (isFunc(customize)) {
+          customize(_this4[scaleName + 'Axis']);
         }
       });
     }
   }, {
     key: '_initRender',
     value: function _initRender() {
-      var _this4 = this;
+      var _this5 = this;
 
       // Attach axes
       this.forEachAxisScale(function (scaleName) {
-        _this4.support.append('g').attr('class', scaleName + '-axis axis');
+        _this5.support.append('g').attr('class', scaleName + '-axis axis');
       });
       this.updateAxesTransforms();
 
@@ -4153,17 +4411,17 @@ var AxesChart = function (_Chart) {
   }, {
     key: '_data',
     value: function _data(data) {
-      var _this5 = this;
+      var _this6 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var cb = _this5.opts[scaleName + 'DomainCustomize'];
-        var extent = data ? _this5._domainExtent(data, scaleName) : [];
+        var cb = _this6.opts[scaleName + 'DomainCustomize'];
+        var extent = data ? _this6._domainExtent(data, scaleName) : [];
 
         if (cb) {
           extent = cb(extent);
         }
 
-        _this5[scaleName].domain(extent);
+        _this6[scaleName].domain(extent);
       });
 
       get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_data', this).call(this, data);
@@ -4179,31 +4437,31 @@ var AxesChart = function (_Chart) {
   }, {
     key: 'updateAxesTransforms',
     value: function updateAxesTransforms() {
-      var _this6 = this;
+      var _this7 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var axisGrp = _this6.support.select('.' + scaleName + '-axis');
-        var trans = _this6.__axisOpt(scaleName, 'AxisTransform');
+        var axisGrp = _this7.support.select('.' + scaleName + '-axis');
+        var trans = _this7.__axisOpt(scaleName, 'AxisTransform');
 
         if (trans) {
-          axisGrp.attr('transform', trans(_this6.width, _this6.height));
+          axisGrp.attr('transform', trans(_this7.width, _this7.height));
         }
       });
     }
   }, {
     key: 'updateAxesRanges',
     value: function updateAxesRanges() {
-      var _this7 = this;
+      var _this8 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var range = _this7.__axisOpt(scaleName, 'Range')(_this7.width, _this7.height);
-        _this7[scaleName].range(range);
+        var range = _this8.__axisOpt(scaleName, 'Range')(_this8.width, _this8.height);
+        _this8[scaleName].range(range);
       });
     }
   }, {
     key: 'renderAxes',
     value: function renderAxes() {
-      var _this8 = this;
+      var _this9 = this;
 
       // Only suppress all if a literal boolean is given.
       if (this.opts.suppressAxes === true) {
@@ -4214,12 +4472,12 @@ var AxesChart = function (_Chart) {
 
       // (Re)render axes
       this.forEachAxisScale(function (scaleName) {
-        if (isSuppressArray && _this8.opts.suppressAxes.indexOf(scaleName) > -1) {
+        if (isSuppressArray && _this9.opts.suppressAxes.indexOf(scaleName) > -1) {
           return;
         }
 
-        _this8.support.select('.' + scaleName + '-axis').transition().duration(_this8.opts.transitionDuration).call(_this8[scaleName + 'Axis']).call(_this8._setLabel.bind(_this8, scaleName)).call(function (t) {
-          return _this8.__notify('axisRendered', t);
+        _this9.support.select('.' + scaleName + '-axis').transition().duration(_this9.opts.transitionDuration).call(_this9[scaleName + 'Axis']).call(_this9._setLabel.bind(_this9, scaleName)).call(function (t) {
+          return _this9.__notify('axisRendered', t);
         });
       });
     }
@@ -4246,6 +4504,23 @@ var AxesChart = function (_Chart) {
       if (label) {
         this.support.select('.' + scaleName + '-axis').append('text').attr('class', 'axis-label').text(label);
       }
+    }
+  }, {
+    key: 'scaleGet',
+    value: function scaleGet(scaleName, d) {
+      var val = void 0;
+
+      if (!isFunc(this[scaleName])) {
+        throw new MonteError('Scale "' + scaleName + '" is not defined.');
+      } else if (isObject$2(d)) {
+        // Assume `d` is a datum related to the chart data.
+        val = d[this.opts[scaleName + 'Prop']];
+      } else {
+        // Assume `d` is a value the scale can process.
+        val = d;
+      }
+
+      return this[scaleName](val);
     }
   }]);
   return AxesChart;
@@ -4430,9 +4705,9 @@ var LineChart = function (_AxesChart) {
 
       // Initialize the line generator
       this.line = d3.line().x(function (d) {
-        return _this2.x(d[_this2.opts.xProp]);
+        return _this2.xGet(d);
       }).y(function (d) {
-        return _this2.y(d[_this2.opts.yProp]);
+        return _this2.yGet(d);
       });
     }
   }, {
@@ -4546,13 +4821,13 @@ var LineChart = function (_AxesChart) {
       // Create new points
       points.enter().append('path').attr('d', genSym).call(this.__bindCommonEvents('point')).merge(points) // Update existing points and set values on new points.
       .attr('transform', function (d) {
-        return 'translate(' + _this5.x(d[_this5.opts.xProp]) + ', ' + _this5.y(d[_this5.opts.yProp]) + ')';
+        return 'translate(' + _this5.xGet(d) + ', ' + _this5.yGet(d) + ')';
       }).attr('class', function (d) {
         return ['monte-point', lineDatum.css, _this5.opts.lineCssScale(lineDatum.id || lineIndex), _this5.opts.pointCss, _this5.opts.pointCssScale(lineDatum.id || lineIndex), d.css].join(' ');
       });
 
       points.transition().duration(this.opts.transitionDuration).attr('fill', this.opts.pointFillScale).attr('stroke', this.opts.pointStrokeScale).attr('transform', function (d) {
-        return 'translate(' + _this5.x(d[_this5.opts.xProp]) + ', ' + _this5.y(d[_this5.opts.yProp]) + ')';
+        return 'translate(' + _this5.xGet(d) + ', ' + _this5.yGet(d) + ')';
       }).attr('d', genSym);
 
       // Fade out removed points.
@@ -4669,11 +4944,11 @@ var AreaChart = function (_LineChart) {
 
       // Initialize the line generator
       this.area = d3.area().x(function (d) {
-        return _this2.x(d[_this2.opts.xProp]);
+        return _this2.xGet(d);
       }).y0(function () {
         return _this2.height;
       }).y1(function (d) {
-        return _this2.y(d[_this2.opts.yProp]);
+        return _this2.yGet(d);
       });
     }
   }, {
@@ -4812,7 +5087,7 @@ var BarChart = function (_AxesChart) {
       if (scaleName === 'y') {
         extent = d3.extent(data, function (d) {
           return d[_this2.opts.yProp];
-        }); // [0, d3.max(data, (d) => d[this.opts.yProp])];
+        });
       } else if (scaleName === 'x') {
         extent = data.map(function (d) {
           return d[_this2.opts.xProp];
@@ -4880,7 +5155,7 @@ var BarChart = function (_AxesChart) {
   }, {
     key: '_barX',
     value: function _barX(d) {
-      return this.x(d[this.opts.xProp]);
+      return this.xGet(d);
     }
   }, {
     key: '_barWidth',
@@ -4890,12 +5165,12 @@ var BarChart = function (_AxesChart) {
   }, {
     key: '_barY',
     value: function _barY(d) {
-      return this.y(d[this.opts.yProp]);
+      return this.yGet(d);
     }
   }, {
     key: '_barHeight',
     value: function _barHeight(d) {
-      return this.height - this.y(d[this.opts.yProp]);
+      return this.height - this.yGet(d);
     }
   }]);
   return BarChart;
@@ -4965,17 +5240,16 @@ var HorizontalBarChart = function (_BarChart) {
     key: '_barX',
     value: function _barX() {
       return 0;
-    } // this.x(d[this.opts.xProp]); }
-
+    }
   }, {
     key: '_barWidth',
     value: function _barWidth(d) {
-      return this.x(d[this.opts.xProp]);
+      return this.xGet(d);
     }
   }, {
     key: '_barY',
     value: function _barY(d) {
-      return this.y(d[this.opts.yProp]);
+      return this.yGet(d);
     }
   }, {
     key: '_barHeight',
@@ -5106,7 +5380,7 @@ var ScatterPlot = function (_AxesChart) {
       }).attr('class', function (d, i) {
         return _this2._buildCss(['monte-point', _this2.opts.pointCss, _this2.opts.pointCssScale, d.css], d, i);
       }).transition().duration(this.opts.transitionDuration).call(this.opts.pointEnterStart).attr('transform', function (d) {
-        return 'translate(' + _this2.x(d[_this2.opts.xProp]) + ', ' + _this2.y(d[_this2.opts.yProp]) + ')';
+        return 'translate(' + _this2.xGet(d) + ', ' + _this2.yGet(d) + ')';
       }).call(this.opts.pointEnterEnd);
 
       // Fade out removed points.
@@ -5331,7 +5605,6 @@ var ArcChart = function (_PolarChart) {
         endAngle: this.opts.pieEndAngle,
         value: pieSum
       });
-      // const or = this.optInvoke(this.opts.outerRadius, this.width, this.height);
       var wedge = this.bg.selectAll('.monte-wedge-bg').data([bgArc]);
 
       wedge.enter().append('path').merge(wedge).attr('d', function (d) {
@@ -5782,11 +6055,13 @@ var DEFAULTS$2 = {
   layer: 'bg',
 
   // The chart events to listen for.
-  binding: ['rendered', 'updateBounds'],
+  binding: ['rendered', 'updatedBounds'],
 
   // Flag for global updates for any option change.
   // Subclasses can override `_shouldOptionUpdate` for nuanced behavior.
-  optionsTriggerUpdate: false
+  optionsTriggerUpdate: false,
+
+  eventPrefix: null
 };
 
 var Extension = function () {
@@ -5805,6 +6080,10 @@ var Extension = function () {
       }
 
       this.opts = mergeOptions.apply(undefined, options.concat([DEFAULTS$2]));
+
+      if (!this.opts.eventPrefix) {
+        throw MonteOptionError.RequiredOption('eventPrefix');
+      }
     }
   }, {
     key: 'setChart',
@@ -5835,6 +6114,17 @@ var Extension = function () {
       return this.opts.optionsTriggerUpdate;
     }
   }, {
+    key: 'emit',
+    value: function emit(eventName) {
+      var _chart;
+
+      for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+        args[_key2 - 1] = arguments[_key2];
+      }
+
+      (_chart = this.chart).emit.apply(_chart, ['extension', this.opts.eventPrefix + ':' + eventName].concat(args));
+    }
+  }, {
     key: 'update',
     value: function update() {
       // Cache chart for use on option update.
@@ -5848,13 +6138,13 @@ var Extension = function () {
         this._destroy();
       } else {
         this._update.apply(this, arguments);
+        this.emit('updated');
       }
     }
   }, {
     key: '_update',
     value: function _update(binding, chart) {
       // eslint-disable-line no-unused-vars
-      // throw new MonteError('Update (`_update`) needs to be defined in order for the extension to be useful.');
       throw MonteError.UnimplementedMethod('Update', '_update');
     }
 
@@ -5864,8 +6154,8 @@ var Extension = function () {
     key: 'optInvoke',
     value: function optInvoke(value) {
       try {
-        for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-          args[_key2 - 1] = arguments[_key2];
+        for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+          args[_key3 - 1] = arguments[_key3];
         }
 
         return isFunc(value) ? value.call.apply(value, [this].concat(args)) : value;
@@ -5896,6 +6186,11 @@ var Extension = function () {
   }, {
     key: '_destroy',
     value: function _destroy() {}
+  }, {
+    key: 'toString',
+    value: function toString() {
+      return this.constructor.name;
+    }
   }]);
   return Extension;
 }();
@@ -5908,6 +6203,7 @@ var VERTICAL = 'vertical';
 var AXIS_SHIFT = 0.5;
 
 var GRID_DEFAULTS = {
+  eventPrefix: 'grid',
   scalePrefixes: ['x', 'y'],
   prefixCssMap: {
     'x': 'v-line',
@@ -6062,6 +6358,7 @@ var VerticalLines = function (_Grid2) {
 }(Grid);
 
 var POLAR_GRID_DEFAULTS = {
+  eventPrefix: 'polargrid',
   startAngle: 0,
   endAngle: tau,
   ringRadii: [100],
@@ -6181,6 +6478,7 @@ var PolarTicks$1 = function () {
 }();
 
 var POLAR_TICKS_DEFAULTS = {
+  eventPrefix: 'polarticks',
   startAngle: 0,
   endAngle: tau,
   tickInterval: 1 / 8 * tau, // 8 ticks, one every 45 deg
@@ -6222,6 +6520,7 @@ var PolarTicks$$1 = function (_Extension) {
 }(Extension);
 
 var FRAME_DEFAULTS = {
+  eventPrefix: 'frame',
   frameLineCss: 'monte-frame-line',
   edges: ['top', 'right', 'bottom', 'left'],
   alignmentShift: AXIS_SHIFT };
@@ -6302,6 +6601,7 @@ var Frame = function (_Extension) {
 // import { tau } from '../const/math';
 
 var BAR_BG_DEFAULTS = {
+  eventPrefix: 'barbg',
   barBgCss: 'monte-bar-bg',
   data: null,
   maxValue: null, // Maximum value
@@ -6462,6 +6762,7 @@ var HorizontalBarBg = function (_BarBg) {
 }(BarBg);
 
 var REF_LINE_DEFAULTS = {
+  eventPrefix: 'refline',
   css: 'monte-ref-line-grp',
   data: noop,
   layer: 'overlay',
@@ -6762,10 +7063,10 @@ var VerticalResizer = function (_Resizer4) {
   return VerticalResizer;
 }(Resizer);
 
-// Abstract charts
 // Tools
 
 exports.tools = index;
+exports.version = version;
 exports.Chart = Chart;
 exports.AxesChart = AxesChart;
 exports.PolarChart = PolarChart;

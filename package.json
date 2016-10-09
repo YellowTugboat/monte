@@ -1,18 +1,19 @@
 {
   "name": "monte",
-  "version": "0.0.0-alpha9",
+  "version": "0.0.0-alpha10",
   "description": "A set of common charts based on D3 built for extension and modification.",
   "main": "build/monte.js",
   "jsnext:main": "index.js",
   "scripts": {
     "postpublish": "zip -j build/monte.zip -- LICENSE README.md build/monte.js build/monte.min.js",
     "prepublish": "npm run build",
-    "test": "browserify test/**/*-test.js | tape-run",
+    "test": "(browserify test/**/*-test.js | tape-run) && npm run lint",
     "lint": "eslint src/**",
+    "package-version": "json2module package.json > build/package.js",
     "package-umd": "rollup --config config/rollup.config.umd.js",
     "package-umd-min": "rollup --config config/rollup.config.umd.min.js",
-    "watch": "nodemon -e js -w *.js -w src -x \"npm run package-umd\"",
-    "build": "npm run package-umd && npm run package-umd-min"
+    "watch": "npm run package-version && nodemon -e js -w *.js -w src -x \"npm run package-umd\"",
+    "build": "npm run package-version && npm run package-umd && npm run package-umd-min"
   },
   "repository": {
     "type": "git",
@@ -45,6 +46,7 @@
     "eslint": "^3.6.0",
     "eslint-config-yellow-tugboat": "^0.1.0",
     "http-server": "^0.9.0",
+    "json2module": "0.0.3",
     "lodash": "^4.16.1",
     "lodash-es": "^4.16.1",
     "nodemon": "^1.9.2",

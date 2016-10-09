@@ -1,3 +1,5 @@
+export { version } from './build/package';
+
 // Abstract charts
 export { Chart } from './src/chart/Chart';
 export { AxesChart } from './src/chart/axesChart/AxesChart';
