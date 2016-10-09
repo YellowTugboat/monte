@@ -2,6 +2,7 @@ import { Extension } from './Extension';
 import { tau } from '../const/math';
 
 const POLAR_GRID_DEFAULTS = {
+  eventPrefix: 'polargrid',
   startAngle: 0,
   endAngle: tau,
   ringRadii: [100],

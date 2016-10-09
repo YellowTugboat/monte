@@ -2,6 +2,7 @@ import { Extension } from './Extension';
 // import { tau } from '../const/math';
 
 const BAR_BG_DEFAULTS = {
+  eventPrefix: 'barbg',
   barBgCss: 'monte-bar-bg',
   data: null,
   maxValue: null,  // Maximum value

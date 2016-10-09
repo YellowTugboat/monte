@@ -3,6 +3,7 @@ import { isArray } from '../tools/is';
 import { noop } from '../tools/noop';
 
 const REF_LINE_DEFAULTS = {
+  eventPrefix: 'refline',
   css: 'monte-ref-line-grp',
   data: noop,
   layer: 'overlay',

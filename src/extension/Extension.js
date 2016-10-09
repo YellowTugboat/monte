@@ -1,4 +1,5 @@
 import { MonteError } from '../support/MonteError';
+import { MonteOptionError } from '../support/MonteOptionError';
 import { isFunc } from '../tools/is';
 import { mergeOptions } from '../tools/mergeOptions';
 
@@ -7,11 +8,13 @@ const DEFAULTS = {
   layer: 'bg',
 
   // The chart events to listen for.
-  binding: ['rendered', 'updateBounds'],
+  binding: ['rendered', 'updatedBounds'],
 
   // Flag for global updates for any option change.
   // Subclasses can override `_shouldOptionUpdate` for nuanced behavior.
   optionsTriggerUpdate: false,
+
+  eventPrefix: null,
 };
 
 export class Extension {
@@ -22,6 +25,10 @@ export class Extension {
 
   _initOptions(...options) {
     this.opts = mergeOptions(...options, DEFAULTS);
+
+    if (!this.opts.eventPrefix) {
+      throw MonteOptionError.RequiredOption('eventPrefix');
+    }
   }
 
   setChart(chart) {
@@ -45,6 +52,10 @@ export class Extension {
   // Indicates whether an option change should cause an update to occur.
   _shouldOptionUpdate() { return this.opts.optionsTriggerUpdate; }
 
+  emit(eventName, ...args) {
+    this.chart.emit('extension', `${this.opts.eventPrefix}:${eventName}`, ...args);
+  }
+
   update(...args) {
     // Cache chart for use on option update.
     const event = args[0];
@@ -56,11 +67,11 @@ export class Extension {
     }
     else {
       this._update(...args);
+      this.emit('updated');
     }
   }
 
   _update(binding, chart) { // eslint-disable-line no-unused-vars
-    // throw new MonteError('Update (`_update`) needs to be defined in order for the extension to be useful.');
     throw MonteError.UnimplementedMethod('Update', '_update');
   }
 
@@ -88,4 +99,8 @@ export class Extension {
 
   // Clean up if necessary.
   _destroy() {}
+
+  toString() {
+    return this.constructor.name;
+  }
 }

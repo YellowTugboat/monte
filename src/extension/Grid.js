@@ -3,6 +3,7 @@ import { AXIS_SHIFT } from '../const/d3';
 import { Extension } from './Extension';
 
 const GRID_DEFAULTS = {
+  eventPrefix: 'grid',
   scalePrefixes: ['x', 'y'],
   prefixCssMap: {
     'x': 'v-line',

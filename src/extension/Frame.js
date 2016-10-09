@@ -2,6 +2,7 @@ import { AXIS_SHIFT } from '../const/d3';
 import { Extension } from './Extension';
 
 const FRAME_DEFAULTS = {
+  eventPrefix: 'frame',
   frameLineCss: 'monte-frame-line',
   edges: ['top', 'right', 'bottom', 'left'],
   alignmentShift: AXIS_SHIFT, // Use a slight shift to match default d3-axis drawing.

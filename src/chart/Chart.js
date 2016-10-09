@@ -1,6 +1,7 @@
-import { get as getOpt, set as setOpt } from '../external/lodash';
+import { get as _get, set as _set } from '../external/lodash';
 import { isDefined, isFunc } from '../tools/is';
 import { EventWatcher } from '../support/EventWatcher';
+import { INTERACTION_EVENTS } from '../const/events';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
 import { mergeOptions } from '../tools/mergeOptions';
@@ -18,6 +19,7 @@ const DEFAULTS = {
     left: 0,
   },
 
+  customEvents: [],
   extensions: [],
 
   transitionDuration: 250,
@@ -44,6 +46,7 @@ const EVENT_CSS_MAP = {
   'mouseover': { action: 'add', css: 'over' },
   'mouseout': { action: 'remove', css: 'over' },
   'touchstart': { action: 'add', css: 'touch' },
+  'touchend': { action: 'remove', css: 'touch' },
 };
 
 /*
@@ -73,8 +76,26 @@ export class Chart {
     this._initOptions(options);
 
     // Setup the Public events.
-    this._initPublicEvents('rendered', 'updated', 'updateBounds', 'click', 'cssDomainsReset',
-      'suppressedError', 'destroy');
+    this._initPublicEvents(
+      // Interaction events
+      ...INTERACTION_EVENTS,
+
+      // Support events
+      'suppressedError', 'extension',
+
+      // Lifecycle event pairs
+      'rendering', 'rendered',
+      'updating', 'updated',
+      'updatingBounds', 'updatedBounds',
+      'cssDomainsReseting', 'cssDomainsReset',
+      'destroying', 'destroyed',
+
+      // Custom events
+      ...this.opts.customEvents);
+
+    if (this.opts.developerMode || global.developerMode) {
+      this._initDeveloperMode();
+    }
 
     // Bind initial extensions to this chart instance.
     this._bindExt(this.opts.extensions);
@@ -147,23 +168,40 @@ export class Chart {
     this.addLayer('overlay');
 
     const chart = this;
-    this.bound.on('click', function(...args) {
-      const svg = this;
-      chart.__notify('click', svg, ...args);
+
+    INTERACTION_EVENTS.forEach((ev) => {
+      this.bound.on(ev, function(...args) { chart.__notify(ev, this, ...args); })
     });
 
     if (this.opts.resize) {
       if (!global.resizeWatch) { global.resizeWatch = new EventWatcher(); }
 
       const resizer = this.opts.resize;
-      // resizer.option('chart', this);
       this._resizeHandler = resizer.resize.bind(resizer, this);
       global.resizeWatch.add(this._resizeHandler);
     }
   }
 
   _initPublicEvents(...events) {
+    this._events = events;
     this.dispatch = d3.dispatch(...events);
+  }
+
+  _initDeveloperMode() {
+    const echo = (eventName, ...args) => {
+      //const t = this.constructor.name;
+      let a = '(no arguments)';
+
+      if (args && args.length > 0) {
+        a = '\n';
+
+        args.forEach((v, i) => a += `\t${i}: ${v}\n`);
+      }
+
+      console.log(`[${this}] "${eventName}": ${a}`); // eslint-disable-line no-console
+    };
+
+    this._events.forEach((eventName) => this.on(eventName, echo.bind(this, eventName)));
   }
 
   _initCustomize() {}
@@ -171,12 +209,14 @@ export class Chart {
   _initRender() {}
 
   _updateBounds(suppressNotify=false, suppressUpdate=false) {
+    this.__notify('updatingBounds');
+
     // Margin Convention and calculate drawing area size
     this.margin = this.opts.margin;
     this.width = this.opts.boundingWidth - this.margin.left - this.margin.right;
     this.height = this.opts.boundingHeight - this.margin.top - this.margin.bottom;
 
-    // Apply margins to bg and draw area
+    // Apply margins to layers
     this.layers.forEach((l) => l.attr('transform', this._getLayerTranslate()));
 
     // Update sizing attributes
@@ -191,7 +231,7 @@ export class Chart {
         .attr('height', this.height);
     }
 
-    const notify = () => { if (this._constructed) { this.__notify('updateBounds'); } };
+    const notify = () => { if (this._constructed) { this.__notify('updatedBounds'); } };
     const update = () => { if (this.hasRendered) { this.update(); } };
 
     if (!suppressNotify) { notify(); }
@@ -213,14 +253,18 @@ export class Chart {
   }
 
   destroy() {
+    this.__notify('destroying');
+
     if (this._resizeHandler) {
       global.resizeWatch.remove(this._resizeHandler);
     }
 
-    this.__notify('destroy');
+    this._destroy();
 
     // TODO: Handle case where parentSelector and bound are the same and only remove internal elements.
     this.bound.remove();
+
+    this.__notify('destroyed');
   }
 
   _destroy() {}
@@ -234,6 +278,11 @@ export class Chart {
 
   _getLayerTranslate() { return `translate(${this.margin.left}, ${this.margin.top})`; }
 
+  /**
+   * Sets the external dimensions on the SVG element.
+   *
+   * @Chainable
+   */
   boundingRect(width, height) {
     if (arguments.length === 0) {
       return [this.opts.boundingWidth, this.opts.boundingHeight];
@@ -248,6 +297,11 @@ export class Chart {
     return this;
   }
 
+  /**
+   * Binds an event to a given `callback`. If no `callback` is provided it returns the callback.
+   *
+   * @Chainable <setter>
+   */
   on(typenames, callback) {
     if (callback) {
       this.dispatch.on(typenames, callback);
@@ -257,12 +311,42 @@ export class Chart {
     return this.dispatch.on(typenames);
   }
 
-  option(prop, value) {
-    if (value === undefined) {
-      return getOpt(this.opts, prop);
+  /**
+   * Force the triggering of an event with the given arguments. The `on` callbacks are invoked in
+   * the context of the chart.
+   *
+   * Uses:
+   *  + Trigger event for listeners as needed such as force an extension to update.
+   *
+   * @Chainable
+   */
+  emit(eventName, ...args) {
+    if (!eventName) {
+      return;
+    }
+    else if (!this.dispatch._[eventName]) {
+      // Check that dispatch has a registered event
+      throw new MonteError(`Unknown event ${eventName}. Double check the spelling or register the event. Custom events must registered at chart creation.`);
     }
 
-    setOpt(this.opts, prop, value);
+    this.__notify(eventName, ...args);
+
+    return this;
+  }
+
+  /**
+   * Get or set a chart option.
+   *
+   * NOTE: Does not invoke the "Update cycle". To apply option changes call `update`.
+   *
+   * @Chainable
+   */
+  option(prop, value) {
+    if (value === undefined) {
+      return _get(this.opts, prop);
+    }
+
+    _set(this.opts, prop, value);
 
     if (prop === 'margin') {
       if (typeof value !== 'object') {
@@ -278,6 +362,10 @@ export class Chart {
     return this;
   }
 
+  /**
+   * Invoke a `value` (generally from the chart options) with the given arguments. Static values
+   * are returned directly.
+   */
   optInvoke(value, ...args) {
     if (value == null) {
       throw new MonteOptionError('Option not initialized.');
@@ -294,6 +382,9 @@ export class Chart {
 
   _clearDataElements() {}
 
+  /**
+   * Remove the data, remove the data elements, and clear the CSS domains.
+   */
   clear() {
     this.displayData = null;
     this._clearDataElements();
@@ -301,7 +392,14 @@ export class Chart {
     if (this.opts.autoResetCssDomains) { this.resetCssDomains(); }
   }
 
+  /**
+   * Resets domains related to CSS scales.
+   *
+   * @Chainable
+   */
   resetCssDomains() {
+    this.__notify('cssDomainsReseting');
+
     this._resetCssDomains();
 
     this.__notify('cssDomainsReset');
@@ -323,22 +421,51 @@ export class Chart {
     return cssClasses.join(' ');
   }
 
+  /**
+   * Set the CSS classes on the SVG element.
+   *
+   * @Chainable
+   */
   classed(...args) {
     this.bound.classed(...args);
 
+    if (args[0]) {
+      alert();
+    }
+    if (args[1]) {
+      alert();
+    }
+
     return this;
   }
 
-  call(...args) {
-    this.bound.call(...args);
+  /**
+   * Invokes a function in the context of the chart with the given arguments.
+   *
+   * @Chainable
+   */
+  call(f, ...args) {
+    f.call(this, ...args);
 
     return this;
   }
 
+  /**
+   * Update the existing data of the chart to display and trigger the "Update cycle".
+   *
+   * @Chainable
+   */
   updateData(data) {
     this.data(data, true);
+
+    return this;
   }
 
+  /**
+   * Set the data for the chart to display and trigger the "Updtate cycle".
+   *
+   * @Chainable
+   */
   data(data, isUpdate=false, suppressUpdate=false) {
     if (data === undefined) {
       // No data to assign return the current data.
@@ -356,12 +483,17 @@ export class Chart {
     this.displayData = data;
   }
 
+  /**
+   * Add an extension instance to the chart instance.
+   */
   addExt(...exts) {
     this._bindExt(exts);
   }
 
+  /**
+   * Binds a given extension instance to the chart instance.
+   */
   _bindExt(exts) {
-    // Bind extension to this chart instance.
     exts.forEach((ext) => {
       if (ext.opts.binding) {
         ext.setChart(this);
@@ -373,12 +505,21 @@ export class Chart {
     });
   }
 
+  /**
+   * Invokes all extensions "Update Cycle" if bound to the given event (binding) name.
+   */
   __updateExt(bindingName, ...extArgs) {
     this.extensions.forEach((ext) => {
       if (ext.opts.binding.indexOf(bindingName) > -1) { ext.update(bindingName, ...extArgs); }
     });
   }
 
+  /**
+   * Replaces one scale with another. The new scale `range` and `domain` are set to match the
+   * previous scale.
+   *
+   * For example: changing between a linear and logarithmic scale to allow users to identify trends.
+   */
   replaceScale(scaleName, newScaleConstructor) {
     const scale = newScaleConstructor();
     scale.range(this[scaleName].range())
@@ -387,9 +528,15 @@ export class Chart {
     this.update();
   }
 
-  // Render the vis.
+  /**
+   * (Re)renders the chart by invoking the "Update cycle" which is consistent with the D3
+   * "Enter-Update-Exit" pattern.
+   */
   update() {
-    if (!this.data()) { return; }
+    if (!this.data()) { return; } // Don't allow update if data has not been set.
+    if (!this.hasRendered) { this.__notify('rendering'); }
+
+    this.__notify('updating');
     this._update();
 
     // Notify if first rendered
@@ -401,30 +548,46 @@ export class Chart {
     this.__notify('updated');
   }
 
+  /**
+   * A specific charts implementation of the "Update cycle"
+   */
   _update() {
     if (!this.opts.directUse) {
-      // throw new MonteError('Update (`_update`) needs to be defined in order for the chart to be useful.');
       throw MonteError.UnimplementedMethod('Update', '_update');
     }
   }
 
+  /**
+   * Generates a function to bind the "common" element events to an event handler.
+   */
   __bindCommonEvents(lead) {
     const chart = this;
 
+    // return function(sel) {
+    //   sel.on('mouseover', (d, i, nodes) => chart.__elemEvent('mouseover', `${lead}:mouseover`, d, i, nodes))
+    //     .on('mouseout', (d, i, nodes) => chart.__elemEvent('mouseout', `${lead}:mouseout`, d, i, nodes))
+    //     .on('click', (d, i, nodes) => chart.__elemEvent('click', `${lead}:click`, d, i, nodes))
+    //     .on('touchstart', (d, i, nodes) => chart.__elemEvent('touchstart', `${lead}:touchstart`, d, i, nodes));
+    // };
+
     return function(sel) {
-      sel.on('mouseover', (d, i, nodes) => chart.__elemEvent('mouseover', `${lead}:mouseover`, d, i, nodes))
-        .on('mouseout', (d, i, nodes) => chart.__elemEvent('mouseout', `${lead}:mouseout`, d, i, nodes))
-        .on('click', (d, i, nodes) => chart.__elemEvent('click', `${lead}:click`, d, i, nodes))
-        .on('touchstart', (d, i, nodes) => chart.__elemEvent('touchstart', `${lead}:touchstart`, d, i, nodes));
+      INTERACTION_EVENTS.forEach((ev) =>
+        sel.on(ev, (d, i, nodes) => chart.__elemEvent(ev, `${lead}:${ev}`, d, i, nodes)));
     };
   }
 
-  // Using notify ensures that extensions are notified before outside listeners are.
+  /**
+   * Notify all listeners, extensions and those bound through `on`, of an event.
+   * Using notify ensures that extensions are notified before outside listeners are.
+   */
   __notify(eventName, ...args) {
     this.__updateExt(eventName, this, ...args);
     this.dispatch.call(eventName, this, ...args);
   }
 
+  /**
+   * Handles an event generated through element interaction (i.e. click, mouseover, etc...).
+   */
   __elemEvent(eventType, eventNameFull, d, i, nodes) {
     const node = nodes[i];
     const cssAction = EVENT_CSS_MAP[eventType];
@@ -438,6 +601,13 @@ export class Chart {
       }
     }
 
-    this.__notify(eventNameFull, node, d, i, nodes);
+    this.__notify(eventNameFull, d, i, nodes);
+  }
+
+  /**
+   * Give the chart type name as the identifier.
+   */
+  toString() {
+    return this.constructor.name;
   }
 }

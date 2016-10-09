@@ -3,6 +3,7 @@ import { PolarTicks as PolarTicksDraw } from '../util/polarTicks';
 import { tau } from '../const/math';
 
 const POLAR_TICKS_DEFAULTS = {
+  eventPrefix: 'polarticks',
   startAngle: 0,
   endAngle: tau,
   tickInterval: 1/8 * tau, // 8 ticks, one every 45 deg
