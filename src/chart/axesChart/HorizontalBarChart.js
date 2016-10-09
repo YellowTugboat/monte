@@ -41,8 +41,8 @@ export class HorizontalBarChart extends BarChart {
     return extent;
   }
 
-  _barX() { return 0; } // this.x(d[this.opts.xProp]); }
-  _barWidth(d) { return this.x(d[this.opts.xProp]); }
-  _barY(d) { return this.y(d[this.opts.yProp]); }
+  _barX() { return 0; }
+  _barWidth(d) { return this.xGet(d); }
+  _barY(d) { return this.yGet(d); }
   _barHeight() { return this.y.bandwidth(); }
 }

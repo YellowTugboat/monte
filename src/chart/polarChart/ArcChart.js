@@ -147,7 +147,6 @@ export class ArcChart extends PolarChart {
       endAngle: this.opts.pieEndAngle,
       value: pieSum,
     });
-    // const or = this.optInvoke(this.opts.outerRadius, this.width, this.height);
     const wedge = this.bg.selectAll('.monte-wedge-bg').data([bgArc]);
 
     wedge.enter()
@@ -157,8 +156,7 @@ export class ArcChart extends PolarChart {
         .attr('fill', () => this.opts.arcBgWedgeFillScale())
         .attr('class', () =>
            ['monte-wedge-bg',
-            this.opts.arcBgWedgeCssScale(),
-            ].join(' '));
+            this.opts.arcBgWedgeCssScale()].join(' '));
   }
 }
 

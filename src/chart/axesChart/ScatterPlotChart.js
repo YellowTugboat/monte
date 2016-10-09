@@ -96,7 +96,7 @@ export class ScatterPlot extends AxesChart {
       .transition()
         .duration(this.opts.transitionDuration)
         .call(this.opts.pointEnterStart)
-        .attr('transform', (d) => `translate(${this.x(d[this.opts.xProp])}, ${this.y(d[this.opts.yProp])})`)
+        .attr('transform', (d) => `translate(${this.xGet(d)}, ${this.yGet(d)})`)
         .call(this.opts.pointEnterEnd);
 
     // Fade out removed points.
