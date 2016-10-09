@@ -4,7 +4,7 @@
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha10";
+var version = "0.0.0-alpha11";
 
 /**
  * Checks if `value` is classified as an `Array` object.
@@ -3648,7 +3648,6 @@ var Chart = function () {
           args[_key4 - 1] = arguments[_key4];
         }
 
-        //const t = this.constructor.name;
         var a = '(no arguments)';
 
         if (args && args.length > 0) {
@@ -3961,13 +3960,6 @@ var Chart = function () {
       var _bound;
 
       (_bound = this.bound).classed.apply(_bound, arguments);
-
-      if (arguments.length <= 0 ? undefined : arguments[0]) {
-        alert();
-      }
-      if (arguments.length <= 1 ? undefined : arguments[1]) {
-        alert();
-      }
 
       return this;
     }
@@ -5715,7 +5707,6 @@ var GAUGE_CHART_DEFAULTS = {
   pieStartAngle: pi * -0.55,
   pieEndAngle: pi * 0.55,
 
-  // TODO: Add bg wedge css and fill scales.
   arcBgCssScale: noop,
   arcBgFillScale: noop,
 
@@ -5877,7 +5868,6 @@ var SEGMENT_CHART_DEFAULTS = {
   pieStartAngle: halfPi,
   pieEndAngle: -halfPi,
 
-  // TODO: Add bg wedge css and fill scales.
   arcBgCssScale: noop,
   arcBgFillScale: noop
 };

@@ -170,7 +170,7 @@ export class Chart {
     const chart = this;
 
     INTERACTION_EVENTS.forEach((ev) => {
-      this.bound.on(ev, function(...args) { chart.__notify(ev, this, ...args); })
+      this.bound.on(ev, function(...args) { chart.__notify(ev, this, ...args); });
     });
 
     if (this.opts.resize) {
@@ -189,7 +189,6 @@ export class Chart {
 
   _initDeveloperMode() {
     const echo = (eventName, ...args) => {
-      //const t = this.constructor.name;
       let a = '(no arguments)';
 
       if (args && args.length > 0) {
@@ -428,13 +427,6 @@ export class Chart {
    */
   classed(...args) {
     this.bound.classed(...args);
-
-    if (args[0]) {
-      alert();
-    }
-    if (args[1]) {
-      alert();
-    }
 
     return this;
   }

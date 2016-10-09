@@ -8,7 +8,6 @@ const SEGMENT_CHART_DEFAULTS = {
   pieStartAngle: halfPi,
   pieEndAngle: -halfPi,
 
-  // TODO: Add bg wedge css and fill scales.
   arcBgCssScale: noop,
   arcBgFillScale: noop,
 };

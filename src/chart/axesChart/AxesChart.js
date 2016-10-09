@@ -1,6 +1,6 @@
+import { isArray, isDefined, isFunc, isObject } from '../../tools/is';
 import { Chart } from '../Chart';
 import { MonteError } from '../../support/MonteError';
-import { isArray, isDefined, isFunc, isObject } from '../../tools/is';
 
 const AXES_CHART_DEFAULTS = {
   // The axes X and Y are generally assumed. In some cases it may be desirable to add an additional

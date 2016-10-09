@@ -9,7 +9,6 @@ const GAUGE_CHART_DEFAULTS = {
   pieStartAngle: pi * -0.55,
   pieEndAngle: pi * 0.55,
 
-  // TODO: Add bg wedge css and fill scales.
   arcBgCssScale: noop,
   arcBgFillScale: noop,
 
