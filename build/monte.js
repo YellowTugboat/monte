@@ -4,7 +4,7 @@
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha11";
+var version = "0.0.0-alpha12";
 
 /**
  * Checks if `value` is classified as an `Array` object.
@@ -3747,7 +3747,8 @@ var Chart = function () {
 
       this._destroy();
 
-      // TODO: Handle case where parentSelector and bound are the same and only remove internal elements.
+      // TODO: Handle case where parentSelector and bound are the same and only remove internal
+      //       elements.
       this.bound.remove();
 
       this.__notify('destroyed');
@@ -3782,8 +3783,17 @@ var Chart = function () {
         return [this.opts.boundingWidth, this.opts.boundingHeight];
       }
 
+      var minWidth = this.option('margin.left') + this.option('margin.right');
+      if (width < minWidth) {
+        width = minWidth;
+      }
       this.opts.boundingWidth = width;
+
       if (arguments.length === 2) {
+        var minHeight = this.option('margin.top') + this.option('margin.bottom');
+        if (height < minHeight) {
+          height = minHeight;
+        }
         this.opts.boundingHeight = height;
       }
 
@@ -3827,7 +3837,8 @@ var Chart = function () {
         return;
       } else if (!this.dispatch._[eventName]) {
         // Check that dispatch has a registered event
-        throw new MonteError('Unknown event ' + eventName + '. Double check the spelling or register the event. Custom events must registered at chart creation.');
+        var msg = 'Unknown event ' + eventName + '. Double check the spelling or register the event. Custom events must registered at chart creation.';
+        throw new MonteError(msg);
       }
 
       for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
@@ -3892,6 +3903,47 @@ var Chart = function () {
         this.__notify('suppressedError', e);
         return null;
       }
+    }
+
+    /**
+     * Reads a property from a datum and returns the raw (unscaled) value.
+     */
+
+  }, {
+    key: 'getProp',
+    value: function getProp(propShortName, d) {
+      var defaultValue = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
+
+      var propFullName = propShortName + 'Prop';
+      var dataPropName = this.opts[propFullName];
+
+      if (dataPropName) {
+        return d[dataPropName];
+      }
+
+      return defaultValue;
+    }
+
+    /**
+     * Reads a scale bound property from a datum and returns the scaled value.
+     */
+
+  }, {
+    key: 'getScaledProp',
+    value: function getScaledProp(scaleName, d) {
+      var val = void 0;
+
+      if (!isFunc(this[scaleName])) {
+        throw new MonteError('Scale "' + scaleName + '" is not defined.');
+      } else if (isObject$2(d)) {
+        // Assume `d` is a datum related to the chart data.
+        val = d[this.opts[scaleName + 'Prop']];
+      } else {
+        // Assume `d` is a value the scale can process.
+        val = d;
+      }
+
+      return this[scaleName](val);
     }
   }, {
     key: '_clearDataElements',
@@ -4144,13 +4196,6 @@ var Chart = function () {
     value: function __bindCommonEvents(lead) {
       var chart = this;
 
-      // return function(sel) {
-      //   sel.on('mouseover', (d, i, nodes) => chart.__elemEvent('mouseover', `${lead}:mouseover`, d, i, nodes))
-      //     .on('mouseout', (d, i, nodes) => chart.__elemEvent('mouseout', `${lead}:mouseout`, d, i, nodes))
-      //     .on('click', (d, i, nodes) => chart.__elemEvent('click', `${lead}:click`, d, i, nodes))
-      //     .on('touchstart', (d, i, nodes) => chart.__elemEvent('touchstart', `${lead}:touchstart`, d, i, nodes));
-      // };
-
       return function (sel) {
         INTERACTION_EVENTS.forEach(function (ev) {
           return sel.on(ev, function (d, i, nodes) {
@@ -4292,8 +4337,7 @@ var AxesChart = function (_Chart) {
   }, {
     key: '_initOptions',
     value: function _initOptions() {
-      var _babelHelpers$get,
-          _this2 = this;
+      var _babelHelpers$get;
 
       for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
         options[_key] = arguments[_key];
@@ -4304,26 +4348,6 @@ var AxesChart = function (_Chart) {
       if (!isDefined(this.opts.axes)) {
         // Set empty array to ease assumptions (i.e. avoid null checks) in later code.
         this.opts.axes = [];
-      } else {
-        // Create convenient axes acessors.
-        // A compromise is used for attaching the accessors: If 'x' or 'y' are given they are attached
-        // to the prototype because they are so ubiquitous. Others are attached to the objects
-        // directly to avoid touching class definitions globally.
-        this.forEachAxisScale(function (scaleName) {
-          var obj = void 0;
-
-          if (scaleName === 'x' || scaleName === 'y') {
-            obj = AxesChart.prototype;
-          } else {
-            obj = _this2;
-          }
-
-          if (!obj[scaleName + 'Get']) {
-            obj[scaleName + 'Get'] = function scaleGetWrap(d) {
-              return this.scaleGet(scaleName, d);
-            };
-          }
-        });
       }
     }
   }, {
@@ -4341,48 +4365,48 @@ var AxesChart = function (_Chart) {
   }, {
     key: '_initCore',
     value: function _initCore() {
-      var _this3 = this;
+      var _this2 = this;
 
       get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initCore', this).call(this);
 
       this.forEachAxisScale(function (scaleName) {
         // Create scale
-        var range = _this3.__axisOpt(scaleName, 'Range')(_this3.width, _this3.height);
-        var scale = _this3.__axisOpt(scaleName, 'Scale')().range(range);
-        _this3[scaleName] = scale;
+        var range = _this2.__axisOpt(scaleName, 'Range')(_this2.width, _this2.height);
+        var scale = _this2.__axisOpt(scaleName, 'Scale')().range(range);
+        _this2[scaleName] = scale;
 
         // Setup axes
-        _this3[scaleName + 'Axis'] = _this3.__axisOpt(scaleName, 'AxisConstructor')(scale);
+        _this2[scaleName + 'Axis'] = _this2.__axisOpt(scaleName, 'AxisConstructor')(scale);
       });
     }
   }, {
     key: '_initCustomize',
     value: function _initCustomize() {
-      var _this4 = this;
+      var _this3 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var customize = _this4.__axisOpt(scaleName, 'AxisCustomize');
+        var customize = _this3.__axisOpt(scaleName, 'AxisCustomize');
 
         if (isArray$2(customize)) {
           (function () {
-            var axis = _this4[scaleName + 'Axis'];
+            var axis = _this3[scaleName + 'Axis'];
             customize.forEach(function (customFunc) {
               return customFunc(axis);
             });
           })();
         } else if (isFunc(customize)) {
-          customize(_this4[scaleName + 'Axis']);
+          customize(_this3[scaleName + 'Axis']);
         }
       });
     }
   }, {
     key: '_initRender',
     value: function _initRender() {
-      var _this5 = this;
+      var _this4 = this;
 
       // Attach axes
       this.forEachAxisScale(function (scaleName) {
-        _this5.support.append('g').attr('class', scaleName + '-axis axis');
+        _this4.support.append('g').attr('class', scaleName + '-axis axis');
       });
       this.updateAxesTransforms();
 
@@ -4403,17 +4427,17 @@ var AxesChart = function (_Chart) {
   }, {
     key: '_data',
     value: function _data(data) {
-      var _this6 = this;
+      var _this5 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var cb = _this6.opts[scaleName + 'DomainCustomize'];
-        var extent = data ? _this6._domainExtent(data, scaleName) : [];
+        var cb = _this5.opts[scaleName + 'DomainCustomize'];
+        var extent = data ? _this5._domainExtent(data, scaleName) : [];
 
         if (cb) {
           extent = cb(extent);
         }
 
-        _this6[scaleName].domain(extent);
+        _this5[scaleName].domain(extent);
       });
 
       get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_data', this).call(this, data);
@@ -4429,31 +4453,31 @@ var AxesChart = function (_Chart) {
   }, {
     key: 'updateAxesTransforms',
     value: function updateAxesTransforms() {
-      var _this7 = this;
+      var _this6 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var axisGrp = _this7.support.select('.' + scaleName + '-axis');
-        var trans = _this7.__axisOpt(scaleName, 'AxisTransform');
+        var axisGrp = _this6.support.select('.' + scaleName + '-axis');
+        var trans = _this6.__axisOpt(scaleName, 'AxisTransform');
 
         if (trans) {
-          axisGrp.attr('transform', trans(_this7.width, _this7.height));
+          axisGrp.attr('transform', trans(_this6.width, _this6.height));
         }
       });
     }
   }, {
     key: 'updateAxesRanges',
     value: function updateAxesRanges() {
-      var _this8 = this;
+      var _this7 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var range = _this8.__axisOpt(scaleName, 'Range')(_this8.width, _this8.height);
-        _this8[scaleName].range(range);
+        var range = _this7.__axisOpt(scaleName, 'Range')(_this7.width, _this7.height);
+        _this7[scaleName].range(range);
       });
     }
   }, {
     key: 'renderAxes',
     value: function renderAxes() {
-      var _this9 = this;
+      var _this8 = this;
 
       // Only suppress all if a literal boolean is given.
       if (this.opts.suppressAxes === true) {
@@ -4464,12 +4488,12 @@ var AxesChart = function (_Chart) {
 
       // (Re)render axes
       this.forEachAxisScale(function (scaleName) {
-        if (isSuppressArray && _this9.opts.suppressAxes.indexOf(scaleName) > -1) {
+        if (isSuppressArray && _this8.opts.suppressAxes.indexOf(scaleName) > -1) {
           return;
         }
 
-        _this9.support.select('.' + scaleName + '-axis').transition().duration(_this9.opts.transitionDuration).call(_this9[scaleName + 'Axis']).call(_this9._setLabel.bind(_this9, scaleName)).call(function (t) {
-          return _this9.__notify('axisRendered', t);
+        _this8.support.select('.' + scaleName + '-axis').transition().duration(_this8.opts.transitionDuration).call(_this8[scaleName + 'Axis']).call(_this8._setLabel.bind(_this8, scaleName)).call(function (t) {
+          return _this8.__notify('axisRendered', t);
         });
       });
     }
@@ -4496,23 +4520,6 @@ var AxesChart = function (_Chart) {
       if (label) {
         this.support.select('.' + scaleName + '-axis').append('text').attr('class', 'axis-label').text(label);
       }
-    }
-  }, {
-    key: 'scaleGet',
-    value: function scaleGet(scaleName, d) {
-      var val = void 0;
-
-      if (!isFunc(this[scaleName])) {
-        throw new MonteError('Scale "' + scaleName + '" is not defined.');
-      } else if (isObject$2(d)) {
-        // Assume `d` is a datum related to the chart data.
-        val = d[this.opts[scaleName + 'Prop']];
-      } else {
-        // Assume `d` is a value the scale can process.
-        val = d;
-      }
-
-      return this[scaleName](val);
     }
   }]);
   return AxesChart;
@@ -4697,9 +4704,9 @@ var LineChart = function (_AxesChart) {
 
       // Initialize the line generator
       this.line = d3.line().x(function (d) {
-        return _this2.xGet(d);
+        return _this2.getScaledProp('x', d);
       }).y(function (d) {
-        return _this2.yGet(d);
+        return _this2.getScaledProp('y', d);
       });
     }
   }, {
@@ -4813,13 +4820,13 @@ var LineChart = function (_AxesChart) {
       // Create new points
       points.enter().append('path').attr('d', genSym).call(this.__bindCommonEvents('point')).merge(points) // Update existing points and set values on new points.
       .attr('transform', function (d) {
-        return 'translate(' + _this5.xGet(d) + ', ' + _this5.yGet(d) + ')';
+        return 'translate(' + _this5.getScaledProp('x', d) + ', ' + _this5.getScaledProp('y', d) + ')';
       }).attr('class', function (d) {
         return ['monte-point', lineDatum.css, _this5.opts.lineCssScale(lineDatum.id || lineIndex), _this5.opts.pointCss, _this5.opts.pointCssScale(lineDatum.id || lineIndex), d.css].join(' ');
       });
 
       points.transition().duration(this.opts.transitionDuration).attr('fill', this.opts.pointFillScale).attr('stroke', this.opts.pointStrokeScale).attr('transform', function (d) {
-        return 'translate(' + _this5.xGet(d) + ', ' + _this5.yGet(d) + ')';
+        return 'translate(' + _this5.getScaledProp('x', d) + ', ' + _this5.getScaledProp('y', d) + ')';
       }).attr('d', genSym);
 
       // Fade out removed points.
@@ -4936,11 +4943,11 @@ var AreaChart = function (_LineChart) {
 
       // Initialize the line generator
       this.area = d3.area().x(function (d) {
-        return _this2.xGet(d);
+        return _this2.getScaledProp('x', d);
       }).y0(function () {
         return _this2.height;
       }).y1(function (d) {
-        return _this2.yGet(d);
+        return _this2.getScaledProp('y', d);
       });
     }
   }, {
@@ -5001,7 +5008,7 @@ var AreaChart = function (_LineChart) {
       });
 
       allAreas.transition().duration(this.opts.transitionDuration).attr('d', function (d) {
-        return _this4.area(d[_this4.opts.valuesProp]);
+        return _this4.area(_this4.getProp('values', d));
       }).attr('fill', this.opts.areaFillScale);
 
       // Fade out removed points.
@@ -5078,11 +5085,11 @@ var BarChart = function (_AxesChart) {
 
       if (scaleName === 'y') {
         extent = d3.extent(data, function (d) {
-          return d[_this2.opts.yProp];
+          return _this2.getProp('y', d);
         });
       } else if (scaleName === 'x') {
         extent = data.map(function (d) {
-          return d[_this2.opts.xProp];
+          return _this2.getProp('x', d);
         });
       }
 
@@ -5147,7 +5154,7 @@ var BarChart = function (_AxesChart) {
   }, {
     key: '_barX',
     value: function _barX(d) {
-      return this.xGet(d);
+      return this.getScaledProp('x', d);
     }
   }, {
     key: '_barWidth',
@@ -5157,12 +5164,12 @@ var BarChart = function (_AxesChart) {
   }, {
     key: '_barY',
     value: function _barY(d) {
-      return this.yGet(d);
+      return this.getScaledProp('y', d);
     }
   }, {
     key: '_barHeight',
     value: function _barHeight(d) {
-      return this.height - this.yGet(d);
+      return this.height - this.getScaledProp('y', d);
     }
   }]);
   return BarChart;
@@ -5236,12 +5243,12 @@ var HorizontalBarChart = function (_BarChart) {
   }, {
     key: '_barWidth',
     value: function _barWidth(d) {
-      return this.xGet(d);
+      return this.getScaledProp('x', d);
     }
   }, {
     key: '_barY',
     value: function _barY(d) {
-      return this.yGet(d);
+      return this.getScaledProp('y', d);
     }
   }, {
     key: '_barHeight',
@@ -5372,7 +5379,7 @@ var ScatterPlot = function (_AxesChart) {
       }).attr('class', function (d, i) {
         return _this2._buildCss(['monte-point', _this2.opts.pointCss, _this2.opts.pointCssScale, d.css], d, i);
       }).transition().duration(this.opts.transitionDuration).call(this.opts.pointEnterStart).attr('transform', function (d) {
-        return 'translate(' + _this2.xGet(d) + ', ' + _this2.yGet(d) + ')';
+        return 'translate(' + _this2.getScaledProp('x', d) + ', ' + _this2.getScaledProp('y', d) + ')';
       }).call(this.opts.pointEnterEnd);
 
       // Fade out removed points.
@@ -6112,7 +6119,7 @@ var Extension = function () {
         args[_key2 - 1] = arguments[_key2];
       }
 
-      (_chart = this.chart).emit.apply(_chart, ['extension', this.opts.eventPrefix + ':' + eventName].concat(args));
+      (_chart = this.chart).emit.apply(_chart, ['extension', this.opts.eventPrefix + ':' + eventName, this].concat(args));
     }
   }, {
     key: 'update',
@@ -6152,6 +6159,25 @@ var Extension = function () {
       } catch (e) {
         return null;
       }
+    }
+
+    /**
+     * Reads a property from a datum and returns the raw (unscaled) value.
+     */
+
+  }, {
+    key: 'getProp',
+    value: function getProp(propShortName, d) {
+      var defaultValue = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
+
+      var propFullName = propShortName + 'Prop';
+      var dataPropName = this.opts[propFullName];
+
+      if (dataPropName) {
+        return d[dataPropName];
+      }
+
+      return defaultValue;
     }
 
     // Build a string of CSS classes that may include invokable options.
@@ -6767,36 +6793,36 @@ var REF_LINE_DEFAULTS = {
 
 // Strategies for placing labels.
 var LABEL_PLACEMENT = {
-  'nw': function nw(text, d) {
-    text.attr('dy', '-0.35em').attr('x', d.x1).attr('y', d.y1);
+  'nw': function nw(text, c) {
+    text.attr('dy', '-0.35em').attr('x', c.x1).attr('y', c.y1);
   },
 
-  'n': function n(text, d) {
-    text.attr('dy', '-0.35em').attr('x', (d.x2 - d.x1) / 2 + d.x1).attr('y', d.y2);
+  'n': function n(text, c) {
+    text.attr('dy', '-0.35em').attr('x', (c.x2 - c.x1) / 2 + c.x1).attr('y', c.y2);
   },
 
-  'ne': function ne(text, d) {
-    text.attr('dy', '-0.35em').attr('x', d.x2).attr('y', d.y2);
+  'ne': function ne(text, c) {
+    text.attr('dy', '-0.35em').attr('x', c.x2).attr('y', c.y2);
   },
 
-  'w': function w(text, d) {
-    text.attr('dy', '0.35em').attr('x', d.x1).attr('y', d.y1);
+  'w': function w(text, c) {
+    text.attr('dy', '0.35em').attr('x', c.x1).attr('y', c.y1);
   },
 
-  'e': function e(text, d) {
-    text.attr('dy', '0.35em').attr('x', d.x2).attr('y', d.y2);
+  'e': function e(text, c) {
+    text.attr('dy', '0.35em').attr('x', c.x2).attr('y', c.y2);
   },
 
-  'sw': function sw(text, d) {
-    text.attr('dy', '1em').attr('x', d.x1).attr('y', d.y1);
+  'sw': function sw(text, c) {
+    text.attr('dy', '1em').attr('x', c.x1).attr('y', c.y1);
   },
 
-  's': function s(text, d) {
-    text.attr('dy', '1em').attr('x', (d.x2 - d.x1) / 2 + d.x1).attr('y', d.y2);
+  's': function s(text, c) {
+    text.attr('dy', '1em').attr('x', (c.x2 - c.x1) / 2 + c.x1).attr('y', c.y2);
   },
 
-  'se': function se(text, d) {
-    text.attr('dy', '1em').attr('x', d.x2).attr('y', d.y2);
+  'se': function se(text, c) {
+    text.attr('dy', '1em').attr('x', c.x2).attr('y', c.y2);
   }
 };
 
@@ -6841,13 +6867,13 @@ var ReferenceLine = function (_Extension) {
       // Update + Enter
       var update = enter.merge(lines);
       update.select('line').attr('x1', function (d) {
-        return d[_this2.opts.x1Prop];
+        return _this2.getProp('x1', d);
       }).attr('x2', function (d) {
-        return d[_this2.opts.x2Prop];
+        return _this2.getProp('x2', d);
       }).attr('y1', function (d) {
-        return d[_this2.opts.y1Prop];
+        return _this2.getProp('y1', d);
       }).attr('y2', function (d) {
-        return d[_this2.opts.y2Prop];
+        return _this2.getProp('y2', d);
       });
 
       update.select('text').attr('text-anchor', this.opts.textAnchor).text(function (d) {
@@ -6861,8 +6887,15 @@ var ReferenceLine = function (_Extension) {
     key: '_placeLabel',
     value: function _placeLabel(d, i, nodes) {
       var text = d3.select(nodes[i]);
-      var placement = LABEL_PLACEMENT[this.opts.labelPlacement];
-      placement(text, d);
+      var labelPlacement = this.optInvoke(this.opts.labelPlacement, d, i, nodes);
+      var placement = LABEL_PLACEMENT[labelPlacement];
+      var coords = {
+        x1: this.getProp('x1', d),
+        x2: this.getProp('x2', d),
+        y1: this.getProp('y1', d),
+        y2: this.getProp('y2', d)
+      };
+      placement.call(this, text, coords);
     }
   }]);
   return ReferenceLine;

@@ -53,7 +53,7 @@ export class Extension {
   _shouldOptionUpdate() { return this.opts.optionsTriggerUpdate; }
 
   emit(eventName, ...args) {
-    this.chart.emit('extension', `${this.opts.eventPrefix}:${eventName}`, ...args);
+    this.chart.emit('extension', `${this.opts.eventPrefix}:${eventName}`, this, ...args);
   }
 
   update(...args) {

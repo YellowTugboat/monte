@@ -288,8 +288,15 @@ export class Chart {
       return [this.opts.boundingWidth, this.opts.boundingHeight];
     }
 
+    const minWidth = this.option('margin.left') + this.option('margin.right');
+    if (width < minWidth) { width = minWidth; }
     this.opts.boundingWidth = width;
-    if (arguments.length === 2) { this.opts.boundingHeight = height; }
+
+    if (arguments.length === 2) {
+      const minHeight = this.option('margin.top') + this.option('margin.bottom');
+      if (height < minHeight) { height = minHeight; }
+      this.opts.boundingHeight = height;
+    }
 
     this._updateBounds();
     this.update();
