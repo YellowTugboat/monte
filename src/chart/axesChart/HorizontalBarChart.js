@@ -42,7 +42,7 @@ export class HorizontalBarChart extends BarChart {
   }
 
   _barX() { return 0; }
-  _barWidth(d) { return this.xGet(d); }
-  _barY(d) { return this.yGet(d); }
+  _barWidth(d) { return this.getScaledProp('x', d); }
+  _barY(d) { return this.getScaledProp('y', d); }
   _barHeight() { return this.y.bandwidth(); }
 }

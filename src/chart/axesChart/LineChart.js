@@ -65,8 +65,8 @@ export class LineChart extends AxesChart {
 
     // Initialize the line generator
     this.line = d3.line()
-      .x((d) => this.xGet(d))
-      .y((d) => this.yGet(d));
+      .x((d) => this.getScaledProp('x', d))
+      .y((d) => this.getScaledProp('y', d));
   }
 
   _initCustomize() {
@@ -162,7 +162,7 @@ export class LineChart extends AxesChart {
         .attr('d', genSym)
         .call(this.__bindCommonEvents('point'))
       .merge(points) // Update existing points and set values on new points.
-        .attr('transform', (d) => `translate(${this.xGet(d)}, ${this.yGet(d)})`)
+        .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
         .attr('class', (d) =>
            ['monte-point',
             lineDatum.css,
@@ -175,7 +175,7 @@ export class LineChart extends AxesChart {
         .duration(this.opts.transitionDuration)
         .attr('fill', this.opts.pointFillScale)
         .attr('stroke', this.opts.pointStrokeScale)
-        .attr('transform', (d) => `translate(${this.xGet(d)}, ${this.yGet(d)})`)
+        .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
         .attr('d', genSym);
 
     // Fade out removed points.

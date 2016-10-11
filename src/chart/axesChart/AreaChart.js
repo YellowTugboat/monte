@@ -46,9 +46,9 @@ export class AreaChart extends LineChart {
 
     // Initialize the line generator
     this.area = d3.area()
-      .x((d) => this.xGet(d))
+      .x((d) => this.getScaledProp('x', d))
       .y0(() => this.height)
-      .y1((d) => this.yGet(d));
+      .y1((d) => this.getScaledProp('y', d));
   }
 
   _initCustomize() {
@@ -98,7 +98,7 @@ export class AreaChart extends LineChart {
 
     allAreas.transition()
         .duration(this.opts.transitionDuration)
-        .attr('d', (d) => this.area(d[this.opts.valuesProp]))
+        .attr('d', (d) => this.area(this.getProp('values', d)))
         .attr('fill', this.opts.areaFillScale);
 
     // Fade out removed points.

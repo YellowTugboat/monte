@@ -1,5 +1,5 @@
 import { get as _get, set as _set } from '../external/lodash';
-import { isDefined, isFunc } from '../tools/is';
+import { isDefined, isFunc, isObject } from '../tools/is';
 import { EventWatcher } from '../support/EventWatcher';
 import { INTERACTION_EVENTS } from '../const/events';
 import { MonteError } from '../support/MonteError';
@@ -260,7 +260,8 @@ export class Chart {
 
     this._destroy();
 
-    // TODO: Handle case where parentSelector and bound are the same and only remove internal elements.
+    // TODO: Handle case where parentSelector and bound are the same and only remove internal
+    //       elements.
     this.bound.remove();
 
     this.__notify('destroyed');
@@ -325,7 +326,8 @@ export class Chart {
     }
     else if (!this.dispatch._[eventName]) {
       // Check that dispatch has a registered event
-      throw new MonteError(`Unknown event ${eventName}. Double check the spelling or register the event. Custom events must registered at chart creation.`);
+      const msg = `Unknown event ${eventName}. Double check the spelling or register the event. Custom events must registered at chart creation.`;
+      throw new MonteError(msg);
     }
 
     this.__notify(eventName, ...args);
@@ -377,6 +379,41 @@ export class Chart {
       this.__notify('suppressedError', e);
       return null;
     }
+  }
+
+  /**
+   * Reads a property from a datum and returns the raw (unscaled) value.
+   */
+  getProp(propShortName, d, defaultValue=null) {
+    const propFullName = `${propShortName}Prop`;
+    const dataPropName = this.opts[propFullName];
+
+    if (dataPropName) {
+      return d[dataPropName];
+    }
+
+    return defaultValue;
+  }
+
+  /**
+   * Reads a scale bound property from a datum and returns the scaled value.
+   */
+  getScaledProp(scaleName, d) {
+    let val;
+
+    if (!isFunc(this[scaleName])) {
+      throw new MonteError(`Scale "${scaleName}" is not defined.`);
+    }
+    else if (isObject(d)) {
+      // Assume `d` is a datum related to the chart data.
+      val = d[this.opts[`${scaleName}Prop`]];
+    }
+    else {
+      // Assume `d` is a value the scale can process.
+      val = d;
+    }
+
+    return this[scaleName](val);
   }
 
   _clearDataElements() {}
@@ -554,13 +591,6 @@ export class Chart {
    */
   __bindCommonEvents(lead) {
     const chart = this;
-
-    // return function(sel) {
-    //   sel.on('mouseover', (d, i, nodes) => chart.__elemEvent('mouseover', `${lead}:mouseover`, d, i, nodes))
-    //     .on('mouseout', (d, i, nodes) => chart.__elemEvent('mouseout', `${lead}:mouseout`, d, i, nodes))
-    //     .on('click', (d, i, nodes) => chart.__elemEvent('click', `${lead}:click`, d, i, nodes))
-    //     .on('touchstart', (d, i, nodes) => chart.__elemEvent('touchstart', `${lead}:touchstart`, d, i, nodes));
-    // };
 
     return function(sel) {
       INTERACTION_EVENTS.forEach((ev) =>

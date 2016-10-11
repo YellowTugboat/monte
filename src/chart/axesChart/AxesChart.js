@@ -1,4 +1,4 @@
-import { isArray, isDefined, isFunc, isObject } from '../../tools/is';
+import { isArray, isDefined, isFunc } from '../../tools/is';
 import { Chart } from '../Chart';
 import { MonteError } from '../../support/MonteError';
 
@@ -71,28 +71,6 @@ export class AxesChart extends Chart {
     if (!isDefined(this.opts.axes)) {
       // Set empty array to ease assumptions (i.e. avoid null checks) in later code.
       this.opts.axes = [];
-    }
-    else {
-      // Create convenient axes acessors.
-      // A compromise is used for attaching the accessors: If 'x' or 'y' are given they are attached
-      // to the prototype because they are so ubiquitous. Others are attached to the objects
-      // directly to avoid touching class definitions globally.
-      this.forEachAxisScale((scaleName) => {
-        let obj;
-
-        if (scaleName === 'x' || scaleName === 'y') {
-          obj = AxesChart.prototype;
-        }
-        else {
-          obj = this;
-        }
-
-        if (!obj[`${scaleName}Get`]) {
-          obj[`${scaleName}Get`] = function scaleGetWrap(d) {
-            return this.scaleGet(scaleName, d);
-          };
-        }
-      });
     }
   }
 
@@ -223,23 +201,5 @@ export class AxesChart extends Chart {
         .attr('class', 'axis-label')
         .text(label);
     }
-  }
-
-  scaleGet(scaleName, d) {
-    let val;
-
-    if (!isFunc(this[scaleName])) {
-      throw new MonteError(`Scale "${scaleName}" is not defined.`);
-    }
-    else if (isObject(d)) {
-      // Assume `d` is a datum related to the chart data.
-      val = d[this.opts[`${scaleName}Prop`]];
-    }
-    else {
-      // Assume `d` is a value the scale can process.
-      val = d;
-    }
-
-    return this[scaleName](val);
   }
 }

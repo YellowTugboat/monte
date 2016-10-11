@@ -47,10 +47,10 @@ export class BarChart extends AxesChart {
     let extent = null;
 
     if (scaleName === 'y') {
-      extent = d3.extent(data, (d) => d[this.opts.yProp]);
+      extent = d3.extent(data, (d) => this.getProp('y', d));
     }
     else if (scaleName === 'x') {
-      extent = data.map((d) => d[this.opts.xProp]);
+      extent = data.map((d) => this.getProp('x', d));
     }
 
     return extent;
@@ -125,8 +125,8 @@ export class BarChart extends AxesChart {
     return barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp'));
   }
 
-  _barX(d) { return this.xGet(d); }
+  _barX(d) { return this.getScaledProp('x', d); }
   _barWidth() { return this.x.bandwidth(); }
-  _barY(d) { return this.yGet(d); }
-  _barHeight(d) { return this.height - this.yGet(d); }
+  _barY(d) { return this.getScaledProp('y', d); }
+  _barHeight(d) { return this.height - this.getScaledProp('y', d); }
 }

@@ -118,7 +118,8 @@ export class GaugeChart extends ArcChart {
 
   _updateNeedle() {
     const baseWidth = this.opts.needleBase;
-    const height = this.optInvoke(this.opts.needleHeight, this.opts.outerRadius, this.opts.innerRadius);
+    const height = this.optInvoke(this.opts.needleHeight, this.opts.outerRadius,
+      this.opts.innerRadius);
     const path = this.optInvoke(this.opts.needlePath, height, baseWidth);
 
     const needle = this.overlay.selectAll('.monte-gauge-needle').data([this.needleValueAngleData || 0]);

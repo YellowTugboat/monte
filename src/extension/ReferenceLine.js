@@ -18,36 +18,36 @@ const REF_LINE_DEFAULTS = {
 
 // Strategies for placing labels.
 const LABEL_PLACEMENT = {
-  'nw': (text, d) => {
-    text.attr('dy', '-0.35em').attr('x', d.x1).attr('y', d.y1);
+  'nw': (text, c) => {
+    text.attr('dy', '-0.35em').attr('x', c.x1).attr('y', c.y1);
   },
 
-  'n': (text, d) => {
-    text.attr('dy', '-0.35em').attr('x', (d.x2 - d.x1) / 2 + d.x1).attr('y', d.y2);
+  'n': (text, c) => {
+    text.attr('dy', '-0.35em').attr('x', (c.x2 - c.x1) / 2 + c.x1).attr('y', c.y2);
   },
 
-  'ne': (text, d) => {
-    text.attr('dy', '-0.35em').attr('x', d.x2).attr('y', d.y2);
+  'ne': (text, c) => {
+    text.attr('dy', '-0.35em').attr('x', c.x2).attr('y', c.y2);
   },
 
-  'w': (text, d) => {
-    text.attr('dy', '0.35em').attr('x', d.x1).attr('y', d.y1);
+  'w': (text, c) => {
+    text.attr('dy', '0.35em').attr('x', c.x1).attr('y', c.y1);
   },
 
-  'e': (text, d) => {
-    text.attr('dy', '0.35em').attr('x', d.x2).attr('y', d.y2);
+  'e': (text, c) => {
+    text.attr('dy', '0.35em').attr('x', c.x2).attr('y', c.y2);
   },
 
-  'sw': (text, d) => {
-    text.attr('dy', '1em').attr('x', d.x1).attr('y', d.y1);
+  'sw': (text, c) => {
+    text.attr('dy', '1em').attr('x', c.x1).attr('y', c.y1);
   },
 
-  's': (text, d) => {
-    text.attr('dy', '1em').attr('x', (d.x2 - d.x1) / 2 + d.x1).attr('y', d.y2);
+  's': (text, c) => {
+    text.attr('dy', '1em').attr('x', (c.x2 - c.x1) / 2 + c.x1).attr('y', c.y2);
   },
 
-  'se': (text, d) => {
-    text.attr('dy', '1em').attr('x', d.x2).attr('y', d.y2);
+  'se': (text, c) => {
+    text.attr('dy', '1em').attr('x', c.x2).attr('y', c.y2);
   },
 };
 
@@ -72,10 +72,10 @@ export class ReferenceLine extends Extension {
     // Update + Enter
     const update = enter.merge(lines);
     update.select('line')
-      .attr('x1', (d) => d[this.opts.x1Prop])
-      .attr('x2', (d) => d[this.opts.x2Prop])
-      .attr('y1', (d) => d[this.opts.y1Prop])
-      .attr('y2', (d) => d[this.opts.y2Prop]);
+      .attr('x1', (d) => this.getProp('x1', d))
+      .attr('x2', (d) => this.getProp('x2', d))
+      .attr('y1', (d) => this.getProp('y1', d))
+      .attr('y2', (d) => this.getProp('y2', d));
 
     update.select('text')
       .attr('text-anchor', this.opts.textAnchor)
@@ -88,7 +88,14 @@ export class ReferenceLine extends Extension {
 
   _placeLabel(d, i, nodes) {
     const text = d3.select(nodes[i]);
-    const placement = LABEL_PLACEMENT[this.opts.labelPlacement];
-    placement(text, d);
+    const labelPlacement = this.optInvoke(this.opts.labelPlacement, d, i, nodes);
+    const placement = LABEL_PLACEMENT[labelPlacement];
+    const coords = {
+      x1: this.getProp('x1', d),
+      x2: this.getProp('x2', d),
+      y1: this.getProp('y1', d),
+      y2: this.getProp('y2', d),
+    };
+    placement.call(this, text, coords);
   }
 }

@@ -11,6 +11,6 @@ module.exports = {
     'd3': true
   },
   'rules': {
-    'sort-imports': 'error'
+    'sort-imports': 'error',
   },
 };

@@ -85,6 +85,20 @@ export class Extension {
     }
   }
 
+  /**
+   * Reads a property from a datum and returns the raw (unscaled) value.
+   */
+  getProp(propShortName, d, defaultValue=null) {
+    const propFullName = `${propShortName}Prop`;
+    const dataPropName = this.opts[propFullName];
+
+    if (dataPropName) {
+      return d[dataPropName];
+    }
+
+    return defaultValue;
+  }
+
   // Build a string of CSS classes that may include invokable options.
   _buildCss(cssSources, d, i) {
     const cssClasses = [];
