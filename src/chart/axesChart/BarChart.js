@@ -30,6 +30,22 @@ const BAR_CHART_DEFAULTS = {
   },
 
   yDomainCustomize: extentBalanced,
+
+  includeLabels: false,
+
+  labelProp: 'value',
+  labelFillScale: noop,
+  label: function(d) {
+    return this.getProp('label', d);
+  },
+  labelXAdjust: '',
+  labelX: function(d) {
+    return this._barX(d) + this.x.bandwidth() / 2;
+  },
+  labelYAdjust: '-0.05em',
+  labelY: function(d) {
+    return this._barY(d);
+  },
 };
 
 export class BarChart extends AxesChart {
@@ -66,18 +82,17 @@ export class BarChart extends AxesChart {
 
   // Render the vis.
   _update() {
-    this._updateBars();
+    const barGrps = this._updateBars();
 
-    // TODO: Implement?
-    // if (this.opts.includeLabels) {
-    //   const vis = this;
-    //
-    //   barGrps.each((d, i, nodes) => vis._updateBarLabels(nodes[i], d, i));
-    // }
+    if (this.opts.includeLabels) {
+      barGrps.each((d, i, nodes) => {
+        const node = d3.select(nodes[i]);
+        this._updateBarLabel(node, d, i, nodes);
+      });
+    }
   }
 
   _updateBars() {
-    // Data join for the lines
     const barGrps = this.draw.selectAll('.monte-bar-grp')
       .data(this.displayData, (d, i) => d.id || i);
 
@@ -86,7 +101,6 @@ export class BarChart extends AxesChart {
     const barWidth = this._barWidth.bind(this);
     const barHeight = this._barHeight.bind(this);
 
-    // Create new lines
     barGrps.enter().append('g')
       .attr('class', 'monte-bar-grp')
       .append('rect')
@@ -103,7 +117,7 @@ export class BarChart extends AxesChart {
         )
       .transition()
         .duration(this.opts.transitionDuration)
-        .attr('fill', (d, i) => this.opts.barFillScale(d.id || i));
+        .attr('fill', (d, i, nodes) => this.optInvoke(this.opts.barFillScale, d, i, nodes));
 
     barGrps.select('rect')
       .transition()
@@ -123,6 +137,22 @@ export class BarChart extends AxesChart {
     // Here the order is important. Merging the line groups when only an update occurs results in an
     // empty selection if the command was lineGrps.enter().selectAll('.grp-line').merge(lineGrps);
     return barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp'));
+  }
+
+  _updateBarLabel(barGrp, d, i, nodes) {
+    const lbl = barGrp.selectAll('.monte-bar-label').data([d]);
+
+    lbl.enter().append('text')
+      .attr('class', 'monte-bar-label')
+      .merge(lbl)
+        .attr('fill', (d1) => this.optInvoke(this.opts.labelFillScale, d1, i, nodes))
+        .attr('x', (d1) => this.optInvoke(this.opts.labelX, d1, i, nodes))
+        .attr('dx', (d1) => this.optInvoke(this.opts.labelXAdjust, d1, i, nodes))
+        .attr('y', (d1) => this.optInvoke(this.opts.labelY, d1, i, nodes))
+        .attr('dy', (d1) => this.optInvoke(this.opts.labelYAdjust, d1, i, nodes))
+        .text((d1) => this.optInvoke(this.opts.label, d1, i, nodes));
+
+    lbl.exit().remove();
   }
 
   _barX(d) { return this.getScaledProp('x', d); }

@@ -21,6 +21,15 @@ const HBAR_CHART_DEFAULTS = {
 
   xDomainCustomize: extentBalanced,
   yDomainCustomize: null,
+
+  labelX: function(d) {
+    return this._barWidth(d);
+  },
+  labelXAdjust: '',
+  labelY: function(d) {
+    return this._barY(d) + this.y.bandwidth() / 2;
+  },
+  labelYAdjust: '0.5em',
 };
 
 export class HorizontalBarChart extends BarChart {
