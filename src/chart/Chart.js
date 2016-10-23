@@ -1,10 +1,11 @@
+import { INTERACTION_EVENTS, INTERACTION_EVENT_CSS_MAP } from '../const/events';
 import { get as _get, set as _set } from '../external/lodash';
 import { isDefined, isFunc, isObject } from '../tools/is';
 import { EventWatcher } from '../support/EventWatcher';
-import { INTERACTION_EVENTS } from '../const/events';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
 import { mergeOptions } from '../tools/mergeOptions';
+import { UNDEF } from '../const/undef';
 
 const global = window ? window.MonteGlobals = {} : {};
 
@@ -42,13 +43,6 @@ const DEFAULTS = {
   directUse: false,
 };
 
-const EVENT_CSS_MAP = {
-  'mouseover': { action: 'add', css: 'over' },
-  'mouseout': { action: 'remove', css: 'over' },
-  'touchstart': { action: 'add', css: 'touch' },
-  'touchend': { action: 'remove', css: 'touch' },
-};
-
 /*
   Data Format:
 
@@ -64,13 +58,14 @@ const EVENT_CSS_MAP = {
  */
 
 export class Chart {
-  constructor(parentSelector, options, data) {
+  constructor(parentSelector, options, data) { // eslint-disable-line max-statements
     this._constructed = false;
     this._optsSet = false;
     this.parentSelector = parentSelector;
     this.hasRendered = false;
     this.layers = [];
     this.extensions = [];
+    this._optionReaderCache = {};
 
     // Configure the data options.
     this._initOptions(options);
@@ -93,9 +88,8 @@ export class Chart {
       // Custom events
       ...this.opts.customEvents);
 
-    if (this.opts.developerMode || global.developerMode) {
-      this._initDeveloperMode();
-    }
+    // Put chart in developer mode if opted into on a chart or global basis
+    if (this.opts.developerMode || global.developerMode) { this._initDeveloperMode(); }
 
     // Bind initial extensions to this chart instance.
     this._bindExt(this.opts.extensions);
@@ -169,10 +163,12 @@ export class Chart {
 
     const chart = this;
 
+    // Setup interaction events for the overall chart.
     INTERACTION_EVENTS.forEach((ev) => {
       this.bound.on(ev, function(...args) { chart.__notify(ev, this, ...args); });
     });
 
+    // Bind resize function if given.
     if (this.opts.resize) {
       if (!global.resizeWatch) { global.resizeWatch = new EventWatcher(); }
 
@@ -260,9 +256,13 @@ export class Chart {
 
     this._destroy();
 
-    // TODO: Handle case where parentSelector and bound are the same and only remove internal
-    //       elements.
-    this.bound.remove();
+    // Handle case where parentSelector and bound are the same and only remove internal elements.
+    if (this.bound.node() === d3.select(this.parentSelector).node()) {
+      this.bound.node().innerHTML = '';
+    }
+    else {
+      this.bound.remove();
+    }
 
     this.__notify('destroyed');
   }
@@ -370,12 +370,25 @@ export class Chart {
     return this;
   }
 
+  optionReader(prop) {
+    if (!this._optionReaderCache[prop]) {
+      this._optionReaderCache[prop] = (...args) => {
+        this.optInvoke(this.opts[prop], ...args);
+      };
+    }
+
+    return this._optionReaderCache[prop];
+  }
+
   /**
    * Invoke a `value` (generally from the chart options) with the given arguments. Static values
    * are returned directly.
    */
   optInvoke(value, ...args) {
-    if (value == null) {
+    if (value === null) {
+      return null;
+    }
+    else if (value === UNDEF) {
       throw new MonteOptionError('Option not initialized.');
     }
 
@@ -404,16 +417,34 @@ export class Chart {
 
   /**
    * Reads a scale bound property from a datum and returns the scaled value.
+   *
+   * @param {string} scaleName The scale used for scaling
+   * @param {string} [propPrefix=<scaleName>] The property to be scaled. Defaults to the scale's property.
+   * @param {any}    datum The data to scale.
    */
-  getScaledProp(scaleName, d) {
+  getScaledProp(scaleName, propPrefix, datum) {
     let val;
+    let propPre;
+    let d;
+
+    if (arguments.length === 2) {
+      propPre = scaleName;
+      d = propPrefix;
+    }
+    else if (arguments.length === 3) {
+      propPre = propPrefix;
+      d = datum;
+    }
+    else {
+      throw new MonteError(`Incorrect number of arguments. Expected 2 or 3 recieved ${arguments.length}`);
+    }
 
     if (!isFunc(this[scaleName])) {
       throw new MonteError(`Scale "${scaleName}" is not defined.`);
     }
     else if (isObject(d)) {
       // Assume `d` is a datum related to the chart data.
-      val = d[this.opts[`${scaleName}Prop`]];
+      val = d[this.opts[`${propPre}Prop`]];
     }
     else {
       // Assume `d` is a value the scale can process.
@@ -619,7 +650,7 @@ export class Chart {
    */
   __elemEvent(eventType, eventNameFull, d, i, nodes) {
     const node = nodes[i];
-    const cssAction = EVENT_CSS_MAP[eventType];
+    const cssAction = INTERACTION_EVENT_CSS_MAP[eventType];
 
     if (cssAction) {
       if (cssAction.action === 'add') {
