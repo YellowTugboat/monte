@@ -1,5 +1,4 @@
 import { Extension } from './Extension';
-// import { tau } from '../const/math';
 
 const BAR_BG_DEFAULTS = {
   eventPrefix: 'barbg',
@@ -8,6 +7,7 @@ const BAR_BG_DEFAULTS = {
   maxValue: null,  // Maximum value
   maxValueProp: null, // Maximum value taken from chart data
   enlarge: 0.05,
+  cornerRadius: 0,
 };
 
 export class BarBg extends Extension {
@@ -41,7 +41,8 @@ export class BarBg extends Extension {
           let v = bw + wa;
           return v;
         })
-        .attr('height', (...args) => barChart._barHeight.bind(barChart)(...args) + this._heightAdjust(sizeAdjust));
+        .attr('height', (...args) => barChart._barHeight.bind(barChart)(...args) + this._heightAdjust(sizeAdjust))
+        .attr('rx', (d, i) => this.optInvoke(this.opts.cornerRadius, d, i));
   }
 
   _buildData(barChart, chartData) {
