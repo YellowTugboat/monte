@@ -152,7 +152,8 @@ export class LineChart extends AxesChart {
     const points = lineGrp.selectAll('.monte-point').data((d) => d[this.opts.valuesProp]);
 
     const genSym = (d, i) => {
-      const symbase = d3.symbol().size(this.opts.pointSize);
+      const size = this.optInvoke(this.opts.pointSize, d, i);
+      const symbase = d3.symbol().size(size);
       const symbol = this.opts.pointSymbol(symbase, d, i);
       return symbol(d, i);
     };
