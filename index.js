@@ -13,6 +13,7 @@ export { BarChart } from './src/chart/axesChart/BarChart';
 export { HorizontalBarChart } from './src/chart/axesChart/HorizontalBarChart';
 export { ScatterPlot } from './src/chart/axesChart/ScatterPlotChart';
 export { SparklineChart } from './src/chart/axesChart/SparklineChart';
+export { IconArray } from './src/chart/axesChart/IconArray';
 
 // Polar coordinates
 export { ArcChart } from './src/chart/polarChart/ArcChart';
