@@ -76,7 +76,7 @@ export class LineChart extends AxesChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('line'),   // Line events
+      ...commonEventNames('line'), // Line events
       ...commonEventNames('point') // Point events
     );
   }
@@ -122,14 +122,14 @@ export class LineChart extends AxesChart {
       .append('path')
         .call(this.__bindCommonEvents('line'))
       .merge(lineGrps.select('.monte-line')) // Update existing lines and set values on new lines.
-        .attr('class', (d, i) =>
+        .attr('class', (d, i) => this._buildCss(
           ['monte-line',
            this.opts.lineCss,
-           this.opts.lineCssScale(d.id || i),
-           d.css].join(' ')
-        )
+           this.opts.lineCssScale,
+           d.css], d, i))
         .transition()
           .duration(this.opts.transitionDuration)
+          .ease(this.opts.ease)
           .attr('d', (d) => this.line(d[this.opts.valuesProp]))
           .attr('stroke', this.opts.lineStrokeScale);
 
@@ -152,7 +152,7 @@ export class LineChart extends AxesChart {
     const points = lineGrp.selectAll('.monte-point').data((d) => d[this.opts.valuesProp]);
 
     const genSym = (d, i) => {
-      const size = this.optInvoke(this.opts.pointSize, d, i);
+      const size = this.tryInvoke(this.opts.pointSize, d, i);
       const symbase = d3.symbol().size(size);
       const symbol = this.opts.pointSymbol(symbase, d, i);
       return symbol(d, i);
@@ -164,16 +164,17 @@ export class LineChart extends AxesChart {
         .call(this.__bindCommonEvents('point'))
       .merge(points) // Update existing points and set values on new points.
         .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
-        .attr('class', (d) =>
+        .attr('class', (d) => this._buildCss(
            ['monte-point',
             lineDatum.css,
-            this.opts.lineCssScale(lineDatum.id || lineIndex),
+            this.opts.lineCssScale,
             this.opts.pointCss,
-            this.opts.pointCssScale(lineDatum.id || lineIndex),
-            d.css].join(' '));
+            this.opts.pointCssScale,
+            d.css], lineDatum.id, lineIndex));
 
     points.transition()
         .duration(this.opts.transitionDuration)
+        .ease(this.opts.ease)
         .attr('fill', this.opts.pointFillScale)
         .attr('stroke', this.opts.pointStrokeScale)
         .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
@@ -182,8 +183,9 @@ export class LineChart extends AxesChart {
     // Fade out removed points.
     points.exit()
       .transition()
-      .duration(this.opts.transitionDuration)
-      .style('opacity', 0)
-      .remove();
+        .duration(this.opts.transitionDuration)
+        .ease(this.opts.ease)
+        .style('opacity', 0)
+        .remove();
   }
 }

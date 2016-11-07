@@ -4,7 +4,7 @@ import { noop } from '../tools/noop';
 
 const REF_LINE_DEFAULTS = {
   eventPrefix: 'refline',
-  css: 'monte-ref-line-grp',
+  css: 'monte-ext-ref-line-grp',
   data: noop,
   layer: 'overlay',
   labelPlacement: 'nw',
@@ -53,16 +53,22 @@ const LABEL_PLACEMENT = {
 
 // A static line with an optional label.
 export class ReferenceLine extends Extension {
+  constructor(options) {
+    super(options);
+
+    this.lineData = [];
+  }
+
   _initOptions(...options) {
     super._initOptions(...options, REF_LINE_DEFAULTS);
   }
 
   _update() {
-    let lineData = this.optInvoke(this.opts.data, this.chart.data());
+    this.lineData = this.tryInvoke(this.opts.data, this.chart.data());
 
-    if (!isArray(lineData)) { lineData = [lineData]; }
+    if (!isArray(this.lineData)) { this.lineData = [this.lineData]; }
 
-    const lines = this.layer.selectAll(`.${this.opts.css}`).data(lineData);
+    const lines = this.layer.selectAll(`.${this.opts.css}`).data(this.lineData);
 
     // Enter
     const enter = lines.enter().append('g').attr('class', this.opts.css);
@@ -79,7 +85,7 @@ export class ReferenceLine extends Extension {
 
     update.select('text')
       .attr('text-anchor', this.opts.textAnchor)
-      .text((d) => d[this.opts.textProp])
+      .text((d) => this.getProp('text', d))
       .each(this._placeLabel.bind(this));
 
     // Exit
@@ -88,7 +94,7 @@ export class ReferenceLine extends Extension {
 
   _placeLabel(d, i, nodes) {
     const text = d3.select(nodes[i]);
-    const labelPlacement = this.optInvoke(this.opts.labelPlacement, d, i, nodes);
+    const labelPlacement = this.tryInvoke(this.opts.labelPlacement, d, i, nodes);
     const placement = LABEL_PLACEMENT[labelPlacement];
     const coords = {
       x1: this.getProp('x1', d),
@@ -96,6 +102,7 @@ export class ReferenceLine extends Extension {
       y1: this.getProp('y1', d),
       y2: this.getProp('y2', d),
     };
+
     placement.call(this, text, coords);
   }
 }

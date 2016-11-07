@@ -1,4 +1,4 @@
-import { halfPi, pi } from '../../const/math';
+import { HALF_PI, PI } from '../../const/math';
 import { Chart } from '../Chart';
 
 // Serves as the base chart for charts using polar coordinates (pie, donut, guage, etc...)
@@ -26,8 +26,8 @@ export class PolarChart extends Chart {
     let t;
 
     if (this.opts.origin) {
-      l = this.optInvoke(this.opts.origin.left, this);
-      t = this.optInvoke(this.opts.origin.top, this);
+      l = this.tryInvoke(this.opts.origin.left, this);
+      t = this.tryInvoke(this.opts.origin.top, this);
     }
     else {
       l = this.width / 2 + this.margin.left;
@@ -40,9 +40,9 @@ export class PolarChart extends Chart {
   static getCoord(radius, angle) {
     // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment. We repeat that here for
     // coordinate consistency.
-    const a = angle - halfPi;
+    const a = angle - HALF_PI;
     return [Math.cos(a) * radius, Math.sin(a) * radius];
   }
-  static degreesToRadians(deg) { return deg * (pi / 180); } // radians = degrees * (pi/180)
-  static radiansToDegrees(rad) { return rad * (180 / pi); } // degrees = radians * (180/pi)
+  static degreesToRadians(deg) { return deg * (PI / 180); } // radians = degrees * (pi/180)
+  static radiansToDegrees(rad) { return rad * (180 / PI); } // degrees = radians * (180/pi)
 }

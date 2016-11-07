@@ -1,10 +1,10 @@
+import { TAU } from '../const/math';
 import { mergeOptions } from '../tools/mergeOptions';
-import { tau } from '../const/math';
 
 const POLAR_TICKS_DEFAULTS = {
   startAngle: 0,
-  endAngle: tau,
-  tickInterval: 1/4 * tau, // Every 90deg
+  endAngle: TAU,
+  tickInterval: 1/4 * TAU, // Every 90deg
   innerRadius: 0,
   outerRadius: 100,
   tickCss: 'monte-polar-tick',
@@ -13,9 +13,9 @@ const POLAR_TICKS_DEFAULTS = {
 
 // https://sites.google.com/site/mymathclassroom/testing-if-two-angles-are-coterminal
 function areCoterminalAngles(a1, a2) {
-  const n = (a1 - a2) / tau;
+  const n = (a1 - a2) / TAU;
 
-  // Angles are coterminal if n is an integer; otherwise .
+  // Angles are coterminal if n is an integer; otherwise not.
   return Number.isInteger(n);
 }
 

@@ -47,13 +47,17 @@ export class EventWatcher {
     }
 
     if (this.opts.documentLoadRun) {
+      const eventWatcher = this;
       const ready = (() => {
-        document.removeEventListener('DOMContentLoaded', ready);
-        window.removeEventListener('load', ready);
+        // Use timeout to get a fresh pass after document is ready.
+        setTimeout(function() {
+          document.removeEventListener('DOMContentLoaded', ready);
+          window.removeEventListener('load', ready);
 
-        this.documentReady = true;
-        this.runCallbacks();
-      }).bind(this); // Work around for proper binding.
+          eventWatcher.documentReady = true;
+          eventWatcher.runCallbacks();
+        }, 0);
+      });
 
       this.documentReady = false;
       document.addEventListener('DOMContentLoaded', ready);

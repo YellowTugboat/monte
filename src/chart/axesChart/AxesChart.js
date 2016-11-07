@@ -1,11 +1,14 @@
 import { isArray, isDefined, isFunc } from '../../tools/is';
 import { Chart } from '../Chart';
 import { MonteError } from '../../support/MonteError';
+import { noop } from '../../tools/noop';
 
 const AXES_CHART_DEFAULTS = {
   // The axes X and Y are generally assumed. In some cases it may be desirable to add an additional
   // axis such as 'Y2'.
   axes: ['x', 'y'], // The scale names to create axes for.
+
+  suppressAxes: false, // Suppress the display of the axes.
 
   /*************************************************************************************************
    *
@@ -31,7 +34,9 @@ const AXES_CHART_DEFAULTS = {
 
   xAxisTransform: (w, h) => `translate(0,${h})`,
 
-  xLabel: '',
+  xLabel: null,
+
+  xLabelCustomize: noop,
 
   /*************************************************************************************************
    *
@@ -57,7 +62,9 @@ const AXES_CHART_DEFAULTS = {
 
   yAxisTransform: null,
 
-  yLabel: '',
+  yLabel: null,
+
+  yLabelCustomize: noop,
 };
 
 export class AxesChart extends Chart {
@@ -72,6 +79,8 @@ export class AxesChart extends Chart {
       // Set empty array to ease assumptions (i.e. avoid null checks) in later code.
       this.opts.axes = [];
     }
+
+    this.axes = this.tryInvoke(this.opts.axes);
   }
 
   _initPublicEvents(...events) {
@@ -130,16 +139,8 @@ export class AxesChart extends Chart {
   }
 
   _data(data) {
-    this.forEachAxisScale((scaleName) => {
-      const cb = this.opts[scaleName + 'DomainCustomize'];
-      let extent = data ? this._domainExtent(data, scaleName) : [];
-
-      if (cb) { extent = cb(extent); }
-
-      this[scaleName].domain(extent);
-    });
-
     super._data(data);
+    this.updateAxesDomains();
     this.renderAxes();
   }
 
@@ -165,22 +166,37 @@ export class AxesChart extends Chart {
     });
   }
 
+  updateAxesDomains() {
+    const data = this.data();
+
+    this.forEachAxisScale((scaleName) => {
+      const customize = this.opts[scaleName + 'DomainCustomize'];
+      let extent = data ? this._domainExtent(data, scaleName) : [];
+
+      if (customize) { extent = this.tryInvoke(customize, extent); }
+
+      this[scaleName].domain(extent);
+    });
+  }
+
   renderAxes() {
     // Only suppress all if a literal boolean is given.
-    if (this.opts.suppressAxes === true) { return; }
+    const suppressAxes = this.tryInvoke(this.opts.suppressAxes);
+    if (suppressAxes === true) { return; }
 
-    const isSuppressArray = isArray(this.opts.suppressAxes);
+    const isSuppressArray = isArray(suppressAxes);
 
     // (Re)render axes
     this.forEachAxisScale((scaleName) => {
-      if (isSuppressArray && this.opts.suppressAxes.indexOf(scaleName) > -1) { return; }
+      if (isSuppressArray && suppressAxes.indexOf(scaleName) > -1) { return; }
 
       this.support.select(`.${scaleName}-axis`)
         .transition()
           .duration(this.opts.transitionDuration)
+          .ease(this.opts.ease)
           .call(this[`${scaleName}Axis`])
           .call(this._setLabel.bind(this, scaleName))
-          .call((t) => this.__notify('axisRendered', t));
+          .call((t) => this.emit('axisRendered', t));
     });
   }
 
@@ -190,16 +206,19 @@ export class AxesChart extends Chart {
 
   // Loops over each scale name that is bound to an axis.
   forEachAxisScale(f) {
-    this.opts.axes.forEach(f);
+    this.axes.forEach(f);
   }
 
   _setLabel(scaleName, transition) { // eslint-disable-line no-unused-vars
-    const label = this.opts[`${scaleName}Label`];
+    const label = this.tryInvoke(this.opts[`${scaleName}Label`]);
+    const lbl = this.support.select(`.${scaleName}-axis`).selectAll('.monte-axis-label').data([label]);
 
-    if (label) {
-      this.support.select(`.${scaleName}-axis`).append('text')
-        .attr('class', 'axis-label')
-        .text(label);
-    }
+    lbl.enter().append('text')
+      .merge(lbl)
+        .attr('class', 'monte-axis-label')
+        .text((d) => d)
+        .call(() => this.tryInvoke(this.opts[`${scaleName}LabelCustomize`], lbl));
+
+    lbl.exit().remove();
   }
 }

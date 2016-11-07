@@ -3,7 +3,7 @@ import { Extension } from './Extension';
 
 const FRAME_DEFAULTS = {
   eventPrefix: 'frame',
-  frameLineCss: 'monte-frame-line',
+  frameLineCss: 'monte-ext-frame-line',
   edges: ['top', 'right', 'bottom', 'left'],
   alignmentShift: AXIS_SHIFT, // Use a slight shift to match default d3-axis drawing.
 };

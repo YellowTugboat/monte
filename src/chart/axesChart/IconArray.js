@@ -1,4 +1,5 @@
 import { AxesChart } from './AxesChart';
+import { MonteError } from '../../support/MonteError';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
@@ -64,11 +65,18 @@ const ICON_ARRAY_DEFAULTS = {
   iconSvgWidth: 24,
   iconSvgHeight: 24,
   iconHref: '',
+  iconSvgSymbol: (symbol) => {
+    symbol.attr('viewbox', '0 0 24 24')
+      .append('path')
+        .attr('d', 'm 0,0 24,24 m -24,0 24,-24');
+  },
 
   rows: 10,
   columns: 10,
 
   placement: ICON_PLACEMENT.TopToBottomLeftToRightPlacement,
+
+  svgVersion: 1, // SVG version 1 requires `xlink:href` for <use> references, but SVG version 2 adds a regular `href` to use instead.
 };
 
 export class IconArray extends AxesChart {
@@ -103,7 +111,24 @@ export class IconArray extends AxesChart {
     return extent.fill().map((_, idx) => idx);
   }
 
+  _render() {
+    if (this.opts.iconMode === ICON_MODE.SVG_USE_DEF) {
+      const chart = this;
+      this.defs.append('symbol')
+        .attr('id', 'svgIcon')
+        .each(function() {
+          chart.opts.iconSvgSymbol(d3.select(this));
+        });
+    }
+  }
+
   _update() {
+    const max = this.opts.rows * this.opts.columns;
+
+    if (max < this.displayData.length ) {
+      throw new MonteError(`Maximum number of items is ${max}. Data contains ${this.displayData.length}.`);
+    }
+
     this._updateIcons();
   }
 
@@ -121,14 +146,15 @@ export class IconArray extends AxesChart {
     // Fade out removed icons.
     icons.exit()
       .transition()
-      .duration(this.opts.transitionDuration)
-      .style('opacity', 0)
-      .remove();
+        .duration(this.opts.transitionDuration)
+        .ease(this.opts.ease)
+        .style('opacity', 0)
+        .remove();
   }
 
   _updateD3Symbol(icons) {
     const genSym = (d, i) => {
-      const size = this.optInvoke(this.opts.iconSize, d, i);
+      const size = this.tryInvoke(this.opts.iconSize, d, i);
       const symbase = d3.symbol().size(size);
       const symbol = this.opts.iconSymbol(symbase, d, i);
       return symbol(d, i);
@@ -139,8 +165,8 @@ export class IconArray extends AxesChart {
 
   _updateSvgUse(icons, mode) {
     const href = mode === ICON_MODE.SVG_USE_DEF ?
-      (d, i, nodes) => '#' + this.optInvoke(this.opts.iconDefId, d, i, nodes) :
-      (d, i, nodes) => this.optInvoke(this.opts.iconHref, d, i, nodes);
+      (d, i, nodes) => '#' + this.tryInvoke(this.opts.iconDefId, d, i, nodes) :
+      (d, i, nodes) => this.tryInvoke(this.opts.iconHref, d, i, nodes);
 
     const mergedUpdates = (d, i, nodes) => {
       const node = d3.select(nodes[i]);
@@ -149,7 +175,8 @@ export class IconArray extends AxesChart {
         .attr('height', this.opts.iconSvgHeight);
     };
 
-    this._updateCommon('use', icons, iconTransformShift, mergedUpdates).attr('href', href);
+    const hrefAttr = this.tryInvoke(this.opts.svgVersion) === 2 ? 'href' : 'xlink:href';
+    this._updateCommon('use', icons, iconTransformShift, mergedUpdates).attr(hrefAttr, href);
   }
 
   _updateCommon(type, icons, transform, merge = noop) {
@@ -158,12 +185,13 @@ export class IconArray extends AxesChart {
       .merge(icons)
         .each(merge)
         .attr('transform', (d, i, nodes) => transform.call(this, d, i, nodes))
-        .attr('class', (d, i, nodes) => ['monte-icon',
+        .attr('class', (d, i) => this._buildCss(['monte-icon',
           this.opts.iconCss,
-          this.opts.iconCssScale(d, i, nodes),
-          d.css].join(' '))
+          this.opts.iconCssScale,
+          d.css], d, i))
         .transition()
           .duration(this.opts.transitionDuration)
+          .ease(this.opts.ease)
           .attr('fill', this.opts.iconFillScale)
           .attr('stroke', this.opts.iconStrokeScale);
 
@@ -172,8 +200,8 @@ export class IconArray extends AxesChart {
 }
 
 function iconTransform(d, i, nodes) {
-  const col = this.optInvoke(this.opts.placement.columnIndex, d, i, nodes);
-  const row = this.optInvoke(this.opts.placement.rowIndex, d, i, nodes);
+  const col = this.tryInvoke(this.opts.placement.columnIndex, d, i, nodes);
+  const row = this.tryInvoke(this.opts.placement.rowIndex, d, i, nodes);
   const x = this.getScaledProp('x', col);
   const y = this.getScaledProp('y', row);
 
@@ -181,8 +209,8 @@ function iconTransform(d, i, nodes) {
 }
 
 function iconTransformShift(d, i, nodes) {
-  const col = this.optInvoke(this.opts.placement.columnIndex, d, i, nodes);
-  const row = this.optInvoke(this.opts.placement.rowIndex, d, i, nodes);
+  const col = this.tryInvoke(this.opts.placement.columnIndex, d, i, nodes);
+  const row = this.tryInvoke(this.opts.placement.rowIndex, d, i, nodes);
   const x = this.getScaledProp('x', col);
   const y = this.getScaledProp('y', row);
   const xShift = this.opts.iconSvgWidth / 2;

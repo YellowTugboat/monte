@@ -1,3 +1,4 @@
+import { EXIT, UPDATE } from '../../const/d3';
 import { LineChart } from './LineChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { extentFromZero } from '../../util/extents';
@@ -53,7 +54,10 @@ export class AreaChart extends LineChart {
 
   _initCustomize() {
     super._initCustomize();
-    if (this.opts.areaCustomize) { this.opts.areaCustomize(this.area); }
+
+    if (this.opts.areaCustomize) {
+      this.tryInvoke(this.opts.areaCustomize, this.area);
+    }
   }
 
   _initPublicEvents(...events) {
@@ -88,23 +92,25 @@ export class AreaChart extends LineChart {
     const allAreas = area.enter().insert('path', ':first-child')
         .call(this.__bindCommonEvents('area'))
       .merge(area) // Update existing points and set values on new points.
-        .attr('class', (d) =>
+        .attr('class', (d) => this._buildCss(
            ['monte-area',
             lineDatum.css,
-            this.opts.lineCssScale(lineDatum.id || lineIndex),
+            this.opts.lineCssScale,
             this.opts.areaCss,
-            this.opts.areaCssScale(lineDatum.id || lineIndex),
-            d.css].join(' '));
+            this.opts.areaCssScale,
+            d.css], lineDatum, lineIndex));
 
     allAreas.transition()
-        .duration(this.opts.transitionDuration)
+        .duration(this.tryInvoke(this.opts.transitionDuration, UPDATE))
+        .ease(this.opts.ease)
         .attr('d', (d) => this.area(this.getProp('values', d)))
-        .attr('fill', this.opts.areaFillScale);
+        .attr('fill', this.optionReaderFunc('areaFillScale'));
 
     // Fade out removed points.
     area.exit()
-      .transition()
+      .transition(this.tryInvoke(this.opts.transitionDuration, EXIT))
         .duration(this.opts.transitionDuration)
+        .ease(this.opts.ease)
         .style('opacity', 0)
         .remove();
   }

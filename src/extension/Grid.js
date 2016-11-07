@@ -9,7 +9,7 @@ const GRID_DEFAULTS = {
     'x': 'v-line',
     'y': 'h-line',
   },
-  lineCss: 'monte-grid-line',
+  lineCss: 'monte-ext-grid-line',
   binding: ['axisRendered'],
   x1Adjust: 0,
   x2Adjust: 0,
@@ -55,10 +55,10 @@ export class Grid extends Extension {
 
   _updateTicks(ticks, axisTransition, cfg) {
     const fullCss = [cfg.lineCss, cfg.css].join(' ');
-    const x1 = this.optInvoke(this.opts.x1Adjust);
-    const x2 = this.optInvoke(this.opts.x2Adjust);
-    const y1 = this.optInvoke(this.opts.y1Adjust);
-    const y2 = this.optInvoke(this.opts.y2Adjust);
+    const x1 = this.tryInvoke(this.opts.x1Adjust);
+    const x2 = this.tryInvoke(this.opts.x2Adjust);
+    const y1 = this.tryInvoke(this.opts.y1Adjust);
+    const y2 = this.tryInvoke(this.opts.y2Adjust);
 
     if (cfg.orient === HORIZONTAL) {
       ticks.enter().append('line')
@@ -70,6 +70,8 @@ export class Grid extends Extension {
         .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
 
       ticks.transition(axisTransition)
+        .duration(this.chart.opts.transitionDuration)
+        .ease(this.chart.opts.ease)
         .attr('x2', () => cfg.axesChart.width + x2)
         .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
     }
@@ -83,6 +85,8 @@ export class Grid extends Extension {
         .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
 
       ticks.transition(axisTransition)
+        .duration(this.chart.opts.transitionDuration)
+        .ease(this.chart.opts.ease)
         .attr('y2', () => cfg.axesChart.height + y2)
         .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
     }

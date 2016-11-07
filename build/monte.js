@@ -4,32 +4,7 @@
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha12";
-
-/**
- * Checks if `value` is classified as an `Array` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an array, else `false`.
- * @example
- *
- * _.isArray([1, 2, 3]);
- * // => true
- *
- * _.isArray(document.body.children);
- * // => false
- *
- * _.isArray('abc');
- * // => false
- *
- * _.isArray(_.noop);
- * // => false
- */
-var isArray = Array.isArray;
+var version = "0.0.0-alpha13";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -84,7 +59,7 @@ var defineProperty = function (obj, key, value) {
   return obj;
 };
 
-var get$2 = function get$2(object, property, receiver) {
+var get = function get(object, property, receiver) {
   if (object === null) object = Function.prototype;
   var desc = Object.getOwnPropertyDescriptor(object, property);
 
@@ -94,7 +69,7 @@ var get$2 = function get$2(object, property, receiver) {
     if (parent === null) {
       return undefined;
     } else {
-      return get$2(parent, property, receiver);
+      return get(parent, property, receiver);
     }
   } else if ("value" in desc) {
     return desc.value;
@@ -145,14 +120,14 @@ var possibleConstructorReturn = function (self, call) {
 
 
 
-var set$1 = function set$1(object, property, value, receiver) {
+var set = function set(object, property, value, receiver) {
   var desc = Object.getOwnPropertyDescriptor(object, property);
 
   if (desc === undefined) {
     var parent = Object.getPrototypeOf(object);
 
     if (parent !== null) {
-      set$1(parent, property, value, receiver);
+      set(parent, property, value, receiver);
     }
   } else if ("value" in desc && desc.writable) {
     desc.value = value;
@@ -191,6 +166,171 @@ var toConsumableArray = function (arr) {
   }
 };
 
+var _INTERACTION_EVENT_CS;
+
+// General interaction (charts or elements)
+var CLICK = 'click';
+var TOUCHSTART = 'touchstart';
+var TOUCHEND = 'touchend';
+var MOUSEOVER = 'mouseover';
+var MOUSEOUT = 'mouseout';
+
+// Chart Support
+var SUPPRESSED_ERROR = 'suppressedError';
+var EXTENSION = 'extension';
+
+// Chart Lifecycle
+var RENDERING = 'rendering';
+var RENDERED = 'rendered';
+var UPDATING = 'updating';
+var UPDATED = 'updated';
+var UPDATING_BOUNDS = 'updatingBounds';
+var UPDATED_BOUNDS = 'updatedBounds';
+var CLEARING = 'clearing';
+var CLEARED = 'cleared';
+var CSS_DOMAINS_RESETING = 'cssDomainsReseting';
+var CSS_DOMAINS_RESET = 'cssDomainsReset';
+var DESTROYING = 'destroying';
+var DESTROYED = 'destroyed';
+
+var INTERACTION_EVENTS = [CLICK, TOUCHSTART, TOUCHEND, MOUSEOVER, MOUSEOUT];
+
+// Support events
+var CHART_SUPPORT_EVENTS = [SUPPRESSED_ERROR, EXTENSION];
+
+// Lifecycle event pairs
+var CHART_LIFECYCLE_EVENTS = [RENDERING, RENDERED, UPDATING, UPDATED, UPDATING_BOUNDS, UPDATED_BOUNDS, CLEARING, CLEARED, CSS_DOMAINS_RESETING, CSS_DOMAINS_RESET, DESTROYING, DESTROYED];
+
+var ACTION_ADD = 'add';
+var ACTION_REMOVE = 'remove';
+var ACTION_CSS_OVER = 'over';
+var ACTION_CSS_TOUCH = 'touch';
+
+var INTERACTION_EVENT_CSS_MAP = (_INTERACTION_EVENT_CS = {}, defineProperty(_INTERACTION_EVENT_CS, MOUSEOVER, { action: ACTION_ADD, css: ACTION_CSS_OVER }), defineProperty(_INTERACTION_EVENT_CS, MOUSEOUT, { action: ACTION_REMOVE, css: ACTION_CSS_OVER }), defineProperty(_INTERACTION_EVENT_CS, TOUCHSTART, { action: ACTION_ADD, css: ACTION_CSS_TOUCH }), defineProperty(_INTERACTION_EVENT_CS, TOUCHEND, { action: ACTION_REMOVE, css: ACTION_CSS_TOUCH }), _INTERACTION_EVENT_CS);
+
+/**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(document.body.children);
+ * // => false
+ *
+ * _.isArray('abc');
+ * // => false
+ *
+ * _.isArray(_.noop);
+ * // => false
+ */
+var isArray = Array.isArray;
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = (typeof global === 'undefined' ? 'undefined' : _typeof(global)) == 'object' && global && global.Object === Object && global;
+
+/** Detect free variable `self`. */
+var freeSelf = (typeof self === 'undefined' ? 'undefined' : _typeof(self)) == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+/** Built-in value references. */
+var _Symbol = root.Symbol;
+
+/** Used for built-in method references. */
+var objectProto$1 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$1 = objectProto$1.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto$1.toString;
+
+/** Built-in value references. */
+var symToStringTag$1 = _Symbol ? _Symbol.toStringTag : undefined;
+
+/**
+ * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the raw `toStringTag`.
+ */
+function getRawTag(value) {
+  var isOwn = hasOwnProperty$1.call(value, symToStringTag$1),
+      tag = value[symToStringTag$1];
+
+  try {
+    value[symToStringTag$1] = undefined;
+    var unmasked = true;
+  } catch (e) {}
+
+  var result = nativeObjectToString.call(value);
+  if (unmasked) {
+    if (isOwn) {
+      value[symToStringTag$1] = tag;
+    } else {
+      delete value[symToStringTag$1];
+    }
+  }
+  return result;
+}
+
+/** Used for built-in method references. */
+var objectProto$2 = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString$1 = objectProto$2.toString;
+
+/**
+ * Converts `value` to a string using `Object.prototype.toString`.
+ *
+ * @private
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ */
+function objectToString(value) {
+  return nativeObjectToString$1.call(value);
+}
+
+/** `Object#toString` result references. */
+var nullTag = '[object Null]';
+var undefinedTag = '[object Undefined]';
+
+/** Built-in value references. */
+var symToStringTag = _Symbol ? _Symbol.toStringTag : undefined;
+
+/**
+ * The base implementation of `getTag` without fallbacks for buggy environments.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+function baseGetTag(value) {
+  if (value == null) {
+    return value === undefined ? undefinedTag : nullTag;
+  }
+  value = Object(value);
+  return symToStringTag && symToStringTag in value ? getRawTag(value) : objectToString(value);
+}
+
 /**
  * Checks if `value` is the
  * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
@@ -222,18 +362,10 @@ function isObject(value) {
 }
 
 /** `Object#toString` result references. */
+var asyncTag = '[object AsyncFunction]';
 var funcTag = '[object Function]';
 var genTag = '[object GeneratorFunction]';
-
-/** Used for built-in method references. */
-var objectProto$1 = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString = objectProto$1.toString;
+var proxyTag = '[object Proxy]';
 
 /**
  * Checks if `value` is classified as a `Function` object.
@@ -253,20 +385,14 @@ var objectToString = objectProto$1.toString;
  * // => false
  */
 function isFunction(value) {
+  if (!isObject(value)) {
+    return false;
+  }
   // The use of `Object#toString` avoids issues with the `typeof` operator
-  // in Safari 8-9 which returns 'object' for typed array and other constructors.
-  var tag = isObject(value) ? objectToString.call(value) : '';
-  return tag == funcTag || tag == genTag;
+  // in Safari 9 which returns 'object' for typed arrays and other constructors.
+  var tag = baseGetTag(value);
+  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
 }
-
-/** Detect free variable `global` from Node.js. */
-var freeGlobal = (typeof global === 'undefined' ? 'undefined' : _typeof(global)) == 'object' && global && global.Object === Object && global;
-
-/** Detect free variable `self`. */
-var freeSelf = (typeof self === 'undefined' ? 'undefined' : _typeof(self)) == 'object' && self && self.Object === Object && self;
-
-/** Used as a reference to the global object. */
-var root = freeGlobal || freeSelf || Function('return this')();
 
 /** Used to detect overreaching core-js shims. */
 var coreJsData = root['__core-js_shared__'];
@@ -298,7 +424,7 @@ var funcToString$1 = funcProto$1.toString;
  * Converts `func` to its source code.
  *
  * @private
- * @param {Function} func The function to process.
+ * @param {Function} func The function to convert.
  * @returns {string} Returns the source code.
  */
 function toSource(func) {
@@ -411,10 +537,10 @@ function hashDelete(key) {
 var HASH_UNDEFINED = '__lodash_hash_undefined__';
 
 /** Used for built-in method references. */
-var objectProto$2 = Object.prototype;
+var objectProto$3 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$1 = objectProto$2.hasOwnProperty;
+var hasOwnProperty$2 = objectProto$3.hasOwnProperty;
 
 /**
  * Gets the hash value for `key`.
@@ -431,14 +557,14 @@ function hashGet(key) {
     var result = data[key];
     return result === HASH_UNDEFINED ? undefined : result;
   }
-  return hasOwnProperty$1.call(data, key) ? data[key] : undefined;
+  return hasOwnProperty$2.call(data, key) ? data[key] : undefined;
 }
 
 /** Used for built-in method references. */
-var objectProto$3 = Object.prototype;
+var objectProto$4 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$2 = objectProto$3.hasOwnProperty;
+var hasOwnProperty$3 = objectProto$4.hasOwnProperty;
 
 /**
  * Checks if a hash value for `key` exists.
@@ -451,7 +577,7 @@ var hasOwnProperty$2 = objectProto$3.hasOwnProperty;
  */
 function hashHas(key) {
   var data = this.__data__;
-  return nativeCreate ? data[key] !== undefined : hasOwnProperty$2.call(data, key);
+  return nativeCreate ? data[key] !== undefined : hasOwnProperty$3.call(data, key);
 }
 
 /** Used to stand-in for `undefined` hash values. */
@@ -483,7 +609,7 @@ function hashSet(key, value) {
  */
 function Hash(entries) {
   var index = -1,
-      length = entries ? entries.length : 0;
+      length = entries == null ? 0 : entries.length;
 
   this.clear();
   while (++index < length) {
@@ -658,7 +784,7 @@ function listCacheSet(key, value) {
  */
 function ListCache(entries) {
   var index = -1,
-      length = entries ? entries.length : 0;
+      length = entries == null ? 0 : entries.length;
 
   this.clear();
   while (++index < length) {
@@ -787,7 +913,7 @@ function mapCacheSet(key, value) {
  */
 function MapCache(entries) {
   var index = -1,
-      length = entries ? entries.length : 0;
+      length = entries == null ? 0 : entries.length;
 
   this.clear();
   while (++index < length) {
@@ -803,7 +929,7 @@ MapCache.prototype.get = mapCacheGet;
 MapCache.prototype.has = mapCacheHas;
 MapCache.prototype.set = mapCacheSet;
 
-/** Used as the `TypeError` message for "Functions" methods. */
+/** Error message constants. */
 var FUNC_ERROR_TEXT = 'Expected a function';
 
 /**
@@ -817,7 +943,7 @@ var FUNC_ERROR_TEXT = 'Expected a function';
  * function. Its creation may be customized by replacing the `_.memoize.Cache`
  * constructor with one whose instances implement the
  * [`Map`](http://ecma-international.org/ecma-262/7.0/#sec-properties-of-the-map-prototype-object)
- * method interface of `delete`, `get`, `has`, and `set`.
+ * method interface of `clear`, `delete`, `get`, `has`, and `set`.
  *
  * @static
  * @memberOf _
@@ -851,7 +977,7 @@ var FUNC_ERROR_TEXT = 'Expected a function';
  * _.memoize.Cache = WeakMap;
  */
 function memoize(func, resolver) {
-  if (typeof func != 'function' || resolver && typeof resolver != 'function') {
+  if (typeof func != 'function' || resolver != null && typeof resolver != 'function') {
     throw new TypeError(FUNC_ERROR_TEXT);
   }
   var memoized = function memoized() {
@@ -896,8 +1022,25 @@ function memoizeCapped(func) {
   return result;
 }
 
-/** Built-in value references. */
-var _Symbol = root.Symbol;
+/**
+ * A specialized version of `_.map` for arrays without support for iteratee
+ * shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the new mapped array.
+ */
+function arrayMap(array, iteratee) {
+  var index = -1,
+      length = array == null ? 0 : array.length,
+      result = Array(length);
+
+  while (++index < length) {
+    result[index] = iteratee(array[index], index, array);
+  }
+  return result;
+}
 
 /**
  * Checks if `value` is object-like. A value is object-like if it's not `null`
@@ -930,16 +1073,6 @@ function isObjectLike(value) {
 /** `Object#toString` result references. */
 var symbolTag = '[object Symbol]';
 
-/** Used for built-in method references. */
-var objectProto$4 = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString$1 = objectProto$4.toString;
-
 /**
  * Checks if `value` is classified as a `Symbol` primitive or object.
  *
@@ -958,7 +1091,7 @@ var objectToString$1 = objectProto$4.toString;
  * // => false
  */
 function isSymbol(value) {
-  return (typeof value === 'undefined' ? 'undefined' : _typeof(value)) == 'symbol' || isObjectLike(value) && objectToString$1.call(value) == symbolTag;
+  return (typeof value === 'undefined' ? 'undefined' : _typeof(value)) == 'symbol' || isObjectLike(value) && baseGetTag(value) == symbolTag;
 }
 
 /** Used as references for various `Number` constants. */
@@ -981,6 +1114,10 @@ function baseToString(value) {
   if (typeof value == 'string') {
     return value;
   }
+  if (isArray(value)) {
+    // Recursively convert values (susceptible to call stack limits).
+    return arrayMap(value, baseToString) + '';
+  }
   if (isSymbol(value)) {
     return symbolToString ? symbolToString.call(value) : '';
   }
@@ -996,8 +1133,8 @@ function baseToString(value) {
  * @memberOf _
  * @since 4.0.0
  * @category Lang
- * @param {*} value The value to process.
- * @returns {string} Returns the string.
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
  * @example
  *
  * _.toString(null);
@@ -1137,13 +1274,18 @@ function baseGet(object, path) {
  * _.get(object, 'a.b.c', 'default');
  * // => 'default'
  */
-function get$1(object, path, defaultValue) {
+function get$2(object, path, defaultValue) {
   var result = object == null ? undefined : baseGet(object, path);
   return result === undefined ? defaultValue : result;
 }
 
-/** Built-in value references. */
-var defineProperty$1 = Object.defineProperty;
+var defineProperty$1 = function () {
+  try {
+    var func = getNative(Object, 'defineProperty');
+    func({}, '', {});
+    return func;
+  } catch (e) {}
+}();
 
 /**
  * The base implementation of `assignValue` and `assignMergeValue` without
@@ -1171,7 +1313,7 @@ function baseAssignValue(object, key, value) {
 var objectProto$5 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$3 = objectProto$5.hasOwnProperty;
+var hasOwnProperty$4 = objectProto$5.hasOwnProperty;
 
 /**
  * Assigns `value` to `key` of `object` if the existing value is not equivalent
@@ -1185,7 +1327,7 @@ var hasOwnProperty$3 = objectProto$5.hasOwnProperty;
  */
 function assignValue(object, key, value) {
   var objValue = object[key];
-  if (!(hasOwnProperty$3.call(object, key) && eq(objValue, value)) || value === undefined && !(key in object)) {
+  if (!(hasOwnProperty$4.call(object, key) && eq(objValue, value)) || value === undefined && !(key in object)) {
     baseAssignValue(object, key, value);
   }
 }
@@ -1381,9 +1523,6 @@ function constant(value) {
   };
 }
 
-/* Built-in method references that are verified to be native. */
-var nativeDefineProperty = getNative(Object, 'defineProperty');
-
 /**
  * The base implementation of `setToString` without support for hot loop shorting.
  *
@@ -1392,8 +1531,8 @@ var nativeDefineProperty = getNative(Object, 'defineProperty');
  * @param {Function} string The `toString` result.
  * @returns {Function} Returns `func`.
  */
-var baseSetToString = !nativeDefineProperty ? identity : function (func, string) {
-  return nativeDefineProperty(func, 'toString', {
+var baseSetToString = !defineProperty$1 ? identity : function (func, string) {
+  return defineProperty$1(func, 'toString', {
     'configurable': true,
     'enumerable': false,
     'value': constant(string),
@@ -1402,7 +1541,7 @@ var baseSetToString = !nativeDefineProperty ? identity : function (func, string)
 };
 
 /** Used to detect hot functions by number of calls within a span of milliseconds. */
-var HOT_COUNT = 500;
+var HOT_COUNT = 800;
 var HOT_SPAN = 16;
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
@@ -1563,27 +1702,6 @@ Stack.prototype.has = stackHas;
 Stack.prototype.set = stackSet;
 
 /**
- * A specialized version of `_.forEach` for arrays without support for
- * iteratee shorthands.
- *
- * @private
- * @param {Array} [array] The array to iterate over.
- * @param {Function} iteratee The function invoked per iteration.
- * @returns {Array} Returns `array`.
- */
-function arrayEach(array, iteratee) {
-  var index = -1,
-      length = array ? array.length : 0;
-
-  while (++index < length) {
-    if (iteratee(array[index], index, array) === false) {
-      break;
-    }
-  }
-  return array;
-}
-
-/**
  * This function is like `assignValue` except that it doesn't assign
  * `undefined` values.
  *
@@ -1593,13 +1711,174 @@ function arrayEach(array, iteratee) {
  * @param {*} value The value to assign.
  */
 function assignMergeValue(object, key, value) {
-  if (value !== undefined && !eq(object[key], value) || typeof key == 'number' && value === undefined && !(key in object)) {
+  if (value !== undefined && !eq(object[key], value) || value === undefined && !(key in object)) {
     baseAssignValue(object, key, value);
   }
 }
 
+/**
+ * Creates a base function for methods like `_.forIn` and `_.forOwn`.
+ *
+ * @private
+ * @param {boolean} [fromRight] Specify iterating from right to left.
+ * @returns {Function} Returns the new base function.
+ */
+function createBaseFor(fromRight) {
+  return function (object, iteratee, keysFunc) {
+    var index = -1,
+        iterable = Object(object),
+        props = keysFunc(object),
+        length = props.length;
+
+    while (length--) {
+      var key = props[fromRight ? length : ++index];
+      if (iteratee(iterable[key], key, iterable) === false) {
+        break;
+      }
+    }
+    return object;
+  };
+}
+
+/**
+ * The base implementation of `baseForOwn` which iterates over `object`
+ * properties returned by `keysFunc` and invokes `iteratee` for each property.
+ * Iteratee functions may exit iteration early by explicitly returning `false`.
+ *
+ * @private
+ * @param {Object} object The object to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @param {Function} keysFunc The function to get the keys of `object`.
+ * @returns {Object} Returns `object`.
+ */
+var baseFor = createBaseFor();
+
+/** Detect free variable `exports`. */
+var freeExports = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
+
+/** Detect free variable `module`. */
+var freeModule = freeExports && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports = freeModule && freeModule.exports === freeExports;
+
+/** Built-in value references. */
+var Buffer = moduleExports ? root.Buffer : undefined;
+var allocUnsafe = Buffer ? Buffer.allocUnsafe : undefined;
+
+/**
+ * Creates a clone of  `buffer`.
+ *
+ * @private
+ * @param {Buffer} buffer The buffer to clone.
+ * @param {boolean} [isDeep] Specify a deep clone.
+ * @returns {Buffer} Returns the cloned buffer.
+ */
+function cloneBuffer(buffer, isDeep) {
+  if (isDeep) {
+    return buffer.slice();
+  }
+  var length = buffer.length,
+      result = allocUnsafe ? allocUnsafe(length) : new buffer.constructor(length);
+
+  buffer.copy(result);
+  return result;
+}
+
+/** Built-in value references. */
+var Uint8Array = root.Uint8Array;
+
+/**
+ * Creates a clone of `arrayBuffer`.
+ *
+ * @private
+ * @param {ArrayBuffer} arrayBuffer The array buffer to clone.
+ * @returns {ArrayBuffer} Returns the cloned array buffer.
+ */
+function cloneArrayBuffer(arrayBuffer) {
+  var result = new arrayBuffer.constructor(arrayBuffer.byteLength);
+  new Uint8Array(result).set(new Uint8Array(arrayBuffer));
+  return result;
+}
+
+/**
+ * Creates a clone of `typedArray`.
+ *
+ * @private
+ * @param {Object} typedArray The typed array to clone.
+ * @param {boolean} [isDeep] Specify a deep clone.
+ * @returns {Object} Returns the cloned typed array.
+ */
+function cloneTypedArray(typedArray, isDeep) {
+  var buffer = isDeep ? cloneArrayBuffer(typedArray.buffer) : typedArray.buffer;
+  return new typedArray.constructor(buffer, typedArray.byteOffset, typedArray.length);
+}
+
+/**
+ * Copies the values of `source` to `array`.
+ *
+ * @private
+ * @param {Array} source The array to copy values from.
+ * @param {Array} [array=[]] The array to copy values to.
+ * @returns {Array} Returns `array`.
+ */
+function copyArray(source, array) {
+  var index = -1,
+      length = source.length;
+
+  array || (array = Array(length));
+  while (++index < length) {
+    array[index] = source[index];
+  }
+  return array;
+}
+
+/** Built-in value references. */
+var objectCreate = Object.create;
+
+/**
+ * The base implementation of `_.create` without support for assigning
+ * properties to the created object.
+ *
+ * @private
+ * @param {Object} proto The object to inherit from.
+ * @returns {Object} Returns the new object.
+ */
+var baseCreate = function () {
+  function object() {}
+  return function (proto) {
+    if (!isObject(proto)) {
+      return {};
+    }
+    if (objectCreate) {
+      return objectCreate(proto);
+    }
+    object.prototype = proto;
+    var result = new object();
+    object.prototype = undefined;
+    return result;
+  };
+}();
+
+/**
+ * Creates a unary function that invokes `func` with its argument transformed.
+ *
+ * @private
+ * @param {Function} func The function to wrap.
+ * @param {Function} transform The argument transform.
+ * @returns {Function} Returns the new function.
+ */
+function overArg(func, transform) {
+  return function (arg) {
+    return func(transform(arg));
+  };
+}
+
+/** Built-in value references. */
+var getPrototype = overArg(Object.getPrototypeOf, Object);
+
 /** Used for built-in method references. */
-var objectProto$7 = Object.prototype;
+var objectProto$6 = Object.prototype;
 
 /**
  * Checks if `value` is likely a prototype object.
@@ -1610,110 +1889,68 @@ var objectProto$7 = Object.prototype;
  */
 function isPrototype(value) {
   var Ctor = value && value.constructor,
-      proto = typeof Ctor == 'function' && Ctor.prototype || objectProto$7;
+      proto = typeof Ctor == 'function' && Ctor.prototype || objectProto$6;
 
   return value === proto;
 }
 
 /**
- * This function is like
- * [`Object.keys`](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
- * except that it includes inherited enumerable properties.
+ * Initializes an object clone.
  *
  * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
+ * @param {Object} object The object to clone.
+ * @returns {Object} Returns the initialized clone.
  */
-function nativeKeysIn(object) {
-  var result = [];
-  if (object != null) {
-    for (var key in Object(object)) {
-      result.push(key);
-    }
-  }
-  return result;
+function initCloneObject(object) {
+  return typeof object.constructor == 'function' && !isPrototype(object) ? baseCreate(getPrototype(object)) : {};
+}
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]';
+
+/**
+ * The base implementation of `_.isArguments`.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ */
+function baseIsArguments(value) {
+  return isObjectLike(value) && baseGetTag(value) == argsTag;
 }
 
 /** Used for built-in method references. */
-var objectProto$6 = Object.prototype;
+var objectProto$7 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$4 = objectProto$6.hasOwnProperty;
+var hasOwnProperty$5 = objectProto$7.hasOwnProperty;
+
+/** Built-in value references. */
+var propertyIsEnumerable = objectProto$7.propertyIsEnumerable;
 
 /**
- * The base implementation of `_.keysIn` which doesn't treat sparse arrays as dense.
+ * Checks if `value` is likely an `arguments` object.
  *
- * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- */
-function baseKeysIn(object) {
-  if (!isObject(object)) {
-    return nativeKeysIn(object);
-  }
-  var isProto = isPrototype(object),
-      result = [];
-
-  for (var key in object) {
-    if (!(key == 'constructor' && (isProto || !hasOwnProperty$4.call(object, key)))) {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-/**
- * Copies properties of `source` to `object`.
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ *  else `false`.
+ * @example
  *
- * @private
- * @param {Object} source The object to copy properties from.
- * @param {Array} props The property identifiers to copy.
- * @param {Object} [object={}] The object to copy properties to.
- * @param {Function} [customizer] The function to customize copied values.
- * @returns {Object} Returns `object`.
- */
-function copyObject(source, props, object, customizer) {
-  var isNew = !object;
-  object || (object = {});
-
-  var index = -1,
-      length = props.length;
-
-  while (++index < length) {
-    var key = props[index];
-
-    var newValue = customizer ? customizer(object[key], source[key], key, object, source) : undefined;
-
-    if (newValue === undefined) {
-      newValue = source[key];
-    }
-    if (isNew) {
-      baseAssignValue(object, key, newValue);
-    } else {
-      assignValue(object, key, newValue);
-    }
-  }
-  return object;
-}
-
-/**
- * The base implementation of `_.times` without support for iteratee shorthands
- * or max array length checks.
+ * _.isArguments(function() { return arguments; }());
+ * // => true
  *
- * @private
- * @param {number} n The number of times to invoke `iteratee`.
- * @param {Function} iteratee The function invoked per iteration.
- * @returns {Array} Returns the array of results.
+ * _.isArguments([1, 2, 3]);
+ * // => false
  */
-function baseTimes(n, iteratee) {
-  var index = -1,
-      result = Array(n);
-
-  while (++index < n) {
-    result[index] = iteratee(index);
-  }
-  return result;
-}
+var isArguments = baseIsArguments(function () {
+  return arguments;
+}()) ? baseIsArguments : function (value) {
+  return isObjectLike(value) && hasOwnProperty$5.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
+};
 
 /** Used as references for various `Number` constants. */
 var MAX_SAFE_INTEGER$1 = 9007199254740991;
@@ -1806,702 +2043,6 @@ function isArrayLikeObject(value) {
   return isObjectLike(value) && isArrayLike(value);
 }
 
-/** `Object#toString` result references. */
-var argsTag$1 = '[object Arguments]';
-
-/** Used for built-in method references. */
-var objectProto$9 = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty$6 = objectProto$9.hasOwnProperty;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString$2 = objectProto$9.toString;
-
-/** Built-in value references. */
-var propertyIsEnumerable = objectProto$9.propertyIsEnumerable;
-
-/**
- * Checks if `value` is likely an `arguments` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an `arguments` object,
- *  else `false`.
- * @example
- *
- * _.isArguments(function() { return arguments; }());
- * // => true
- *
- * _.isArguments([1, 2, 3]);
- * // => false
- */
-function isArguments(value) {
-  // Safari 8.1 makes `arguments.callee` enumerable in strict mode.
-  return isArrayLikeObject(value) && hasOwnProperty$6.call(value, 'callee') && (!propertyIsEnumerable.call(value, 'callee') || objectToString$2.call(value) == argsTag$1);
-}
-
-/** Used for built-in method references. */
-var objectProto$8 = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty$5 = objectProto$8.hasOwnProperty;
-
-/**
- * Creates an array of the enumerable property names of the array-like `value`.
- *
- * @private
- * @param {*} value The value to query.
- * @param {boolean} inherited Specify returning inherited property names.
- * @returns {Array} Returns the array of property names.
- */
-function arrayLikeKeys(value, inherited) {
-  // Safari 8.1 makes `arguments.callee` enumerable in strict mode.
-  // Safari 9 makes `arguments.length` enumerable in strict mode.
-  var result = isArray(value) || isArguments(value) ? baseTimes(value.length, String) : [];
-
-  var length = result.length,
-      skipIndexes = !!length;
-
-  for (var key in value) {
-    if ((inherited || hasOwnProperty$5.call(value, key)) && !(skipIndexes && (key == 'length' || isIndex(key, length)))) {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-/**
- * Creates a unary function that invokes `func` with its argument transformed.
- *
- * @private
- * @param {Function} func The function to wrap.
- * @param {Function} transform The argument transform.
- * @returns {Function} Returns the new function.
- */
-function overArg(func, transform) {
-  return function (arg) {
-    return func(transform(arg));
-  };
-}
-
-/* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeKeys = overArg(Object.keys, Object);
-
-/** Used for built-in method references. */
-var objectProto$10 = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty$7 = objectProto$10.hasOwnProperty;
-
-/**
- * The base implementation of `_.keys` which doesn't treat sparse arrays as dense.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- */
-function baseKeys(object) {
-  if (!isPrototype(object)) {
-    return nativeKeys(object);
-  }
-  var result = [];
-  for (var key in Object(object)) {
-    if (hasOwnProperty$7.call(object, key) && key != 'constructor') {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-/**
- * Creates an array of the own enumerable property names of `object`.
- *
- * **Note:** Non-object values are coerced to objects. See the
- * [ES spec](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
- * for more details.
- *
- * @static
- * @since 0.1.0
- * @memberOf _
- * @category Object
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- * @example
- *
- * function Foo() {
- *   this.a = 1;
- *   this.b = 2;
- * }
- *
- * Foo.prototype.c = 3;
- *
- * _.keys(new Foo);
- * // => ['a', 'b'] (iteration order is not guaranteed)
- *
- * _.keys('hi');
- * // => ['0', '1']
- */
-function keys(object) {
-  return isArrayLike(object) ? arrayLikeKeys(object) : baseKeys(object);
-}
-
-/**
- * The base implementation of `_.assign` without support for multiple sources
- * or `customizer` functions.
- *
- * @private
- * @param {Object} object The destination object.
- * @param {Object} source The source object.
- * @returns {Object} Returns `object`.
- */
-function baseAssign(object, source) {
-  return object && copyObject(source, keys(source), object);
-}
-
-/**
- * Creates a clone of  `buffer`.
- *
- * @private
- * @param {Buffer} buffer The buffer to clone.
- * @param {boolean} [isDeep] Specify a deep clone.
- * @returns {Buffer} Returns the cloned buffer.
- */
-function cloneBuffer(buffer, isDeep) {
-  if (isDeep) {
-    return buffer.slice();
-  }
-  var result = new buffer.constructor(buffer.length);
-  buffer.copy(result);
-  return result;
-}
-
-/**
- * Copies the values of `source` to `array`.
- *
- * @private
- * @param {Array} source The array to copy values from.
- * @param {Array} [array=[]] The array to copy values to.
- * @returns {Array} Returns `array`.
- */
-function copyArray(source, array) {
-  var index = -1,
-      length = source.length;
-
-  array || (array = Array(length));
-  while (++index < length) {
-    array[index] = source[index];
-  }
-  return array;
-}
-
-/**
- * This method returns a new empty array.
- *
- * @static
- * @memberOf _
- * @since 4.13.0
- * @category Util
- * @returns {Array} Returns the new empty array.
- * @example
- *
- * var arrays = _.times(2, _.stubArray);
- *
- * console.log(arrays);
- * // => [[], []]
- *
- * console.log(arrays[0] === arrays[1]);
- * // => false
- */
-function stubArray() {
-  return [];
-}
-
-/* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeGetSymbols = Object.getOwnPropertySymbols;
-
-/**
- * Creates an array of the own enumerable symbol properties of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of symbols.
- */
-var getSymbols = nativeGetSymbols ? overArg(nativeGetSymbols, Object) : stubArray;
-
-/**
- * Copies own symbol properties of `source` to `object`.
- *
- * @private
- * @param {Object} source The object to copy symbols from.
- * @param {Object} [object={}] The object to copy symbols to.
- * @returns {Object} Returns `object`.
- */
-function copySymbols(source, object) {
-  return copyObject(source, getSymbols(source), object);
-}
-
-/**
- * Appends the elements of `values` to `array`.
- *
- * @private
- * @param {Array} array The array to modify.
- * @param {Array} values The values to append.
- * @returns {Array} Returns `array`.
- */
-function arrayPush(array, values) {
-  var index = -1,
-      length = values.length,
-      offset = array.length;
-
-  while (++index < length) {
-    array[offset + index] = values[index];
-  }
-  return array;
-}
-
-/**
- * The base implementation of `getAllKeys` and `getAllKeysIn` which uses
- * `keysFunc` and `symbolsFunc` to get the enumerable property names and
- * symbols of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @param {Function} keysFunc The function to get the keys of `object`.
- * @param {Function} symbolsFunc The function to get the symbols of `object`.
- * @returns {Array} Returns the array of property names and symbols.
- */
-function baseGetAllKeys(object, keysFunc, symbolsFunc) {
-  var result = keysFunc(object);
-  return isArray(object) ? result : arrayPush(result, symbolsFunc(object));
-}
-
-/**
- * Creates an array of own enumerable property names and symbols of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names and symbols.
- */
-function getAllKeys(object) {
-  return baseGetAllKeys(object, keys, getSymbols);
-}
-
-/* Built-in method references that are verified to be native. */
-var DataView = getNative(root, 'DataView');
-
-/* Built-in method references that are verified to be native. */
-var Promise$1 = getNative(root, 'Promise');
-
-/* Built-in method references that are verified to be native. */
-var Set = getNative(root, 'Set');
-
-/* Built-in method references that are verified to be native. */
-var WeakMap = getNative(root, 'WeakMap');
-
-/** Used for built-in method references. */
-var objectProto$12 = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString$4 = objectProto$12.toString;
-
-/**
- * The base implementation of `getTag`.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the `toStringTag`.
- */
-function baseGetTag(value) {
-  return objectToString$4.call(value);
-}
-
-/** `Object#toString` result references. */
-var mapTag$1 = '[object Map]';
-var objectTag$1 = '[object Object]';
-var promiseTag = '[object Promise]';
-var setTag$1 = '[object Set]';
-var weakMapTag$1 = '[object WeakMap]';
-
-var dataViewTag$1 = '[object DataView]';
-
-/** Used for built-in method references. */
-var objectProto$11 = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString$3 = objectProto$11.toString;
-
-/** Used to detect maps, sets, and weakmaps. */
-var dataViewCtorString = toSource(DataView);
-var mapCtorString = toSource(Map);
-var promiseCtorString = toSource(Promise$1);
-var setCtorString = toSource(Set);
-var weakMapCtorString = toSource(WeakMap);
-
-/**
- * Gets the `toStringTag` of `value`.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the `toStringTag`.
- */
-var getTag = baseGetTag;
-
-// Fallback for data views, maps, sets, and weak maps in IE 11 and promises in Node.js < 6.
-if (DataView && getTag(new DataView(new ArrayBuffer(1))) != dataViewTag$1 || Map && getTag(new Map()) != mapTag$1 || Promise$1 && getTag(Promise$1.resolve()) != promiseTag || Set && getTag(new Set()) != setTag$1 || WeakMap && getTag(new WeakMap()) != weakMapTag$1) {
-    getTag = function getTag(value) {
-        var result = objectToString$3.call(value),
-            Ctor = result == objectTag$1 ? value.constructor : undefined,
-            ctorString = Ctor ? toSource(Ctor) : undefined;
-
-        if (ctorString) {
-            switch (ctorString) {
-                case dataViewCtorString:
-                    return dataViewTag$1;
-                case mapCtorString:
-                    return mapTag$1;
-                case promiseCtorString:
-                    return promiseTag;
-                case setCtorString:
-                    return setTag$1;
-                case weakMapCtorString:
-                    return weakMapTag$1;
-            }
-        }
-        return result;
-    };
-}
-
-var getTag$1 = getTag;
-
-/** Used for built-in method references. */
-var objectProto$13 = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty$8 = objectProto$13.hasOwnProperty;
-
-/**
- * Initializes an array clone.
- *
- * @private
- * @param {Array} array The array to clone.
- * @returns {Array} Returns the initialized clone.
- */
-function initCloneArray(array) {
-  var length = array.length,
-      result = array.constructor(length);
-
-  // Add properties assigned by `RegExp#exec`.
-  if (length && typeof array[0] == 'string' && hasOwnProperty$8.call(array, 'index')) {
-    result.index = array.index;
-    result.input = array.input;
-  }
-  return result;
-}
-
-/** Built-in value references. */
-var Uint8Array = root.Uint8Array;
-
-/**
- * Creates a clone of `arrayBuffer`.
- *
- * @private
- * @param {ArrayBuffer} arrayBuffer The array buffer to clone.
- * @returns {ArrayBuffer} Returns the cloned array buffer.
- */
-function cloneArrayBuffer(arrayBuffer) {
-  var result = new arrayBuffer.constructor(arrayBuffer.byteLength);
-  new Uint8Array(result).set(new Uint8Array(arrayBuffer));
-  return result;
-}
-
-/**
- * Creates a clone of `dataView`.
- *
- * @private
- * @param {Object} dataView The data view to clone.
- * @param {boolean} [isDeep] Specify a deep clone.
- * @returns {Object} Returns the cloned data view.
- */
-function cloneDataView(dataView, isDeep) {
-  var buffer = isDeep ? cloneArrayBuffer(dataView.buffer) : dataView.buffer;
-  return new dataView.constructor(buffer, dataView.byteOffset, dataView.byteLength);
-}
-
-/**
- * Adds the key-value `pair` to `map`.
- *
- * @private
- * @param {Object} map The map to modify.
- * @param {Array} pair The key-value pair to add.
- * @returns {Object} Returns `map`.
- */
-function addMapEntry(map, pair) {
-  // Don't return `map.set` because it's not chainable in IE 11.
-  map.set(pair[0], pair[1]);
-  return map;
-}
-
-/**
- * A specialized version of `_.reduce` for arrays without support for
- * iteratee shorthands.
- *
- * @private
- * @param {Array} [array] The array to iterate over.
- * @param {Function} iteratee The function invoked per iteration.
- * @param {*} [accumulator] The initial value.
- * @param {boolean} [initAccum] Specify using the first element of `array` as
- *  the initial value.
- * @returns {*} Returns the accumulated value.
- */
-function arrayReduce(array, iteratee, accumulator, initAccum) {
-  var index = -1,
-      length = array ? array.length : 0;
-
-  if (initAccum && length) {
-    accumulator = array[++index];
-  }
-  while (++index < length) {
-    accumulator = iteratee(accumulator, array[index], index, array);
-  }
-  return accumulator;
-}
-
-/**
- * Converts `map` to its key-value pairs.
- *
- * @private
- * @param {Object} map The map to convert.
- * @returns {Array} Returns the key-value pairs.
- */
-function mapToArray(map) {
-  var index = -1,
-      result = Array(map.size);
-
-  map.forEach(function (value, key) {
-    result[++index] = [key, value];
-  });
-  return result;
-}
-
-/**
- * Creates a clone of `map`.
- *
- * @private
- * @param {Object} map The map to clone.
- * @param {Function} cloneFunc The function to clone values.
- * @param {boolean} [isDeep] Specify a deep clone.
- * @returns {Object} Returns the cloned map.
- */
-function cloneMap(map, isDeep, cloneFunc) {
-  var array = isDeep ? cloneFunc(mapToArray(map), true) : mapToArray(map);
-  return arrayReduce(array, addMapEntry, new map.constructor());
-}
-
-/** Used to match `RegExp` flags from their coerced string values. */
-var reFlags = /\w*$/;
-
-/**
- * Creates a clone of `regexp`.
- *
- * @private
- * @param {Object} regexp The regexp to clone.
- * @returns {Object} Returns the cloned regexp.
- */
-function cloneRegExp(regexp) {
-  var result = new regexp.constructor(regexp.source, reFlags.exec(regexp));
-  result.lastIndex = regexp.lastIndex;
-  return result;
-}
-
-/**
- * Adds `value` to `set`.
- *
- * @private
- * @param {Object} set The set to modify.
- * @param {*} value The value to add.
- * @returns {Object} Returns `set`.
- */
-function addSetEntry(set, value) {
-  // Don't return `set.add` because it's not chainable in IE 11.
-  set.add(value);
-  return set;
-}
-
-/**
- * Converts `set` to an array of its values.
- *
- * @private
- * @param {Object} set The set to convert.
- * @returns {Array} Returns the values.
- */
-function setToArray(set) {
-  var index = -1,
-      result = Array(set.size);
-
-  set.forEach(function (value) {
-    result[++index] = value;
-  });
-  return result;
-}
-
-/**
- * Creates a clone of `set`.
- *
- * @private
- * @param {Object} set The set to clone.
- * @param {Function} cloneFunc The function to clone values.
- * @param {boolean} [isDeep] Specify a deep clone.
- * @returns {Object} Returns the cloned set.
- */
-function cloneSet(set, isDeep, cloneFunc) {
-  var array = isDeep ? cloneFunc(setToArray(set), true) : setToArray(set);
-  return arrayReduce(array, addSetEntry, new set.constructor());
-}
-
-/** Used to convert symbols to primitives and strings. */
-var symbolProto$1 = _Symbol ? _Symbol.prototype : undefined;
-var symbolValueOf = symbolProto$1 ? symbolProto$1.valueOf : undefined;
-
-/**
- * Creates a clone of the `symbol` object.
- *
- * @private
- * @param {Object} symbol The symbol object to clone.
- * @returns {Object} Returns the cloned symbol object.
- */
-function cloneSymbol(symbol) {
-  return symbolValueOf ? Object(symbolValueOf.call(symbol)) : {};
-}
-
-/**
- * Creates a clone of `typedArray`.
- *
- * @private
- * @param {Object} typedArray The typed array to clone.
- * @param {boolean} [isDeep] Specify a deep clone.
- * @returns {Object} Returns the cloned typed array.
- */
-function cloneTypedArray(typedArray, isDeep) {
-  var buffer = isDeep ? cloneArrayBuffer(typedArray.buffer) : typedArray.buffer;
-  return new typedArray.constructor(buffer, typedArray.byteOffset, typedArray.length);
-}
-
-/** `Object#toString` result references. */
-var boolTag$1 = '[object Boolean]';
-var dateTag$1 = '[object Date]';
-var mapTag$2 = '[object Map]';
-var numberTag$1 = '[object Number]';
-var regexpTag$1 = '[object RegExp]';
-var setTag$2 = '[object Set]';
-var stringTag$1 = '[object String]';
-var symbolTag$2 = '[object Symbol]';
-
-var arrayBufferTag$1 = '[object ArrayBuffer]';
-var dataViewTag$2 = '[object DataView]';
-var float32Tag$1 = '[object Float32Array]';
-var float64Tag$1 = '[object Float64Array]';
-var int8Tag$1 = '[object Int8Array]';
-var int16Tag$1 = '[object Int16Array]';
-var int32Tag$1 = '[object Int32Array]';
-var uint8Tag$1 = '[object Uint8Array]';
-var uint8ClampedTag$1 = '[object Uint8ClampedArray]';
-var uint16Tag$1 = '[object Uint16Array]';
-var uint32Tag$1 = '[object Uint32Array]';
-
-/**
- * Initializes an object clone based on its `toStringTag`.
- *
- * **Note:** This function only supports cloning values with tags of
- * `Boolean`, `Date`, `Error`, `Number`, `RegExp`, or `String`.
- *
- * @private
- * @param {Object} object The object to clone.
- * @param {string} tag The `toStringTag` of the object to clone.
- * @param {Function} cloneFunc The function to clone values.
- * @param {boolean} [isDeep] Specify a deep clone.
- * @returns {Object} Returns the initialized clone.
- */
-function initCloneByTag(object, tag, cloneFunc, isDeep) {
-  var Ctor = object.constructor;
-  switch (tag) {
-    case arrayBufferTag$1:
-      return cloneArrayBuffer(object);
-
-    case boolTag$1:
-    case dateTag$1:
-      return new Ctor(+object);
-
-    case dataViewTag$2:
-      return cloneDataView(object, isDeep);
-
-    case float32Tag$1:case float64Tag$1:
-    case int8Tag$1:case int16Tag$1:case int32Tag$1:
-    case uint8Tag$1:case uint8ClampedTag$1:case uint16Tag$1:case uint32Tag$1:
-      return cloneTypedArray(object, isDeep);
-
-    case mapTag$2:
-      return cloneMap(object, isDeep, cloneFunc);
-
-    case numberTag$1:
-    case stringTag$1:
-      return new Ctor(object);
-
-    case regexpTag$1:
-      return cloneRegExp(object);
-
-    case setTag$2:
-      return cloneSet(object, isDeep, cloneFunc);
-
-    case symbolTag$2:
-      return cloneSymbol(object);
-  }
-}
-
-/** Built-in value references. */
-var objectCreate = Object.create;
-
-/**
- * The base implementation of `_.create` without support for assigning
- * properties to the created object.
- *
- * @private
- * @param {Object} prototype The object to inherit from.
- * @returns {Object} Returns the new object.
- */
-function baseCreate(proto) {
-  return isObject(proto) ? objectCreate(proto) : {};
-}
-
-/** Built-in value references. */
-var getPrototype = overArg(Object.getPrototypeOf, Object);
-
-/**
- * Initializes an object clone.
- *
- * @private
- * @param {Object} object The object to clone.
- * @returns {Object} Returns the initialized clone.
- */
-function initCloneObject(object) {
-  return typeof object.constructor == 'function' && !isPrototype(object) ? baseCreate(getPrototype(object)) : {};
-}
-
 /**
  * This method returns `false`.
  *
@@ -2520,19 +2061,19 @@ function stubFalse() {
 }
 
 /** Detect free variable `exports`. */
-var freeExports = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
+var freeExports$1 = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
 
 /** Detect free variable `module`. */
-var freeModule = freeExports && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
+var freeModule$1 = freeExports$1 && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
 
 /** Detect the popular CommonJS extension `module.exports`. */
-var moduleExports = freeModule && freeModule.exports === freeExports;
+var moduleExports$1 = freeModule$1 && freeModule$1.exports === freeExports$1;
 
 /** Built-in value references. */
-var Buffer = moduleExports ? root.Buffer : undefined;
+var Buffer$1 = moduleExports$1 ? root.Buffer : undefined;
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeIsBuffer = Buffer ? Buffer.isBuffer : undefined;
+var nativeIsBuffer = Buffer$1 ? Buffer$1.isBuffer : undefined;
 
 /**
  * Checks if `value` is a buffer.
@@ -2554,133 +2095,20 @@ var nativeIsBuffer = Buffer ? Buffer.isBuffer : undefined;
 var isBuffer = nativeIsBuffer || stubFalse;
 
 /** `Object#toString` result references. */
-var argsTag = '[object Arguments]';
-var arrayTag = '[object Array]';
-var boolTag = '[object Boolean]';
-var dateTag = '[object Date]';
-var errorTag = '[object Error]';
-var funcTag$1 = '[object Function]';
-var genTag$1 = '[object GeneratorFunction]';
-var mapTag = '[object Map]';
-var numberTag = '[object Number]';
 var objectTag = '[object Object]';
-var regexpTag = '[object RegExp]';
-var setTag = '[object Set]';
-var stringTag = '[object String]';
-var symbolTag$1 = '[object Symbol]';
-var weakMapTag = '[object WeakMap]';
-
-var arrayBufferTag = '[object ArrayBuffer]';
-var dataViewTag = '[object DataView]';
-var float32Tag = '[object Float32Array]';
-var float64Tag = '[object Float64Array]';
-var int8Tag = '[object Int8Array]';
-var int16Tag = '[object Int16Array]';
-var int32Tag = '[object Int32Array]';
-var uint8Tag = '[object Uint8Array]';
-var uint8ClampedTag = '[object Uint8ClampedArray]';
-var uint16Tag = '[object Uint16Array]';
-var uint32Tag = '[object Uint32Array]';
-
-/** Used to identify `toStringTag` values supported by `_.clone`. */
-var cloneableTags = {};
-cloneableTags[argsTag] = cloneableTags[arrayTag] = cloneableTags[arrayBufferTag] = cloneableTags[dataViewTag] = cloneableTags[boolTag] = cloneableTags[dateTag] = cloneableTags[float32Tag] = cloneableTags[float64Tag] = cloneableTags[int8Tag] = cloneableTags[int16Tag] = cloneableTags[int32Tag] = cloneableTags[mapTag] = cloneableTags[numberTag] = cloneableTags[objectTag] = cloneableTags[regexpTag] = cloneableTags[setTag] = cloneableTags[stringTag] = cloneableTags[symbolTag$1] = cloneableTags[uint8Tag] = cloneableTags[uint8ClampedTag] = cloneableTags[uint16Tag] = cloneableTags[uint32Tag] = true;
-cloneableTags[errorTag] = cloneableTags[funcTag$1] = cloneableTags[weakMapTag] = false;
-
-/**
- * The base implementation of `_.clone` and `_.cloneDeep` which tracks
- * traversed objects.
- *
- * @private
- * @param {*} value The value to clone.
- * @param {boolean} [isDeep] Specify a deep clone.
- * @param {boolean} [isFull] Specify a clone including symbols.
- * @param {Function} [customizer] The function to customize cloning.
- * @param {string} [key] The key of `value`.
- * @param {Object} [object] The parent object of `value`.
- * @param {Object} [stack] Tracks traversed objects and their clone counterparts.
- * @returns {*} Returns the cloned value.
- */
-function baseClone(value, isDeep, isFull, customizer, key, object, stack) {
-  var result;
-  if (customizer) {
-    result = object ? customizer(value, key, object, stack) : customizer(value);
-  }
-  if (result !== undefined) {
-    return result;
-  }
-  if (!isObject(value)) {
-    return value;
-  }
-  var isArr = isArray(value);
-  if (isArr) {
-    result = initCloneArray(value);
-    if (!isDeep) {
-      return copyArray(value, result);
-    }
-  } else {
-    var tag = getTag$1(value),
-        isFunc = tag == funcTag$1 || tag == genTag$1;
-
-    if (isBuffer(value)) {
-      return cloneBuffer(value, isDeep);
-    }
-    if (tag == objectTag || tag == argsTag || isFunc && !object) {
-      result = initCloneObject(isFunc ? {} : value);
-      if (!isDeep) {
-        return copySymbols(value, baseAssign(result, value));
-      }
-    } else {
-      if (!cloneableTags[tag]) {
-        return object ? value : {};
-      }
-      result = initCloneByTag(value, tag, baseClone, isDeep);
-    }
-  }
-  // Check for circular references and return its corresponding clone.
-  stack || (stack = new Stack());
-  var stacked = stack.get(value);
-  if (stacked) {
-    return stacked;
-  }
-  stack.set(value, result);
-
-  if (!isArr) {
-    var props = isFull ? getAllKeys(value) : keys(value);
-  }
-  arrayEach(props || value, function (subValue, key) {
-    if (props) {
-      key = subValue;
-      subValue = value[key];
-    }
-    // Recursively populate clone (susceptible to call stack limits).
-    assignValue(result, key, baseClone(subValue, isDeep, isFull, customizer, key, value, stack));
-  });
-  return result;
-}
-
-/** `Object#toString` result references. */
-var objectTag$2 = '[object Object]';
 
 /** Used for built-in method references. */
 var funcProto$2 = Function.prototype;
-var objectProto$14 = Object.prototype;
+var objectProto$8 = Object.prototype;
 
 /** Used to resolve the decompiled source of functions. */
 var funcToString$2 = funcProto$2.toString;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$9 = objectProto$14.hasOwnProperty;
+var hasOwnProperty$6 = objectProto$8.hasOwnProperty;
 
 /** Used to infer the `Object` constructor. */
 var objectCtorString = funcToString$2.call(Object);
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString$5 = objectProto$14.toString;
 
 /**
  * Checks if `value` is a plain object, that is, an object created by the
@@ -2711,58 +2139,48 @@ var objectToString$5 = objectProto$14.toString;
  * // => true
  */
 function isPlainObject(value) {
-  if (!isObjectLike(value) || objectToString$5.call(value) != objectTag$2) {
+  if (!isObjectLike(value) || baseGetTag(value) != objectTag) {
     return false;
   }
   var proto = getPrototype(value);
   if (proto === null) {
     return true;
   }
-  var Ctor = hasOwnProperty$9.call(proto, 'constructor') && proto.constructor;
+  var Ctor = hasOwnProperty$6.call(proto, 'constructor') && proto.constructor;
   return typeof Ctor == 'function' && Ctor instanceof Ctor && funcToString$2.call(Ctor) == objectCtorString;
 }
 
 /** `Object#toString` result references. */
-var argsTag$2 = '[object Arguments]';
-var arrayTag$1 = '[object Array]';
-var boolTag$2 = '[object Boolean]';
-var dateTag$2 = '[object Date]';
-var errorTag$1 = '[object Error]';
-var funcTag$2 = '[object Function]';
-var mapTag$3 = '[object Map]';
-var numberTag$2 = '[object Number]';
-var objectTag$3 = '[object Object]';
-var regexpTag$2 = '[object RegExp]';
-var setTag$3 = '[object Set]';
-var stringTag$2 = '[object String]';
-var weakMapTag$2 = '[object WeakMap]';
+var argsTag$1 = '[object Arguments]';
+var arrayTag = '[object Array]';
+var boolTag = '[object Boolean]';
+var dateTag = '[object Date]';
+var errorTag = '[object Error]';
+var funcTag$1 = '[object Function]';
+var mapTag = '[object Map]';
+var numberTag = '[object Number]';
+var objectTag$1 = '[object Object]';
+var regexpTag = '[object RegExp]';
+var setTag = '[object Set]';
+var stringTag = '[object String]';
+var weakMapTag = '[object WeakMap]';
 
-var arrayBufferTag$2 = '[object ArrayBuffer]';
-var dataViewTag$3 = '[object DataView]';
-var float32Tag$2 = '[object Float32Array]';
-var float64Tag$2 = '[object Float64Array]';
-var int8Tag$2 = '[object Int8Array]';
-var int16Tag$2 = '[object Int16Array]';
-var int32Tag$2 = '[object Int32Array]';
-var uint8Tag$2 = '[object Uint8Array]';
-var uint8ClampedTag$2 = '[object Uint8ClampedArray]';
-var uint16Tag$2 = '[object Uint16Array]';
-var uint32Tag$2 = '[object Uint32Array]';
+var arrayBufferTag = '[object ArrayBuffer]';
+var dataViewTag = '[object DataView]';
+var float32Tag = '[object Float32Array]';
+var float64Tag = '[object Float64Array]';
+var int8Tag = '[object Int8Array]';
+var int16Tag = '[object Int16Array]';
+var int32Tag = '[object Int32Array]';
+var uint8Tag = '[object Uint8Array]';
+var uint8ClampedTag = '[object Uint8ClampedArray]';
+var uint16Tag = '[object Uint16Array]';
+var uint32Tag = '[object Uint32Array]';
 
 /** Used to identify `toStringTag` values of typed arrays. */
 var typedArrayTags = {};
-typedArrayTags[float32Tag$2] = typedArrayTags[float64Tag$2] = typedArrayTags[int8Tag$2] = typedArrayTags[int16Tag$2] = typedArrayTags[int32Tag$2] = typedArrayTags[uint8Tag$2] = typedArrayTags[uint8ClampedTag$2] = typedArrayTags[uint16Tag$2] = typedArrayTags[uint32Tag$2] = true;
-typedArrayTags[argsTag$2] = typedArrayTags[arrayTag$1] = typedArrayTags[arrayBufferTag$2] = typedArrayTags[boolTag$2] = typedArrayTags[dataViewTag$3] = typedArrayTags[dateTag$2] = typedArrayTags[errorTag$1] = typedArrayTags[funcTag$2] = typedArrayTags[mapTag$3] = typedArrayTags[numberTag$2] = typedArrayTags[objectTag$3] = typedArrayTags[regexpTag$2] = typedArrayTags[setTag$3] = typedArrayTags[stringTag$2] = typedArrayTags[weakMapTag$2] = false;
-
-/** Used for built-in method references. */
-var objectProto$15 = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString$6 = objectProto$15.toString;
+typedArrayTags[float32Tag] = typedArrayTags[float64Tag] = typedArrayTags[int8Tag] = typedArrayTags[int16Tag] = typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] = typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] = typedArrayTags[uint32Tag] = true;
+typedArrayTags[argsTag$1] = typedArrayTags[arrayTag] = typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] = typedArrayTags[dataViewTag] = typedArrayTags[dateTag] = typedArrayTags[errorTag] = typedArrayTags[funcTag$1] = typedArrayTags[mapTag] = typedArrayTags[numberTag] = typedArrayTags[objectTag$1] = typedArrayTags[regexpTag] = typedArrayTags[setTag] = typedArrayTags[stringTag] = typedArrayTags[weakMapTag] = false;
 
 /**
  * The base implementation of `_.isTypedArray` without Node.js optimizations.
@@ -2772,7 +2190,7 @@ var objectToString$6 = objectProto$15.toString;
  * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
  */
 function baseIsTypedArray(value) {
-    return isObjectLike(value) && isLength(value.length) && !!typedArrayTags[objectToString$6.call(value)];
+    return isObjectLike(value) && isLength(value.length) && !!typedArrayTags[baseGetTag(value)];
 }
 
 /**
@@ -2789,16 +2207,16 @@ function baseUnary(func) {
 }
 
 /** Detect free variable `exports`. */
-var freeExports$1 = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
+var freeExports$2 = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
 
 /** Detect free variable `module`. */
-var freeModule$1 = freeExports$1 && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
+var freeModule$2 = freeExports$2 && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
 
 /** Detect the popular CommonJS extension `module.exports`. */
-var moduleExports$1 = freeModule$1 && freeModule$1.exports === freeExports$1;
+var moduleExports$2 = freeModule$2 && freeModule$2.exports === freeExports$2;
 
 /** Detect free variable `process` from Node.js. */
-var freeProcess = moduleExports$1 && freeGlobal.process;
+var freeProcess = moduleExports$2 && freeGlobal.process;
 
 /** Used to access faster Node.js helpers. */
 var nodeUtil = function () {
@@ -2828,6 +2246,145 @@ var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
  * // => false
  */
 var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedArray;
+
+/**
+ * Copies properties of `source` to `object`.
+ *
+ * @private
+ * @param {Object} source The object to copy properties from.
+ * @param {Array} props The property identifiers to copy.
+ * @param {Object} [object={}] The object to copy properties to.
+ * @param {Function} [customizer] The function to customize copied values.
+ * @returns {Object} Returns `object`.
+ */
+function copyObject(source, props, object, customizer) {
+  var isNew = !object;
+  object || (object = {});
+
+  var index = -1,
+      length = props.length;
+
+  while (++index < length) {
+    var key = props[index];
+
+    var newValue = customizer ? customizer(object[key], source[key], key, object, source) : undefined;
+
+    if (newValue === undefined) {
+      newValue = source[key];
+    }
+    if (isNew) {
+      baseAssignValue(object, key, newValue);
+    } else {
+      assignValue(object, key, newValue);
+    }
+  }
+  return object;
+}
+
+/**
+ * The base implementation of `_.times` without support for iteratee shorthands
+ * or max array length checks.
+ *
+ * @private
+ * @param {number} n The number of times to invoke `iteratee`.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the array of results.
+ */
+function baseTimes(n, iteratee) {
+  var index = -1,
+      result = Array(n);
+
+  while (++index < n) {
+    result[index] = iteratee(index);
+  }
+  return result;
+}
+
+/** Used for built-in method references. */
+var objectProto$9 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$7 = objectProto$9.hasOwnProperty;
+
+/**
+ * Creates an array of the enumerable property names of the array-like `value`.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @param {boolean} inherited Specify returning inherited property names.
+ * @returns {Array} Returns the array of property names.
+ */
+function arrayLikeKeys(value, inherited) {
+  var isArr = isArray(value),
+      isArg = !isArr && isArguments(value),
+      isBuff = !isArr && !isArg && isBuffer(value),
+      isType = !isArr && !isArg && !isBuff && isTypedArray(value),
+      skipIndexes = isArr || isArg || isBuff || isType,
+      result = skipIndexes ? baseTimes(value.length, String) : [],
+      length = result.length;
+
+  for (var key in value) {
+    if ((inherited || hasOwnProperty$7.call(value, key)) && !(skipIndexes && (
+    // Safari 9 has enumerable `arguments.length` in strict mode.
+    key == 'length' ||
+    // Node.js 0.10 has enumerable non-index properties on buffers.
+    isBuff && (key == 'offset' || key == 'parent') ||
+    // PhantomJS 2 has enumerable non-index properties on typed arrays.
+    isType && (key == 'buffer' || key == 'byteLength' || key == 'byteOffset') ||
+    // Skip index properties.
+    isIndex(key, length)))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * This function is like
+ * [`Object.keys`](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
+ * except that it includes inherited enumerable properties.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function nativeKeysIn(object) {
+  var result = [];
+  if (object != null) {
+    for (var key in Object(object)) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/** Used for built-in method references. */
+var objectProto$10 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$8 = objectProto$10.hasOwnProperty;
+
+/**
+ * The base implementation of `_.keysIn` which doesn't treat sparse arrays as dense.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function baseKeysIn(object) {
+  if (!isObject(object)) {
+    return nativeKeysIn(object);
+  }
+  var isProto = isPrototype(object),
+      result = [];
+
+  for (var key in object) {
+    if (!(key == 'constructor' && (isProto || !hasOwnProperty$8.call(object, key)))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
 
 /**
  * Creates an array of the own and inherited enumerable property names of `object`.
@@ -2913,24 +2470,31 @@ function baseMergeDeep(object, source, key, srcIndex, mergeFunc, customizer, sta
   var isCommon = newValue === undefined;
 
   if (isCommon) {
+    var isArr = isArray(srcValue),
+        isBuff = !isArr && isBuffer(srcValue),
+        isTyped = !isArr && !isBuff && isTypedArray(srcValue);
+
     newValue = srcValue;
-    if (isArray(srcValue) || isTypedArray(srcValue)) {
+    if (isArr || isBuff || isTyped) {
       if (isArray(objValue)) {
         newValue = objValue;
       } else if (isArrayLikeObject(objValue)) {
         newValue = copyArray(objValue);
-      } else {
+      } else if (isBuff) {
         isCommon = false;
-        newValue = baseClone(srcValue, true);
+        newValue = cloneBuffer(srcValue, true);
+      } else if (isTyped) {
+        isCommon = false;
+        newValue = cloneTypedArray(srcValue, true);
+      } else {
+        newValue = [];
       }
     } else if (isPlainObject(srcValue) || isArguments(srcValue)) {
+      newValue = objValue;
       if (isArguments(objValue)) {
         newValue = toPlainObject(objValue);
       } else if (!isObject(objValue) || srcIndex && isFunction(objValue)) {
-        isCommon = false;
-        newValue = baseClone(srcValue, true);
-      } else {
-        newValue = objValue;
+        newValue = initCloneObject(srcValue);
       }
     } else {
       isCommon = false;
@@ -2960,14 +2524,7 @@ function baseMerge(object, source, srcIndex, customizer, stack) {
   if (object === source) {
     return;
   }
-  if (!(isArray(source) || isTypedArray(source))) {
-    var props = baseKeysIn(source);
-  }
-  arrayEach(props || source, function (srcValue, key) {
-    if (props) {
-      key = srcValue;
-      srcValue = source[key];
-    }
+  baseFor(source, function (srcValue, key) {
     if (isObject(srcValue)) {
       stack || (stack = new Stack());
       baseMergeDeep(object, source, key, srcIndex, baseMerge, customizer, stack);
@@ -2979,7 +2536,7 @@ function baseMerge(object, source, srcIndex, customizer, stack) {
       }
       assignMergeValue(object, key, newValue);
     }
-  });
+  }, keysIn);
 }
 
 /**
@@ -3122,8 +2679,8 @@ var defaultsDeep$1 = baseRest(function (args) {
 var defaultsDeep = defaultsDeep$1;
 
 // Used for deep setting/getting of values in nested objects
-var set = set$2;
-var get = get$1;
+var set$1 = set$2;
+var get$1 = get$2;
 
 var undef = void 0;
 
@@ -3266,13 +2823,17 @@ var EventWatcher = function () {
 
     if (this.opts.documentLoadRun) {
       (function () {
-        var ready = function () {
-          document.removeEventListener('DOMContentLoaded', ready);
-          window.removeEventListener('load', ready);
+        var eventWatcher = _this;
+        var ready = function ready() {
+          // Use timeout to get a fresh pass after document is ready.
+          setTimeout(function () {
+            document.removeEventListener('DOMContentLoaded', ready);
+            window.removeEventListener('load', ready);
 
-          _this.documentReady = true;
-          _this.runCallbacks();
-        }.bind(_this); // Work around for proper binding.
+            eventWatcher.documentReady = true;
+            eventWatcher.runCallbacks();
+          }, 0);
+        };
 
         _this.documentReady = false;
         document.addEventListener('DOMContentLoaded', ready);
@@ -3386,8 +2947,6 @@ var EventWatcher = function () {
   return EventWatcher;
 }();
 
-var INTERACTION_EVENTS = ['click', 'touchstart', 'touchend', 'mouseover', 'mouseout'];
-
 // Based on `ExtendableError` from
 // http://stackoverflow.com/questions/31089801/extending-error-in-javascript-with-es6-syntax
 
@@ -3432,11 +2991,47 @@ var MonteOptionError = function (_MonteError) {
     value: function RequiredOption(optionName) {
       return new MonteError('Option "' + optionName + '" is required.');
     }
+  }, {
+    key: 'InvalidEnumOption',
+    value: function InvalidEnumOption(optionName, badValue) {
+      return new MonteError('Option "' + optionName + '" must be set to a valid option. The value "' + badValue + '" is not valid.');
+    }
   }]);
   return MonteOptionError;
 }(MonteError);
 
+// In d3-axis, there are hard coded shifts of 0.5. This shift is used for grid alignment and other
+// axis alignments.
+var AXIS_SHIFT = 0.5;
+
+// In d3-transition the default transition time is 250ms.
+var TRANSITION_DURATION_MS = 250;
+
+var ENTER = 'enter';
+var UPDATE = 'update';
+var EXIT = 'exit';
+
+var UPDATE_PATTERN = { ENTER: ENTER, UPDATE: UPDATE, EXIT: EXIT };
+
+var d3$1 = Object.freeze({
+	AXIS_SHIFT: AXIS_SHIFT,
+	TRANSITION_DURATION_MS: TRANSITION_DURATION_MS,
+	ENTER: ENTER,
+	UPDATE: UPDATE,
+	EXIT: EXIT,
+	UPDATE_PATTERN: UPDATE_PATTERN
+});
+
+var UNDEF = void 0;
+
+function noop() {}
+
 var global$1 = window ? window.MonteGlobals = {} : {};
+
+// TODO: Begin adoption of generic scale accessors. Every scale should be accompained with a property
+//       `<scaleProperty>Accessor` that translates which value to pass to the scale.
+
+var CLIP_PATH_ID = 'drawPath';
 
 var DEFAULTS = {
   css: '',
@@ -3452,7 +3047,8 @@ var DEFAULTS = {
   customEvents: [],
   extensions: [],
 
-  transitionDuration: 250,
+  transitionDuration: TRANSITION_DURATION_MS,
+  ease: d3.easeCubic,
 
   resize: null,
 
@@ -3472,13 +3068,6 @@ var DEFAULTS = {
   directUse: false
 };
 
-var EVENT_CSS_MAP = {
-  'mouseover': { action: 'add', css: 'over' },
-  'mouseout': { action: 'remove', css: 'over' },
-  'touchstart': { action: 'add', css: 'touch' },
-  'touchend': { action: 'remove', css: 'touch' }
-};
-
 /*
   Data Format:
 
@@ -3496,26 +3085,22 @@ var EVENT_CSS_MAP = {
 var Chart = function () {
   function Chart(parentSelector, options, data) {
     classCallCheck(this, Chart);
-
+    // eslint-disable-line max-statements
     this._constructed = false;
     this._optsSet = false;
     this.parentSelector = parentSelector;
     this.hasRendered = false;
     this.layers = [];
     this.extensions = [];
+    this._optionReaderCache = {};
 
     // Configure the data options.
     this._initOptions(options);
 
     // Setup the Public events.
-    this._initPublicEvents.apply(this, toConsumableArray(INTERACTION_EVENTS).concat([
+    this._initPublicEvents.apply(this, toConsumableArray(INTERACTION_EVENTS).concat(toConsumableArray(CHART_SUPPORT_EVENTS), toConsumableArray(CHART_LIFECYCLE_EVENTS), toConsumableArray(this.opts.customEvents)));
 
-    // Support events
-    'suppressedError', 'extension',
-
-    // Lifecycle event pairs
-    'rendering', 'rendered', 'updating', 'updated', 'updatingBounds', 'updatedBounds', 'cssDomainsReseting', 'cssDomainsReset', 'destroying', 'destroyed'], toConsumableArray(this.opts.customEvents)));
-
+    // Put chart in developer mode if opted into on a chart or global basis
     if (this.opts.developerMode || global$1.developerMode) {
       this._initDeveloperMode();
     }
@@ -3558,9 +3143,9 @@ var Chart = function () {
       }
 
       var opts = mergeOptions.apply(undefined, options.concat([DEFAULTS]));
-      for (var prop in opts) {
-        if (opts.hasOwnProperty(prop)) {
-          this.option(prop, opts[prop]);
+      for (var key in opts) {
+        if (opts.hasOwnProperty(key)) {
+          this.option(key, opts[key]);
         }
       }
 
@@ -3588,7 +3173,7 @@ var Chart = function () {
       this.defs = this.bound.append('defs');
 
       // Drawing area path clipping
-      this.clip = this.defs.append('clipPath').attr('id', 'drawClip');
+      this.clip = this.defs.append('clipPath').attr('id', CLIP_PATH_ID);
 
       this.clipRect = this.clip.append('rect');
 
@@ -3606,6 +3191,7 @@ var Chart = function () {
 
       var chart = this;
 
+      // Setup interaction events for the overall chart.
       INTERACTION_EVENTS.forEach(function (ev) {
         _this.bound.on(ev, function () {
           for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
@@ -3616,6 +3202,7 @@ var Chart = function () {
         });
       });
 
+      // Bind resize function if given.
       if (this.opts.resize) {
         if (!global$1.resizeWatch) {
           global$1.resizeWatch = new EventWatcher();
@@ -3696,7 +3283,7 @@ var Chart = function () {
         this.bound.attr('width', this.opts.boundingWidthAttr || this.opts.boundingWidth).attr('height', this.opts.boundingHeightAttr || this.opts.boundingHeight);
       }
 
-      // Update drawing clip // TODO: Apply translate?
+      // Update drawing clip
       if (this.clipRect) {
         this.clipRect.attr('width', this.width).attr('height', this.height);
       }
@@ -3747,15 +3334,25 @@ var Chart = function () {
 
       this._destroy();
 
-      // TODO: Handle case where parentSelector and bound are the same and only remove internal
-      //       elements.
-      this.bound.remove();
+      // Handle case where parentSelector and bound are the same and only remove internal elements.
+      if (this.bound.node() === d3.select(this.parentSelector).node()) {
+        this.bound.node().innerHTML = '';
+      } else {
+        this.bound.remove();
+      }
 
       this.__notify('destroyed');
     }
   }, {
     key: '_destroy',
     value: function _destroy() {}
+
+    /*
+     * Adds a layer to the chart. The layer is the top most by default.
+     *
+     * @Chainable
+     */
+
   }, {
     key: 'addLayer',
     value: function addLayer(layerName) {
@@ -3763,6 +3360,24 @@ var Chart = function () {
 
       this[layerName] = layer;
       this.layers.push(layer);
+
+      return this;
+    }
+
+    /*
+     * Makes a layer use a defined `clipPath`.
+     *
+     * @Chainable
+     */
+
+  }, {
+    key: 'layerUseClipPath',
+    value: function layerUseClipPath(layerName) {
+      var pathId = arguments.length <= 1 || arguments[1] === undefined ? CLIP_PATH_ID : arguments[1];
+
+      this[layerName].attr('clip-path', 'url(#' + pathId + ')');
+
+      return this;
     }
   }, {
     key: '_getLayerTranslate',
@@ -3860,14 +3475,14 @@ var Chart = function () {
 
   }, {
     key: 'option',
-    value: function option(prop, value) {
-      if (value === undefined) {
-        return get(this.opts, prop);
+    value: function option(key, value) {
+      if (value === UNDEF) {
+        return get$1(this.opts, key);
       }
 
-      set(this.opts, prop, value);
+      set$1(this.opts, key, value);
 
-      if (prop === 'margin') {
+      if (key === 'margin') {
         if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) !== 'object') {
           this.opts.margin = { top: value, left: value, right: value, bottom: value };
         }
@@ -3882,20 +3497,54 @@ var Chart = function () {
     }
 
     /**
+     * Generates a function (or uses and existing one from cache) for a given option property. The
+     * generated function attempts to access the property (uses `tryInvoke`). If the property is a
+     * function it invokes the function with all parameters passed at the time on invocation.
+     *
+     * Generally this is good allowing D3 Selection chain methods (`attr`, `style`, etc...) to
+     * directly read chart options.
+     *
+     * For example:
+     *  `.attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.fillScale, d, i, nodes))`
+     * is equvilient to
+     *  `.attr('fill', this.optionReaderFunc('fillScale')')`
+     */
+
+  }, {
+    key: 'optionReaderFunc',
+    value: function optionReaderFunc(optionKey) {
+      var _this4 = this;
+
+      if (!this._optionReaderCache[optionKey]) {
+        this._optionReaderCache[optionKey] = function () {
+          for (var _len6 = arguments.length, args = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
+            args[_key6] = arguments[_key6];
+          }
+
+          return _this4.tryInvoke.apply(_this4, [_this4.opts[optionKey]].concat(args));
+        };
+      }
+
+      return this._optionReaderCache[optionKey];
+    }
+
+    /**
      * Invoke a `value` (generally from the chart options) with the given arguments. Static values
      * are returned directly.
      */
 
   }, {
-    key: 'optInvoke',
-    value: function optInvoke(value) {
-      if (value == null) {
-        throw new MonteOptionError('Option not initialized.');
+    key: 'tryInvoke',
+    value: function tryInvoke(value) {
+      if (value === null) {
+        return null;
+      } else if (value === UNDEF) {
+        throw new MonteOptionError('Value not initialized.');
       }
 
       try {
-        for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-          args[_key6 - 1] = arguments[_key6];
+        for (var _len7 = arguments.length, args = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
+          args[_key7 - 1] = arguments[_key7];
         }
 
         return isFunc(value) ? value.call.apply(value, [this].concat(args)) : value;
@@ -3926,43 +3575,78 @@ var Chart = function () {
 
     /**
      * Reads a scale bound property from a datum and returns the scaled value.
+     *
+     * @param {string} scaleName The scale used for scaling
+     * @param {string} [propPrefix=<scaleName>] The property to be scaled. Defaults to the scale's property.
+     * @param {any}    datum The data to scale.
      */
 
   }, {
     key: 'getScaledProp',
-    value: function getScaledProp(scaleName, d) {
+    value: function getScaledProp(scaleName, propPrefix, datum) {
       var val = void 0;
+      var propPre = void 0;
+      var d = void 0;
 
-      if (!isFunc(this[scaleName])) {
+      if (arguments.length === 2) {
+        propPre = scaleName;
+        d = propPrefix;
+      } else if (arguments.length === 3) {
+        propPre = propPrefix;
+        d = datum;
+      } else {
+        throw new MonteError('Incorrect number of arguments. Expected 2 or 3 recieved ' + arguments.length);
+      }
+
+      var scale = get$1(this, scaleName);
+      if (!scale) {
         throw new MonteError('Scale "' + scaleName + '" is not defined.');
+      } else if (scale === noop) {
+        // A noop function means no possible return value.
+        return UNDEF;
+      } else if (!isFunc(scale)) {
+        // Treat scale like a static value (likely string or number) and return early.
+        return scale;
       } else if (isObject$2(d)) {
         // Assume `d` is a datum related to the chart data.
-        val = d[this.opts[scaleName + 'Prop']];
+        val = d[this.opts[propPre + 'Prop']];
       } else {
         // Assume `d` is a value the scale can process.
         val = d;
       }
 
-      return this[scaleName](val);
+      return scale(val);
     }
-  }, {
-    key: '_clearDataElements',
-    value: function _clearDataElements() {}
 
     /**
      * Remove the data, remove the data elements, and clear the CSS domains.
+     *
+     * @Chainable
      */
 
   }, {
     key: 'clear',
     value: function clear() {
+      this.__notify('clearing');
+
       this.displayData = null;
       this._clearDataElements();
 
       if (this.opts.autoResetCssDomains) {
         this.resetCssDomains();
       }
+
+      this.__notify('cleared');
+      return this;
     }
+
+    /**
+     * Internal implementation of the `clear` method.
+     */
+
+  }, {
+    key: '_clearDataElements',
+    value: function _clearDataElements() {}
 
     /**
      * Resets domains related to CSS scales.
@@ -3980,20 +3664,37 @@ var Chart = function () {
       this.__notify('cssDomainsReset');
       return this;
     }
+
+    /**
+     * Internal implementation of the `resetCssDomains` method.
+     */
+
   }, {
     key: '_resetCssDomains',
     value: function _resetCssDomains() {}
+
+    /**
+     * Builds a string of class names to insert into a `class` attribute on a DOM element (typically
+     * SVG). The strings are inidividual class names and *not* selectors (no `.` or compound class
+     * names).
+     *
+     * @param {array} cssSources The sources (strings or functions) for inidividual class names.
+     * @param {object} d The datum to pass to function sources.
+     * @param {object} i The node index to pass to function sources.
+     * @param {array} nodes The node list to pass to function sources.
+     */
+
   }, {
     key: '_buildCss',
-    value: function _buildCss(cssSources, d, i) {
-      var _this4 = this;
+    value: function _buildCss(cssSources, d, i, nodes) {
+      var _this5 = this;
 
       var cssClasses = [];
       var sources = Array.isArray(cssSources) ? cssSources : [cssSources];
 
       sources.forEach(function (source) {
         if (isDefined(source)) {
-          cssClasses.push(_this4.optInvoke(source, d && d.id || i));
+          cssClasses.push(_this5.tryInvoke(source, d, i, nodes));
         }
       });
 
@@ -4025,8 +3726,8 @@ var Chart = function () {
   }, {
     key: 'call',
     value: function call(f) {
-      for (var _len7 = arguments.length, args = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
-        args[_key7 - 1] = arguments[_key7];
+      for (var _len8 = arguments.length, args = Array(_len8 > 1 ? _len8 - 1 : 0), _key8 = 1; _key8 < _len8; _key8++) {
+        args[_key8 - 1] = arguments[_key8];
       }
 
       f.call.apply(f, [this].concat(args));
@@ -4049,7 +3750,7 @@ var Chart = function () {
     }
 
     /**
-     * Set the data for the chart to display and trigger the "Updtate cycle".
+     * Set the data for the chart to display and trigger the "Update cycle".
      *
      * @Chainable
      */
@@ -4060,7 +3761,7 @@ var Chart = function () {
       var isUpdate = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
       var suppressUpdate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
 
-      if (_data === undefined) {
+      if (_data === UNDEF) {
         // No data to assign return the current data.
         return this.displayData;
       }
@@ -4083,16 +3784,20 @@ var Chart = function () {
 
     /**
      * Add an extension instance to the chart instance.
+     *
+     * @Chainable
      */
 
   }, {
     key: 'addExt',
     value: function addExt() {
-      for (var _len8 = arguments.length, exts = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
-        exts[_key8] = arguments[_key8];
+      for (var _len9 = arguments.length, exts = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
+        exts[_key9] = arguments[_key9];
       }
 
       this._bindExt(exts);
+
+      return this;
     }
 
     /**
@@ -4102,14 +3807,14 @@ var Chart = function () {
   }, {
     key: '_bindExt',
     value: function _bindExt(exts) {
-      var _this5 = this;
+      var _this6 = this;
 
       exts.forEach(function (ext) {
         if (ext.opts.binding) {
-          ext.setChart(_this5);
-          _this5.extensions.push(ext);
+          ext.setChart(_this6);
+          _this6.extensions.push(ext);
         } else {
-          _this5.__notify('suppressedError', 'Extensions must have the `binding` option specified.');
+          _this6.__notify('suppressedError', 'Extensions must have the `binding` option specified.');
         }
       });
     }
@@ -4121,8 +3826,8 @@ var Chart = function () {
   }, {
     key: '__updateExt',
     value: function __updateExt(bindingName) {
-      for (var _len9 = arguments.length, extArgs = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
-        extArgs[_key9 - 1] = arguments[_key9];
+      for (var _len10 = arguments.length, extArgs = Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
+        extArgs[_key10 - 1] = arguments[_key10];
       }
 
       this.extensions.forEach(function (ext) {
@@ -4137,6 +3842,8 @@ var Chart = function () {
      * previous scale.
      *
      * For example: changing between a linear and logarithmic scale to allow users to identify trends.
+     *
+     * @Chainable
      */
 
   }, {
@@ -4146,11 +3853,15 @@ var Chart = function () {
       scale.range(this[scaleName].range()).domain(this[scaleName].domain());
       this[scaleName] = scale;
       this.update();
+
+      return this;
     }
 
     /**
      * (Re)renders the chart by invoking the "Update cycle" which is consistent with the D3
      * "Enter-Update-Exit" pattern.
+     *
+     * @Chainable
      */
 
   }, {
@@ -4161,6 +3872,7 @@ var Chart = function () {
       } // Don't allow update if data has not been set.
       if (!this.hasRendered) {
         this.__notify('rendering');
+        this._render();
       }
 
       this.__notify('updating');
@@ -4173,10 +3885,20 @@ var Chart = function () {
       }
 
       this.__notify('updated');
+
+      return this;
     }
 
     /**
-     * A specific charts implementation of the "Update cycle"
+     * A specific chart's one-time only setup drawing pass.
+     */
+
+  }, {
+    key: '_render',
+    value: function _render() {}
+
+    /**
+     * A specific chart's implementation of the "Update cycle"
      */
 
   }, {
@@ -4215,11 +3937,11 @@ var Chart = function () {
     value: function __notify(eventName) {
       var _dispatch;
 
-      for (var _len10 = arguments.length, args = Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
-        args[_key10 - 1] = arguments[_key10];
+      for (var _len11 = arguments.length, args = Array(_len11 > 1 ? _len11 - 1 : 0), _key11 = 1; _key11 < _len11; _key11++) {
+        args[_key11 - 1] = arguments[_key11];
       }
 
-      this.__updateExt.apply(this, [eventName, this].concat(args));
+      this.__updateExt.apply(this, [eventName].concat(args));
       (_dispatch = this.dispatch).call.apply(_dispatch, [eventName, this].concat(args));
     }
 
@@ -4231,7 +3953,7 @@ var Chart = function () {
     key: '__elemEvent',
     value: function __elemEvent(eventType, eventNameFull, d, i, nodes) {
       var node = nodes[i];
-      var cssAction = EVENT_CSS_MAP[eventType];
+      var cssAction = INTERACTION_EVENT_CSS_MAP[eventType];
 
       if (cssAction) {
         if (cssAction.action === 'add') {
@@ -4262,6 +3984,8 @@ var AXES_CHART_DEFAULTS = {
   // axis such as 'Y2'.
   axes: ['x', 'y'], // The scale names to create axes for.
 
+  suppressAxes: false, // Suppress the display of the axes.
+
   /*************************************************************************************************
    *
    * "X"-related Options
@@ -4290,7 +4014,9 @@ var AXES_CHART_DEFAULTS = {
     return 'translate(0,' + h + ')';
   },
 
-  xLabel: '',
+  xLabel: null,
+
+  xLabelCustomize: noop,
 
   /*************************************************************************************************
    *
@@ -4318,7 +4044,9 @@ var AXES_CHART_DEFAULTS = {
 
   yAxisTransform: null,
 
-  yLabel: ''
+  yLabel: null,
+
+  yLabelCustomize: noop
 };
 
 var AxesChart = function (_Chart) {
@@ -4343,12 +4071,14 @@ var AxesChart = function (_Chart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [AXES_CHART_DEFAULTS]));
+      (_babelHelpers$get = get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [AXES_CHART_DEFAULTS]));
 
       if (!isDefined(this.opts.axes)) {
         // Set empty array to ease assumptions (i.e. avoid null checks) in later code.
         this.opts.axes = [];
       }
+
+      this.axes = this.tryInvoke(this.opts.axes);
     }
   }, {
     key: '_initPublicEvents',
@@ -4359,7 +4089,7 @@ var AxesChart = function (_Chart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, ['axisRendered' // Axis events
+      (_babelHelpers$get2 = get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, ['axisRendered' // Axis events
       ]));
     }
   }, {
@@ -4367,7 +4097,7 @@ var AxesChart = function (_Chart) {
     value: function _initCore() {
       var _this2 = this;
 
-      get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initCore', this).call(this);
+      get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initCore', this).call(this);
 
       this.forEachAxisScale(function (scaleName) {
         // Create scale
@@ -4410,12 +4140,12 @@ var AxesChart = function (_Chart) {
       });
       this.updateAxesTransforms();
 
-      get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initRender', this).call(this);
+      get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initRender', this).call(this);
     }
   }, {
     key: '_updateBounds',
     value: function _updateBounds() {
-      var actions = get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_updateBounds', this).call(this, true, true);
+      var actions = get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_updateBounds', this).call(this, true, true);
 
       this.updateAxesRanges();
       this.updateAxesTransforms();
@@ -4427,51 +4157,57 @@ var AxesChart = function (_Chart) {
   }, {
     key: '_data',
     value: function _data(data) {
-      var _this5 = this;
-
-      this.forEachAxisScale(function (scaleName) {
-        var cb = _this5.opts[scaleName + 'DomainCustomize'];
-        var extent = data ? _this5._domainExtent(data, scaleName) : [];
-
-        if (cb) {
-          extent = cb(extent);
-        }
-
-        _this5[scaleName].domain(extent);
-      });
-
-      get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_data', this).call(this, data);
+      get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_data', this).call(this, data);
+      this.updateAxesDomains();
       this.renderAxes();
     }
   }, {
     key: 'replaceScale',
     value: function replaceScale(scaleName, newScaleConstructor) {
-      get$2(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), 'replaceScale', this).call(this, scaleName, newScaleConstructor);
+      get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), 'replaceScale', this).call(this, scaleName, newScaleConstructor);
       this[scaleName + 'Axis'].scale(this[scaleName]);
       this.renderAxes();
     }
   }, {
     key: 'updateAxesTransforms',
     value: function updateAxesTransforms() {
-      var _this6 = this;
+      var _this5 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var axisGrp = _this6.support.select('.' + scaleName + '-axis');
-        var trans = _this6.__axisOpt(scaleName, 'AxisTransform');
+        var axisGrp = _this5.support.select('.' + scaleName + '-axis');
+        var trans = _this5.__axisOpt(scaleName, 'AxisTransform');
 
         if (trans) {
-          axisGrp.attr('transform', trans(_this6.width, _this6.height));
+          axisGrp.attr('transform', trans(_this5.width, _this5.height));
         }
       });
     }
   }, {
     key: 'updateAxesRanges',
     value: function updateAxesRanges() {
-      var _this7 = this;
+      var _this6 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var range = _this7.__axisOpt(scaleName, 'Range')(_this7.width, _this7.height);
-        _this7[scaleName].range(range);
+        var range = _this6.__axisOpt(scaleName, 'Range')(_this6.width, _this6.height);
+        _this6[scaleName].range(range);
+      });
+    }
+  }, {
+    key: 'updateAxesDomains',
+    value: function updateAxesDomains() {
+      var _this7 = this;
+
+      var data = this.data();
+
+      this.forEachAxisScale(function (scaleName) {
+        var customize = _this7.opts[scaleName + 'DomainCustomize'];
+        var extent = data ? _this7._domainExtent(data, scaleName) : [];
+
+        if (customize) {
+          extent = _this7.tryInvoke(customize, extent);
+        }
+
+        _this7[scaleName].domain(extent);
       });
     }
   }, {
@@ -4480,20 +4216,21 @@ var AxesChart = function (_Chart) {
       var _this8 = this;
 
       // Only suppress all if a literal boolean is given.
-      if (this.opts.suppressAxes === true) {
+      var suppressAxes = this.tryInvoke(this.opts.suppressAxes);
+      if (suppressAxes === true) {
         return;
       }
 
-      var isSuppressArray = isArray$2(this.opts.suppressAxes);
+      var isSuppressArray = isArray$2(suppressAxes);
 
       // (Re)render axes
       this.forEachAxisScale(function (scaleName) {
-        if (isSuppressArray && _this8.opts.suppressAxes.indexOf(scaleName) > -1) {
+        if (isSuppressArray && suppressAxes.indexOf(scaleName) > -1) {
           return;
         }
 
-        _this8.support.select('.' + scaleName + '-axis').transition().duration(_this8.opts.transitionDuration).call(_this8[scaleName + 'Axis']).call(_this8._setLabel.bind(_this8, scaleName)).call(function (t) {
-          return _this8.__notify('axisRendered', t);
+        _this8.support.select('.' + scaleName + '-axis').transition().duration(_this8.opts.transitionDuration).ease(_this8.opts.ease).call(_this8[scaleName + 'Axis']).call(_this8._setLabel.bind(_this8, scaleName)).call(function (t) {
+          return _this8.emit('axisRendered', t);
         });
       });
     }
@@ -4509,25 +4246,40 @@ var AxesChart = function (_Chart) {
   }, {
     key: 'forEachAxisScale',
     value: function forEachAxisScale(f) {
-      this.opts.axes.forEach(f);
+      this.axes.forEach(f);
     }
   }, {
     key: '_setLabel',
     value: function _setLabel(scaleName, transition) {
-      // eslint-disable-line no-unused-vars
-      var label = this.opts[scaleName + 'Label'];
+      var _this9 = this;
 
-      if (label) {
-        this.support.select('.' + scaleName + '-axis').append('text').attr('class', 'axis-label').text(label);
-      }
+      // eslint-disable-line no-unused-vars
+      var label = this.tryInvoke(this.opts[scaleName + 'Label']);
+      var lbl = this.support.select('.' + scaleName + '-axis').selectAll('.monte-axis-label').data([label]);
+
+      lbl.enter().append('text').merge(lbl).attr('class', 'monte-axis-label').text(function (d) {
+        return d;
+      }).call(function () {
+        return _this9.tryInvoke(_this9.opts[scaleName + 'LabelCustomize'], lbl);
+      });
+
+      lbl.exit().remove();
     }
   }]);
   return AxesChart;
 }(Chart);
 
-var pi = Math.PI;
-var halfPi = pi / 2;
-var tau = 2 * pi;
+var EPSILON = 1e-12;
+var PI = Math.PI;
+var HALF_PI = PI / 2;
+var TAU = 2 * PI;
+
+var math = Object.freeze({
+	EPSILON: EPSILON,
+	PI: PI,
+	HALF_PI: HALF_PI,
+	TAU: TAU
+});
 
 // Serves as the base chart for charts using polar coordinates (pie, donut, guage, etc...)
 // Adds utility common utility functions such as:
@@ -4563,8 +4315,8 @@ var PolarChart = function (_Chart) {
       var t = void 0;
 
       if (this.opts.origin) {
-        l = this.optInvoke(this.opts.origin.left, this);
-        t = this.optInvoke(this.opts.origin.top, this);
+        l = this.tryInvoke(this.opts.origin.left, this);
+        t = this.tryInvoke(this.opts.origin.top, this);
       } else {
         l = this.width / 2 + this.margin.left;
         t = this.height / 2 + this.margin.top;
@@ -4577,19 +4329,19 @@ var PolarChart = function (_Chart) {
     value: function getCoord(radius, angle) {
       // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment. We repeat that here for
       // coordinate consistency.
-      var a = angle - halfPi;
+      var a = angle - HALF_PI;
       return [Math.cos(a) * radius, Math.sin(a) * radius];
     }
   }, {
     key: 'degreesToRadians',
     value: function degreesToRadians(deg) {
-      return deg * (pi / 180);
+      return deg * (PI / 180);
     } // radians = degrees * (pi/180)
 
   }, {
     key: 'radiansToDegrees',
     value: function radiansToDegrees(rad) {
-      return rad * (180 / pi);
+      return rad * (180 / PI);
     } // degrees = radians * (180/pi)
 
   }]);
@@ -4605,17 +4357,37 @@ function commonEventNames() {
 
   for (var i = 0; i < leads.length; i++) {
     var lead = leads[i];
-    names.push(lead + ":mouseover");
-    names.push(lead + ":mouseout");
-    names.push(lead + ":click");
-    names.push(lead + ":touchstart");
+
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+      for (var _iterator = INTERACTION_EVENTS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var eventName = _step.value;
+
+        names.push(lead + ':' + eventName);
+      }
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
+      }
+    }
   }
 
   return names;
 }
 
-function noop() {}
-
+// Clears the domain of a given scale.
 function resetScaleDomain(scale) {
   if (scale && scale.domain) {
     scale.domain([]);
@@ -4693,14 +4465,14 @@ var LineChart = function (_AxesChart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [LINE_CHART_DEFAULTS]));
+      (_babelHelpers$get = get(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [LINE_CHART_DEFAULTS]));
     }
   }, {
     key: '_initCore',
     value: function _initCore() {
       var _this2 = this;
 
-      get$2(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_initCore', this).call(this);
+      get(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_initCore', this).call(this);
 
       // Initialize the line generator
       this.line = d3.line().x(function (d) {
@@ -4712,7 +4484,7 @@ var LineChart = function (_AxesChart) {
   }, {
     key: '_initCustomize',
     value: function _initCustomize() {
-      get$2(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_initCustomize', this).call(this);
+      get(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_initCustomize', this).call(this);
       if (this.opts.lineCustomize) {
         this.opts.lineCustomize(this.line);
       }
@@ -4726,7 +4498,7 @@ var LineChart = function (_AxesChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get$2(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('line')), toConsumableArray(commonEventNames('point'))));
+      (_babelHelpers$get2 = get(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('line')), toConsumableArray(commonEventNames('point'))));
     }
   }, {
     key: '_domainExtent',
@@ -4749,7 +4521,7 @@ var LineChart = function (_AxesChart) {
   }, {
     key: '_resetCssDomains',
     value: function _resetCssDomains() {
-      get$2(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_resetCssDomains', this).call(this);
+      get(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_resetCssDomains', this).call(this);
 
       resetScaleDomain(this.opts.lineCssScale);
       resetScaleDomain(this.opts.pointCssScale);
@@ -4787,8 +4559,8 @@ var LineChart = function (_AxesChart) {
       // Create new lines
       lineGrps.enter().append('g').attr('class', 'monte-line-grp').append('path').call(this.__bindCommonEvents('line')).merge(lineGrps.select('.monte-line')) // Update existing lines and set values on new lines.
       .attr('class', function (d, i) {
-        return ['monte-line', _this4.opts.lineCss, _this4.opts.lineCssScale(d.id || i), d.css].join(' ');
-      }).transition().duration(this.opts.transitionDuration).attr('d', function (d) {
+        return _this4._buildCss(['monte-line', _this4.opts.lineCss, _this4.opts.lineCssScale, d.css], d, i);
+      }).transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('d', function (d) {
         return _this4.line(d[_this4.opts.valuesProp]);
       }).attr('stroke', this.opts.lineStrokeScale);
 
@@ -4812,7 +4584,8 @@ var LineChart = function (_AxesChart) {
       });
 
       var genSym = function genSym(d, i) {
-        var symbase = d3.symbol().size(_this5.opts.pointSize);
+        var size = _this5.tryInvoke(_this5.opts.pointSize, d, i);
+        var symbase = d3.symbol().size(size);
         var symbol = _this5.opts.pointSymbol(symbase, d, i);
         return symbol(d, i);
       };
@@ -4822,15 +4595,15 @@ var LineChart = function (_AxesChart) {
       .attr('transform', function (d) {
         return 'translate(' + _this5.getScaledProp('x', d) + ', ' + _this5.getScaledProp('y', d) + ')';
       }).attr('class', function (d) {
-        return ['monte-point', lineDatum.css, _this5.opts.lineCssScale(lineDatum.id || lineIndex), _this5.opts.pointCss, _this5.opts.pointCssScale(lineDatum.id || lineIndex), d.css].join(' ');
+        return _this5._buildCss(['monte-point', lineDatum.css, _this5.opts.lineCssScale, _this5.opts.pointCss, _this5.opts.pointCssScale, d.css], lineDatum.id, lineIndex);
       });
 
-      points.transition().duration(this.opts.transitionDuration).attr('fill', this.opts.pointFillScale).attr('stroke', this.opts.pointStrokeScale).attr('transform', function (d) {
+      points.transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('fill', this.opts.pointFillScale).attr('stroke', this.opts.pointStrokeScale).attr('transform', function (d) {
         return 'translate(' + _this5.getScaledProp('x', d) + ', ' + _this5.getScaledProp('y', d) + ')';
       }).attr('d', genSym);
 
       // Fade out removed points.
-      points.exit().transition().duration(this.opts.transitionDuration).style('opacity', 0).remove();
+      points.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0).remove();
     }
   }]);
   return LineChart;
@@ -4932,14 +4705,14 @@ var AreaChart = function (_LineChart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [AREA_CHART_DEFAULTS]));
+      (_babelHelpers$get = get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [AREA_CHART_DEFAULTS]));
     }
   }, {
     key: '_initCore',
     value: function _initCore() {
       var _this2 = this;
 
-      get$2(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_initCore', this).call(this);
+      get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_initCore', this).call(this);
 
       // Initialize the line generator
       this.area = d3.area().x(function (d) {
@@ -4953,9 +4726,10 @@ var AreaChart = function (_LineChart) {
   }, {
     key: '_initCustomize',
     value: function _initCustomize() {
-      get$2(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_initCustomize', this).call(this);
+      get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_initCustomize', this).call(this);
+
       if (this.opts.areaCustomize) {
-        this.opts.areaCustomize(this.area);
+        this.tryInvoke(this.opts.areaCustomize, this.area);
       }
     }
   }, {
@@ -4967,12 +4741,12 @@ var AreaChart = function (_LineChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get$2(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('area'))));
+      (_babelHelpers$get2 = get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('area'))));
     }
   }, {
     key: '_resetCssDomains',
     value: function _resetCssDomains() {
-      get$2(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_resetCssDomains', this).call(this);
+      get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_resetCssDomains', this).call(this);
 
       resetScaleDomain(this.opts.areaCssScale);
 
@@ -4983,7 +4757,7 @@ var AreaChart = function (_LineChart) {
     value: function _update() {
       var _this3 = this;
 
-      var lineGrps = get$2(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_update', this).call(this);
+      var lineGrps = get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_update', this).call(this);
 
       lineGrps.each(function (d, i, nodes) {
         _this3._updateLineArea(nodes[i], d, i);
@@ -5004,18 +4778,69 @@ var AreaChart = function (_LineChart) {
       // Create new area
       var allAreas = area.enter().insert('path', ':first-child').call(this.__bindCommonEvents('area')).merge(area) // Update existing points and set values on new points.
       .attr('class', function (d) {
-        return ['monte-area', lineDatum.css, _this4.opts.lineCssScale(lineDatum.id || lineIndex), _this4.opts.areaCss, _this4.opts.areaCssScale(lineDatum.id || lineIndex), d.css].join(' ');
+        return _this4._buildCss(['monte-area', lineDatum.css, _this4.opts.lineCssScale, _this4.opts.areaCss, _this4.opts.areaCssScale, d.css], lineDatum, lineIndex);
       });
 
-      allAreas.transition().duration(this.opts.transitionDuration).attr('d', function (d) {
+      allAreas.transition().duration(this.tryInvoke(this.opts.transitionDuration, UPDATE)).ease(this.opts.ease).attr('d', function (d) {
         return _this4.area(_this4.getProp('values', d));
-      }).attr('fill', this.opts.areaFillScale);
+      }).attr('fill', this.optionReaderFunc('areaFillScale'));
 
       // Fade out removed points.
-      area.exit().transition().duration(this.opts.transitionDuration).style('opacity', 0).remove();
+      area.exit().transition(this.tryInvoke(this.opts.transitionDuration, EXIT)).duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0).remove();
     }
   }]);
   return AreaChart;
+}(LineChart);
+
+var SPARKLINE_CHART_DEFAULTS = {
+  chartCss: 'monte-sparkline-chart',
+  boundingWidth: 80,
+  boundingHeight: 30,
+
+  margin: {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0
+  },
+
+  suppressAxes: true,
+
+  pointSize: 24
+};
+
+var SparklineChart = function (_LineChart) {
+  inherits(SparklineChart, _LineChart);
+
+  function SparklineChart() {
+    classCallCheck(this, SparklineChart);
+    return possibleConstructorReturn(this, (SparklineChart.__proto__ || Object.getPrototypeOf(SparklineChart)).apply(this, arguments));
+  }
+
+  createClass(SparklineChart, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(SparklineChart.prototype.__proto__ || Object.getPrototypeOf(SparklineChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [SPARKLINE_CHART_DEFAULTS]));
+    }
+  }, {
+    key: '_data',
+    value: function _data(data) {
+      var _babelHelpers$get2;
+
+      for (var _len2 = arguments.length, tail = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+        tail[_key2 - 1] = arguments[_key2];
+      }
+
+      (_babelHelpers$get2 = get(SparklineChart.prototype.__proto__ || Object.getPrototypeOf(SparklineChart.prototype), '_data', this)).call.apply(_babelHelpers$get2, [this, [data]].concat(tail));
+    }
+  }]);
+  return SparklineChart;
 }(LineChart);
 
 var BAR_CHART_DEFAULTS = {
@@ -5028,10 +4853,12 @@ var BAR_CHART_DEFAULTS = {
     left: 40
   },
 
-  // Scale function for CSS class to apply per line. Input: line index, Output: String of CSS Class.
   barCssScale: noop,
-
   barFillScale: noop,
+
+  barFillScaleAccessor: function barFillScaleAccessor(d) {
+    return this.getScaledProp('opts.barFillScale', 'x', d);
+  },
 
   // Static CSS class(es) to apply to every line.
   barCss: 'bar',
@@ -5043,7 +4870,23 @@ var BAR_CHART_DEFAULTS = {
     return d3.scaleBand().paddingInner(0.1).round(true);
   },
 
-  yDomainCustomize: extentBalanced
+  yDomainCustomize: extentBalanced,
+
+  includeLabels: false,
+
+  labelProp: 'value',
+  labelFillScale: noop,
+  label: function label(d) {
+    return this.getProp('label', d);
+  },
+  labelXAdjust: '',
+  labelX: function labelX(d) {
+    return this._barX(d) + this.x.bandwidth() / 2;
+  },
+  labelYAdjust: '-0.05em',
+  labelY: function labelY(d) {
+    return this._barY(d);
+  }
 };
 
 var BarChart = function (_AxesChart) {
@@ -5063,7 +4906,7 @@ var BarChart = function (_AxesChart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [BAR_CHART_DEFAULTS]));
+      (_babelHelpers$get = get(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [BAR_CHART_DEFAULTS]));
     }
   }, {
     key: '_initPublicEvents',
@@ -5074,7 +4917,7 @@ var BarChart = function (_AxesChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get$2(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('bar'))));
+      (_babelHelpers$get2 = get(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('bar'))));
     }
   }, {
     key: '_domainExtent',
@@ -5098,7 +4941,7 @@ var BarChart = function (_AxesChart) {
   }, {
     key: '_resetCssDomains',
     value: function _resetCssDomains() {
-      get$2(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_resetCssDomains', this).call(this);
+      get(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_resetCssDomains', this).call(this);
 
       resetScaleDomain(this.opts.barCssScale);
 
@@ -5110,21 +4953,22 @@ var BarChart = function (_AxesChart) {
   }, {
     key: '_update',
     value: function _update() {
-      this._updateBars();
+      var _this3 = this;
 
-      // TODO: Implement?
-      // if (this.opts.includeLabels) {
-      //   const vis = this;
-      //
-      //   barGrps.each((d, i, nodes) => vis._updateBarLabels(nodes[i], d, i));
-      // }
+      var barGrps = this._updateBars();
+
+      if (this.opts.includeLabels) {
+        barGrps.each(function (d, i, nodes) {
+          var node = d3.select(nodes[i]);
+          _this3._updateBarLabel(node, d, i, nodes);
+        });
+      }
     }
   }, {
     key: '_updateBars',
     value: function _updateBars() {
-      var _this3 = this;
+      var _this4 = this;
 
-      // Data join for the lines
       var barGrps = this.draw.selectAll('.monte-bar-grp').data(this.displayData, function (d, i) {
         return d.id || i;
       });
@@ -5134,22 +4978,48 @@ var BarChart = function (_AxesChart) {
       var barWidth = this._barWidth.bind(this);
       var barHeight = this._barHeight.bind(this);
 
-      // Create new lines
       barGrps.enter().append('g').attr('class', 'monte-bar-grp').append('rect').attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight).call(this.__bindCommonEvents('bar')).merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
       .attr('class', function (d, i) {
-        return [_this3.opts.barCss, _this3.opts.barCssScale(d.id || i), d.css].join(' ');
-      }).transition().duration(this.opts.transitionDuration).attr('fill', function (d, i) {
-        return _this3.opts.barFillScale(d.id || i);
+        return _this4._buildCss([_this4.opts.barCss, _this4.opts.barCssScale, d.css], d, i);
+      }).transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('fill', function (d, i, nodes) {
+        return _this4.tryInvoke(_this4.opts.barFillScaleAccessor, d, i, nodes);
       });
+      // .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScale, d, i, nodes));
 
-      barGrps.select('rect').transition().duration(this.opts.transitionDuration).attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight);
+      // TODO: Begin adoption `optionReaderFunc`
+      // i.e.: .attr('fill', this.optionReaderFunc('barFillScale'));
+
+      barGrps.select('rect').transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight);
 
       // Fade out removed lines.
-      barGrps.exit().transition().duration(this.opts.transitionDuration).style('opacity', 0).remove();
+      barGrps.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0).remove();
 
       // Here the order is important. Merging the line groups when only an update occurs results in an
       // empty selection if the command was lineGrps.enter().selectAll('.grp-line').merge(lineGrps);
       return barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp'));
+    }
+  }, {
+    key: '_updateBarLabel',
+    value: function _updateBarLabel(barGrp, d, i, nodes) {
+      var _this5 = this;
+
+      var lbl = barGrp.selectAll('.monte-bar-label').data([d]);
+
+      lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).attr('fill', function (d1) {
+        return _this5.tryInvoke(_this5.opts.labelFillScale, d1, i, nodes);
+      }).attr('x', function (d1) {
+        return _this5.tryInvoke(_this5.opts.labelX, d1, i, nodes);
+      }).attr('dx', function (d1) {
+        return _this5.tryInvoke(_this5.opts.labelXAdjust, d1, i, nodes);
+      }).attr('y', function (d1) {
+        return _this5.tryInvoke(_this5.opts.labelY, d1, i, nodes);
+      }).attr('dy', function (d1) {
+        return _this5.tryInvoke(_this5.opts.labelYAdjust, d1, i, nodes);
+      }).text(function (d1) {
+        return _this5.tryInvoke(_this5.opts.label, d1, i, nodes);
+      });
+
+      lbl.exit().remove();
     }
   }, {
     key: '_barX',
@@ -5194,7 +5064,16 @@ var HBAR_CHART_DEFAULTS = {
   },
 
   xDomainCustomize: extentBalanced,
-  yDomainCustomize: null
+  yDomainCustomize: null,
+
+  labelX: function labelX(d) {
+    return this._barWidth(d);
+  },
+  labelXAdjust: '',
+  labelY: function labelY(d) {
+    return this._barY(d) + this.y.bandwidth() / 2;
+  },
+  labelYAdjust: '0.5em'
 };
 
 var HorizontalBarChart = function (_BarChart) {
@@ -5214,7 +5093,7 @@ var HorizontalBarChart = function (_BarChart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(HorizontalBarChart.prototype.__proto__ || Object.getPrototypeOf(HorizontalBarChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [HBAR_CHART_DEFAULTS]));
+      (_babelHelpers$get = get(HorizontalBarChart.prototype.__proto__ || Object.getPrototypeOf(HorizontalBarChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [HBAR_CHART_DEFAULTS]));
     }
   }, {
     key: '_domainExtent',
@@ -5258,6 +5137,502 @@ var HorizontalBarChart = function (_BarChart) {
   }]);
   return HorizontalBarChart;
 }(BarChart);
+
+var SIMPLE_BAR_CHART_DEFAULTS = {
+  chartCss: 'monte-simple-bar-chart',
+  boundingWidth: 10,
+  boundingHeight: 100,
+
+  margin: {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0
+  },
+
+  suppressAxes: true,
+
+  xScale: function xScale() {
+    return d3.scaleBand().paddingInner(0).round(true);
+  },
+  yDomainCustomize: [0, 100]
+};
+
+var SimpleBarChart = function (_BarChart) {
+  inherits(SimpleBarChart, _BarChart);
+
+  function SimpleBarChart() {
+    classCallCheck(this, SimpleBarChart);
+    return possibleConstructorReturn(this, (SimpleBarChart.__proto__ || Object.getPrototypeOf(SimpleBarChart)).apply(this, arguments));
+  }
+
+  createClass(SimpleBarChart, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(SimpleBarChart.prototype.__proto__ || Object.getPrototypeOf(SimpleBarChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [SIMPLE_BAR_CHART_DEFAULTS]));
+    }
+  }, {
+    key: '_data',
+    value: function _data(data) {
+      var _babelHelpers$get2;
+
+      var valueProp = this.tryInvoke(this.opts.yProp);
+      var datum = isObject$2(data) ? data : defineProperty({}, valueProp, data);
+
+      if (!datum.css) {
+        datum.css = 'monte-simple-bar-value';
+      }
+
+      for (var _len2 = arguments.length, tail = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+        tail[_key2 - 1] = arguments[_key2];
+      }
+
+      (_babelHelpers$get2 = get(SimpleBarChart.prototype.__proto__ || Object.getPrototypeOf(SimpleBarChart.prototype), '_data', this)).call.apply(_babelHelpers$get2, [this, [datum]].concat(tail));
+    }
+  }]);
+  return SimpleBarChart;
+}(BarChart);
+
+var SIMPLE_HORT_BAR_CHART_DEFAULTS = {
+  chartCss: 'monte-simple-hort-bar-chart',
+  boundingWidth: 100,
+  boundingHeight: 10,
+
+  margin: {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0
+  },
+
+  suppressAxes: true,
+
+  xDomainCustomize: [0, 100],
+  yScale: function yScale() {
+    return d3.scaleBand().paddingInner(0).round(true);
+  }
+};
+
+var HorizontalSimpleBarChart = function (_HorizontalBarChart) {
+  inherits(HorizontalSimpleBarChart, _HorizontalBarChart);
+
+  function HorizontalSimpleBarChart() {
+    classCallCheck(this, HorizontalSimpleBarChart);
+    return possibleConstructorReturn(this, (HorizontalSimpleBarChart.__proto__ || Object.getPrototypeOf(HorizontalSimpleBarChart)).apply(this, arguments));
+  }
+
+  createClass(HorizontalSimpleBarChart, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(HorizontalSimpleBarChart.prototype.__proto__ || Object.getPrototypeOf(HorizontalSimpleBarChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [SIMPLE_HORT_BAR_CHART_DEFAULTS]));
+    }
+  }, {
+    key: '_data',
+    value: function _data(data) {
+      var _babelHelpers$get2;
+
+      var valueProp = this.tryInvoke(this.opts.xProp);
+      var datum = isObject$2(data) ? data : defineProperty({}, valueProp, data);
+
+      if (!datum.css) {
+        datum.css = 'monte-simple-hort-bar-value';
+      }
+
+      for (var _len2 = arguments.length, tail = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+        tail[_key2 - 1] = arguments[_key2];
+      }
+
+      (_babelHelpers$get2 = get(HorizontalSimpleBarChart.prototype.__proto__ || Object.getPrototypeOf(HorizontalSimpleBarChart.prototype), '_data', this)).call.apply(_babelHelpers$get2, [this, [datum]].concat(tail));
+    }
+  }]);
+  return HorizontalSimpleBarChart;
+}(HorizontalBarChart);
+
+var SEGMENT_BAR_MODE = {
+  GROUPED: 'grouped',
+  STACKED: 'stacked'
+};
+
+var SEGMENT_BAR_CHART_DEFAULTS = {
+  chartCss: 'monte-segement-bar-chart',
+  barSegmentCss: 'bar-segment',
+
+  margin: {
+    top: 10,
+    right: 0,
+    bottom: 30,
+    left: 40
+  },
+
+  segmentBarMode: SEGMENT_BAR_MODE.STACKED,
+
+  xProp: 'id',
+  yProp: 'values',
+  xInnerProp: 'type',
+  yInnerProp: 'value',
+
+  xInnerScale: function xInnerScale() {
+    return d3.scaleBand().paddingInner(0.1).paddingOuter(0.1).round(true);
+  },
+
+  barCssScale: noop,
+  barFillScale: noop,
+
+  // TODO: Begin adoption of generic scale accessors.
+  barFillScaleAccessor: function barFillScaleAccessor(d) {
+    return this.getScaledProp('opts.barFillScale', 'x', d);
+  },
+
+  xScale: function xScale() {
+    return d3.scaleBand().paddingInner(0.1).round(true);
+  },
+
+  yDomainCustomize: extentBalanced,
+
+  includeLabels: false,
+
+  labelProp: 'value',
+  labelFillScale: noop,
+  label: function label(d) {
+    return this.getProp('label', d);
+  },
+  labelXAdjust: '',
+  labelX: function labelX(d) {
+    return this._barX(d) + this.x.bandwidth() / 2;
+  },
+  labelYAdjust: '-0.05em',
+  labelY: function labelY(d) {
+    return this._barY(d);
+  }
+};
+
+var SegmentBarChart = function (_AxesChart) {
+  inherits(SegmentBarChart, _AxesChart);
+
+  function SegmentBarChart() {
+    classCallCheck(this, SegmentBarChart);
+    return possibleConstructorReturn(this, (SegmentBarChart.__proto__ || Object.getPrototypeOf(SegmentBarChart)).apply(this, arguments));
+  }
+
+  createClass(SegmentBarChart, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [SEGMENT_BAR_CHART_DEFAULTS]));
+    }
+  }, {
+    key: '_initPublicEvents',
+    value: function _initPublicEvents() {
+      var _babelHelpers$get2;
+
+      for (var _len2 = arguments.length, events = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        events[_key2] = arguments[_key2];
+      }
+
+      (_babelHelpers$get2 = get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('bargrp')), toConsumableArray(commonEventNames('barseg'))));
+    }
+  }, {
+    key: '_initCore',
+    value: function _initCore() {
+      get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_initCore', this).call(this);
+      this._initInnerScales();
+    }
+  }, {
+    key: '_initInnerScales',
+    value: function _initInnerScales() {
+      this.xInner = this.opts.xInnerScale();
+    }
+
+    // Extent of the inner values across all groups
+
+  }, {
+    key: '_extentInner',
+    value: function _extentInner(data, baseProp) {
+      var _this2 = this;
+
+      var vals = [];
+      data.forEach(function (d) {
+        _this2.getProp(baseProp, d).forEach(function (d1) {
+          return vals.push(_this2.getProp(baseProp + 'Inner', d1));
+        });
+      });
+
+      return d3.extent(vals);
+    }
+
+    // Sum the inner values within groups, take max of sums
+
+  }, {
+    key: '_extentMaxes',
+    value: function _extentMaxes(data, baseProp) {
+      var _this3 = this;
+
+      var maxes = data.map(function (d) {
+        return d3.sum(_this3.getProp(baseProp, d), function (d1) {
+          return _this3.getProp(baseProp + 'Inner', d1);
+        });
+      });
+
+      return [0, d3.max(maxes)];
+    }
+  }, {
+    key: '_domainExtent',
+    value: function _domainExtent(data, scaleName) {
+      var _this4 = this;
+
+      var extent = null;
+
+      if (scaleName === 'x') {
+        extent = data.map(function (d) {
+          return _this4.getProp('x', d);
+        });
+      } else if (scaleName === 'y') {
+        var mode = this.tryInvoke(this.opts.segmentBarMode);
+
+        if (mode === SEGMENT_BAR_MODE.GROUPED) {
+          extent = this._extentInner(data, 'y');
+        } else if (mode === SEGMENT_BAR_MODE.STACKED) {
+          extent = this._extentMaxes(data, 'y');
+        } else {
+          throw MonteOptionError.InvalidEnumOption('segmentBarMode', mode);
+        }
+      }
+
+      return extent;
+    }
+  }, {
+    key: '_resetCssDomains',
+    value: function _resetCssDomains() {
+      get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_resetCssDomains', this).call(this);
+
+      resetScaleDomain(this.opts.barCssScale);
+      resetScaleDomain(this.opts.barFillScale);
+
+      return this;
+    }
+  }, {
+    key: 'setMode',
+    value: function setMode(mode) {
+      this.option('segmentBarMode', mode);
+      this.updateAxesDomains();
+      this.renderAxes();
+      this.update();
+    }
+  }, {
+    key: 'updateAxesRanges',
+    value: function updateAxesRanges() {
+      get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), 'updateAxesRanges', this).call(this);
+      this._updateXInnerRange();
+      this._updateYInnerRange();
+    }
+  }, {
+    key: '_updateXInnerRange',
+    value: function _updateXInnerRange() {
+      this.xInner.range([0, this.x.bandwidth()]);
+    }
+  }, {
+    key: '_updateXInnerDomain',
+    value: function _updateXInnerDomain() {
+      var data = this.data();
+      var yProp = this.tryInvoke(this.opts.yProp);
+      var xInnerProp = this.tryInvoke(this.opts.xInnerProp);
+      var xInnerDomain = data[0][yProp].map(function (d) {
+        return d[xInnerProp];
+      });
+      this.xInner.domain(xInnerDomain);
+    }
+  }, {
+    key: '_updateYInnerRange',
+    value: function _updateYInnerRange() {}
+  }, {
+    key: '_updateYInnerDomain',
+    value: function _updateYInnerDomain() {}
+  }, {
+    key: '_data',
+    value: function _data(data) {
+      get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_data', this).call(this, data);
+
+      this._updateXInnerDomain();
+      this._updateXInnerRange();
+      this._updateYInnerDomain();
+      this._updateYInnerRange();
+    }
+
+    // Render the vis.
+
+  }, {
+    key: '_update',
+    value: function _update() {
+      var mode = this.tryInvoke(this.opts.segmentBarMode);
+
+      if (mode === SEGMENT_BAR_MODE.STACKED) {
+        this._updateStackedBars();
+      } else if (mode === SEGMENT_BAR_MODE.GROUPED) {
+        this._updateGroupedBars();
+      } else {
+        throw MonteOptionError.InvalidEnumOption('segmentBarMode', mode);
+      }
+    }
+  }, {
+    key: '_updateStackedBars',
+    value: function _updateStackedBars() {
+      var _this5 = this;
+
+      var barGrps = this.draw.selectAll('.monte-segment-bar-grp').data(this.displayData, function (d, i) {
+        return d.id || i;
+      });
+
+      var barX = this._barX.bind(this);
+      // const barY = this._barY.bind(this);
+      var barXInner = this._barXInnerStacked.bind(this);
+      var barYInner = this._barYInnerStacked.bind(this);
+      var barWidth = this._barWidth.bind(this);
+      var barHeight = this._barHeightInner.bind(this);
+
+      barGrps.enter().append('g').attr('class', 'monte-segment-bar-grp').call(this.__bindCommonEvents('bargrp')).merge(barGrps).attr('transform', function (d) {
+        return 'translate(' + barX(d) + ', 0)';
+      }).each(function (d, i, nodes) {
+        var prop = _this5.tryInvoke(_this5.opts.yProp);
+        var nestedData = d[prop];
+        var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
+
+        var yShift = 0;
+        innerRects.enter().append('rect').call(_this5.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this5.opts.transitionDuration).ease(_this5.opts.ease).attr('x', barXInner).attr('y', function (d) {
+          var baseY = barYInner(d);
+          var y = yShift + baseY;
+          yShift -= barHeight(d);
+
+          return y;
+        }).attr('width', barWidth).attr('height', barHeight);
+      });
+
+      barGrps.exit().remove();
+    }
+  }, {
+    key: '_updateGroupedBars',
+    value: function _updateGroupedBars() {
+      var _this6 = this;
+
+      var barGrps = this.draw.selectAll('.monte-segment-bar-grp').data(this.displayData, function (d, i) {
+        return d.id || i;
+      });
+
+      // const barX = this._barX.bind(this);
+      // const barY = this._barY.bind(this);
+      var barXInner = this._barXInnerGrouped.bind(this);
+      var barYInner = this._barYInnerGrouped.bind(this);
+      var barWidth = this._barWidthInner.bind(this);
+      var barHeight = this._barHeightInner.bind(this);
+      var translate = this._barGroupTranslate.bind(this);
+
+      barGrps.enter().append('g').attr('class', 'monte-segment-bar-grp').call(this.__bindCommonEvents('bargrp')).merge(barGrps).attr('transform', function (d) {
+        return 'translate(' + translate(d) + ')';
+      }).each(function (d, i, nodes) {
+        var prop = _this6.tryInvoke(_this6.opts.yProp);
+        var nestedData = d[prop];
+        var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
+
+        innerRects.enter().append('rect').call(_this6.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this6.opts.transitionDuration).ease(_this6.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
+      });
+
+      barGrps.exit().remove();
+    }
+
+    // TODO: Check if it works with both layouts.
+
+  }, {
+    key: '_updateBarLabel',
+    value: function _updateBarLabel(barGrp, d, i, nodes) {
+      var _this7 = this;
+
+      var lbl = barGrp.selectAll('.monte-bar-label').data([d]);
+
+      lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).attr('fill', function (d1) {
+        return _this7.tryInvoke(_this7.opts.labelFillScale, d1, i, nodes);
+      }).attr('x', function (d1) {
+        return _this7.tryInvoke(_this7.opts.labelX, d1, i, nodes);
+      }).attr('dx', function (d1) {
+        return _this7.tryInvoke(_this7.opts.labelXAdjust, d1, i, nodes);
+      }).attr('y', function (d1) {
+        return _this7.tryInvoke(_this7.opts.labelY, d1, i, nodes);
+      }).attr('dy', function (d1) {
+        return _this7.tryInvoke(_this7.opts.labelYAdjust, d1, i, nodes);
+      }).text(function (d1) {
+        return _this7.tryInvoke(_this7.opts.label, d1, i, nodes);
+      });
+
+      lbl.exit().remove();
+    }
+  }, {
+    key: '_barGroupTranslate',
+    value: function _barGroupTranslate(d) {
+      return this._barX(d) + ', 0';
+    }
+  }, {
+    key: '_barX',
+    value: function _barX(d) {
+      return this.getScaledProp('x', d);
+    }
+  }, {
+    key: '_barXInnerGrouped',
+    value: function _barXInnerGrouped(d) {
+      return this.getScaledProp('xInner', d);
+    }
+  }, {
+    key: '_barXInnerStacked',
+    value: function _barXInnerStacked() {
+      return 0;
+    }
+  }, {
+    key: '_barWidth',
+    value: function _barWidth() {
+      return this.x.bandwidth();
+    }
+  }, {
+    key: '_barWidthInner',
+    value: function _barWidthInner() {
+      return this.xInner.bandwidth();
+    }
+  }, {
+    key: '_barY',
+    value: function _barY(d) {
+      return this.getScaledProp('y', d);
+    }
+  }, {
+    key: '_barYInnerGrouped',
+    value: function _barYInnerGrouped(d) {
+      return this.height - this._barHeightInner(d);
+    }
+  }, {
+    key: '_barYInnerStacked',
+    value: function _barYInnerStacked(d) {
+      return this.getScaledProp('y', 'yInner', d);
+    }
+  }, {
+    key: '_barHeightInner',
+    value: function _barHeightInner(d) {
+      return this.height - this.getScaledProp('y', 'yInner', d);
+    }
+  }]);
+  return SegmentBarChart;
+}(AxesChart);
 
 var SCATTER_PLOT_DEFAULTS = {
   chartCss: 'monte-scatter-plot',
@@ -5309,12 +5684,12 @@ var ScatterPlot = function (_AxesChart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [SCATTER_PLOT_DEFAULTS]));
+      (_babelHelpers$get = get(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [SCATTER_PLOT_DEFAULTS]));
     }
   }, {
     key: '_initCore',
     value: function _initCore() {
-      get$2(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_initCore', this).call(this);
+      get(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_initCore', this).call(this);
 
       this.symbol = d3.symbol();
     }
@@ -5327,7 +5702,7 @@ var ScatterPlot = function (_AxesChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get$2(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('point'))));
+      (_babelHelpers$get2 = get(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('point'))));
     }
   }, {
     key: '_domainExtent',
@@ -5342,7 +5717,7 @@ var ScatterPlot = function (_AxesChart) {
   }, {
     key: '_resetCssDomains',
     value: function _resetCssDomains() {
-      get$2(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_resetCssDomains', this).call(this);
+      get(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_resetCssDomains', this).call(this);
 
       resetScaleDomain(this.opts.pointCssScale);
 
@@ -5378,12 +5753,12 @@ var ScatterPlot = function (_AxesChart) {
         return _this2.opts.pointStrokeScale(d.id || i);
       }).attr('class', function (d, i) {
         return _this2._buildCss(['monte-point', _this2.opts.pointCss, _this2.opts.pointCssScale, d.css], d, i);
-      }).transition().duration(this.opts.transitionDuration).call(this.opts.pointEnterStart).attr('transform', function (d) {
+      }).transition().duration(this.opts.transitionDuration).ease(this.opts.ease).call(this.opts.pointEnterStart).attr('transform', function (d) {
         return 'translate(' + _this2.getScaledProp('x', d) + ', ' + _this2.getScaledProp('y', d) + ')';
       }).call(this.opts.pointEnterEnd);
 
       // Fade out removed points.
-      points.exit().transition().duration(this.opts.transitionDuration).call(this.opts.pointExitStart).style('opacity', 0).call(this.opts.pointExitEnd).remove();
+      points.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).call(this.opts.pointExitStart).style('opacity', 0).call(this.opts.pointExitEnd).remove();
 
       return points.merge(points.enter().selectAll('.point'));
     }
@@ -5391,10 +5766,38 @@ var ScatterPlot = function (_AxesChart) {
   return ScatterPlot;
 }(AxesChart);
 
-var SPARKLINE_CHART_DEFAULTS = {
-  chartCss: 'monte-sparkline-chart',
-  boundingWidth: 80,
-  boundingHeight: 30,
+var ICON_MODE = {
+  D3_SYMBOL: 'd3Symbol',
+  SVG_USE_DEF: 'svgUseDef',
+  SVG_USE_EXTERNAL: 'svgUseExternal'
+};
+
+var ICON_PLACEMENT = {
+  BottomToTopLeftToRightPlacement: {
+    rowIndex: function rowIndex(d, i) {
+      return Math.floor(i / this.opts.columns);
+    },
+
+    columnIndex: function columnIndex(d, i) {
+      return i % this.opts.columns;
+    }
+  },
+
+  TopToBottomLeftToRightPlacement: {
+    rowIndex: function rowIndex(d, i) {
+      return this.opts.rows - Math.floor(i / this.opts.columns) - 1;
+    },
+
+    columnIndex: function columnIndex(d, i) {
+      return i % this.opts.columns;
+    }
+  }
+};
+
+var ICON_ARRAY_DEFAULTS = {
+  chartCss: 'monte-icon-array',
+  boundingWidth: 100,
+  boundingHeight: 100,
 
   margin: {
     top: 0,
@@ -5405,18 +5808,47 @@ var SPARKLINE_CHART_DEFAULTS = {
 
   suppressAxes: true,
 
-  pointSize: 24
-};
+  xScale: function xScale() {
+    return d3.scalePoint().padding(0.5);
+  },
 
-var SparklineChart = function (_LineChart) {
-  inherits(SparklineChart, _LineChart);
+  yScale: function yScale() {
+    return d3.scalePoint().padding(0.5);
+  },
 
-  function SparklineChart() {
-    classCallCheck(this, SparklineChart);
-    return possibleConstructorReturn(this, (SparklineChart.__proto__ || Object.getPrototypeOf(SparklineChart)).apply(this, arguments));
+  iconFillScale: noop,
+  iconStrokeScale: noop,
+  iconCssScale: noop,
+  iconCss: 'icon',
+  iconSize: 24,
+  iconSymbol: function iconSymbol(symbol) {
+    return symbol.type(d3.symbolCircle);
+  },
+  iconMode: ICON_MODE.D3_SYMBOL,
+  iconDefId: 'svgIcon',
+  iconSvgWidth: 24,
+  iconSvgHeight: 24,
+  iconHref: '',
+  iconSvgSymbol: function iconSvgSymbol(symbol) {
+    symbol.attr('viewbox', '0 0 24 24').append('path').attr('d', 'm 0,0 24,24 m -24,0 24,-24');
+  },
+
+  rows: 10,
+  columns: 10,
+
+  placement: ICON_PLACEMENT.TopToBottomLeftToRightPlacement,
+
+  svgVersion: 1 };
+
+var IconArray = function (_AxesChart) {
+  inherits(IconArray, _AxesChart);
+
+  function IconArray() {
+    classCallCheck(this, IconArray);
+    return possibleConstructorReturn(this, (IconArray.__proto__ || Object.getPrototypeOf(IconArray)).apply(this, arguments));
   }
 
-  createClass(SparklineChart, [{
+  createClass(IconArray, [{
     key: '_initOptions',
     value: function _initOptions() {
       var _babelHelpers$get;
@@ -5425,33 +5857,177 @@ var SparklineChart = function (_LineChart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(SparklineChart.prototype.__proto__ || Object.getPrototypeOf(SparklineChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [SPARKLINE_CHART_DEFAULTS]));
+      (_babelHelpers$get = get(IconArray.prototype.__proto__ || Object.getPrototypeOf(IconArray.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [ICON_ARRAY_DEFAULTS]));
     }
   }, {
-    key: '_data',
-    value: function _data(data) {
+    key: '_initPublicEvents',
+    value: function _initPublicEvents() {
       var _babelHelpers$get2;
 
-      for (var _len2 = arguments.length, tail = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-        tail[_key2 - 1] = arguments[_key2];
+      for (var _len2 = arguments.length, events = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get$2(SparklineChart.prototype.__proto__ || Object.getPrototypeOf(SparklineChart.prototype), '_data', this)).call.apply(_babelHelpers$get2, [this, [data]].concat(tail));
+      (_babelHelpers$get2 = get(IconArray.prototype.__proto__ || Object.getPrototypeOf(IconArray.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('icon'))));
+    }
+  }, {
+    key: '_resetCssDomains',
+    value: function _resetCssDomains() {
+      get(IconArray.prototype.__proto__ || Object.getPrototypeOf(IconArray.prototype), '_resetCssDomains', this).call(this);
+
+      resetScaleDomain(this.opts.iconCssScale);
+
+      return this;
+    }
+  }, {
+    key: '_domainExtent',
+    value: function _domainExtent(data, scaleName) {
+      var extent = null;
+
+      if (scaleName === 'y') {
+        extent = new Array(this.opts.rows);
+      } else if (scaleName === 'x') {
+        extent = new Array(this.opts.columns);
+      }
+
+      return extent.fill().map(function (_, idx) {
+        return idx;
+      });
+    }
+  }, {
+    key: '_render',
+    value: function _render() {
+      var _this2 = this;
+
+      if (this.opts.iconMode === ICON_MODE.SVG_USE_DEF) {
+        (function () {
+          var chart = _this2;
+          _this2.defs.append('symbol').attr('id', 'svgIcon').each(function () {
+            chart.opts.iconSvgSymbol(d3.select(this));
+          });
+        })();
+      }
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var max = this.opts.rows * this.opts.columns;
+
+      if (max < this.displayData.length) {
+        throw new MonteError('Maximum number of items is ' + max + '. Data contains ' + this.displayData.length + '.');
+      }
+
+      this._updateIcons();
+    }
+  }, {
+    key: '_updateIcons',
+    value: function _updateIcons() {
+      var _modeMap;
+
+      var modeMap = (_modeMap = {}, defineProperty(_modeMap, ICON_MODE.D3_SYMBOL, this._updateD3Symbol), defineProperty(_modeMap, ICON_MODE.SVG_USE_DEF, this._updateSvgUse), defineProperty(_modeMap, ICON_MODE.SVG_USE_EXTERNAL, this._updateSvgUse), _modeMap);
+
+      var icons = this.draw.selectAll('.monte-icon').data(this.displayData);
+
+      modeMap[this.opts.iconMode].call(this, icons, this.opts.iconMode);
+
+      // Fade out removed icons.
+      icons.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0).remove();
+    }
+  }, {
+    key: '_updateD3Symbol',
+    value: function _updateD3Symbol(icons) {
+      var _this3 = this;
+
+      var genSym = function genSym(d, i) {
+        var size = _this3.tryInvoke(_this3.opts.iconSize, d, i);
+        var symbase = d3.symbol().size(size);
+        var symbol = _this3.opts.iconSymbol(symbase, d, i);
+        return symbol(d, i);
+      };
+
+      this._updateCommon('path', icons, iconTransform).attr('d', genSym);
+    }
+  }, {
+    key: '_updateSvgUse',
+    value: function _updateSvgUse(icons, mode) {
+      var _this4 = this;
+
+      var href = mode === ICON_MODE.SVG_USE_DEF ? function (d, i, nodes) {
+        return '#' + _this4.tryInvoke(_this4.opts.iconDefId, d, i, nodes);
+      } : function (d, i, nodes) {
+        return _this4.tryInvoke(_this4.opts.iconHref, d, i, nodes);
+      };
+
+      var mergedUpdates = function mergedUpdates(d, i, nodes) {
+        var node = d3.select(nodes[i]);
+
+        node.attr('width', _this4.opts.iconSvgWidth).attr('height', _this4.opts.iconSvgHeight);
+      };
+
+      var hrefAttr = this.tryInvoke(this.opts.svgVersion) === 2 ? 'href' : 'xlink:href';
+      this._updateCommon('use', icons, iconTransformShift, mergedUpdates).attr(hrefAttr, href);
+    }
+  }, {
+    key: '_updateCommon',
+    value: function _updateCommon(type, icons, transform) {
+      var _this5 = this;
+
+      var merge = arguments.length <= 3 || arguments[3] === undefined ? noop : arguments[3];
+
+      var t = icons.enter().append(type).call(this.__bindCommonEvents('icon')).merge(icons).each(merge).attr('transform', function (d, i, nodes) {
+        return transform.call(_this5, d, i, nodes);
+      }).attr('class', function (d, i) {
+        return _this5._buildCss(['monte-icon', _this5.opts.iconCss, _this5.opts.iconCssScale, d.css], d, i);
+      }).transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('fill', this.opts.iconFillScale).attr('stroke', this.opts.iconStrokeScale);
+
+      return t;
     }
   }]);
-  return SparklineChart;
-}(LineChart);
+  return IconArray;
+}(AxesChart);
+
+function iconTransform(d, i, nodes) {
+  var col = this.tryInvoke(this.opts.placement.columnIndex, d, i, nodes);
+  var row = this.tryInvoke(this.opts.placement.rowIndex, d, i, nodes);
+  var x = this.getScaledProp('x', col);
+  var y = this.getScaledProp('y', row);
+
+  return 'translate(' + x + ', ' + y + ')';
+}
+
+function iconTransformShift(d, i, nodes) {
+  var col = this.tryInvoke(this.opts.placement.columnIndex, d, i, nodes);
+  var row = this.tryInvoke(this.opts.placement.rowIndex, d, i, nodes);
+  var x = this.getScaledProp('x', col);
+  var y = this.getScaledProp('y', row);
+  var xShift = this.opts.iconSvgWidth / 2;
+  var yShift = this.opts.iconSvgHeight / 2;
+
+  return 'translate(' + (x - xShift) + ', ' + (y - yShift) + ')';
+}
+
+function arcSimpleTween(arc, from, to) {
+  var i = d3.interpolate(from, to);
+
+  return function (t) {
+    return arc(i(t));
+  };
+}
+
+// Constrain to smallest draw-area dimension
+function radiusContrain(width, height) {
+  var wr = width / 2;
+  var hr = height / 2;
+
+  return wr < hr ? wr : hr;
+}
 
 var ARC_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart',
 
   cornerRadius: 0,
   innerRadius: 0,
-  outerRadius: function outerRadius(width, height) {
-    var wr = width / 2;
-    var hr = height / 2;
-    return wr < hr ? wr : hr; // Constrain to smallest draw-area dimension
-  },
+  outerRadius: radiusContrain,
 
   arcCustomize: null,
   arcCss: 'arc',
@@ -5476,7 +6052,7 @@ var ARC_CHART_DEFAULTS = {
 
   itemValueProp: 'value',
   pieStartAngle: 0,
-  pieEndAngle: tau,
+  pieEndAngle: TAU,
   piePadAngle: 0.02
 };
 
@@ -5497,17 +6073,17 @@ var ArcChart = function (_PolarChart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [ARC_CHART_DEFAULTS]));
+      (_babelHelpers$get = get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [ARC_CHART_DEFAULTS]));
     }
   }, {
     key: '_initCore',
     value: function _initCore() {
       var _this2 = this;
 
-      get$2(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initCore', this).call(this);
+      get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initCore', this).call(this);
 
       // Initialize the arc generator
-      this.arc = d3.arc().innerRadius(this.opts.innerRadius).cornerRadius(this.opts.cornerRadius);
+      this.arc = d3.arc().cornerRadius(this.opts.cornerRadius);
 
       this.pie = d3.pie().value(function (d) {
         return d[_this2.opts.itemValueProp];
@@ -5516,7 +6092,7 @@ var ArcChart = function (_PolarChart) {
   }, {
     key: '_initCustomize',
     value: function _initCustomize() {
-      get$2(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initCustomize', this).call(this);
+      get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initCustomize', this).call(this);
       if (this.opts.arcCustomize) {
         this.opts.arcCustomize(this.arc);
       }
@@ -5533,20 +6109,20 @@ var ArcChart = function (_PolarChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get$2(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('wedge'))));
+      (_babelHelpers$get2 = get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('wedge'))));
     }
   }, {
     key: '_updateBounds',
     value: function _updateBounds() {
-      get$2(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_updateBounds', this).call(this);
+      get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_updateBounds', this).call(this);
 
-      this.arc.outerRadius(this.optInvoke(this.opts.outerRadius, this.width, this.height));
+      this.arc.innerRadius(this.tryInvoke(this.opts.innerRadius, this.width, this.height)).outerRadius(this.tryInvoke(this.opts.outerRadius, this.width, this.height));
     }
   }, {
     key: '_data',
     value: function _data(data) {
       this.pieDisplayData = this.pie(data);
-      get$2(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_data', this).call(this, data);
+      get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_data', this).call(this, data);
     }
   }, {
     key: '_update',
@@ -5564,9 +6140,9 @@ var ArcChart = function (_PolarChart) {
 
       arcs.enter().append('g').attr('class', 'monte-arc ' + this.opts.arcCss).append('path').attr('class', function (d, i) {
         return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScale, d.data.css], d, i);
-      }).call(this.__bindCommonEvents('wedge')).transition().delay(this.opts.transitionDuration).duration(this.opts.transitionDuration).attrTween('d', function (d) {
-        var start = _this3.optInvoke(_this3.opts.arcWedgeEnter, d);
-        return arcTween(arc, start, d);
+      }).call(this.__bindCommonEvents('wedge')).transition().delay(this.opts.transitionDuration).duration(this.opts.transitionDuration).ease(this.opts.ease).attrTween('d', function (d) {
+        var start = _this3.tryInvoke(_this3.opts.arcWedgeEnter, d);
+        return arcSimpleTween(arc, start, d);
       }).attr('fill', function (d, i) {
         return _this3.opts.arcWedgeFillScale(d.id || i);
       });
@@ -5581,14 +6157,14 @@ var ArcChart = function (_PolarChart) {
 
         delete nd.prev; // Remove old records to prevent building a history tree.
       }).attr('class', function (d, i) {
-        return ['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScale(d.id || i), d.data.css].join(' ');
-      }).transition().delay(this.opts.transitionDuration).duration(this.opts.transitionDuration).attrTween('d', function (d) {
-        return arcTween(arc, d.prev, d);
+        return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScale, d.data.css], d, i);
+      }).transition().delay(this.opts.transitionDuration).duration(this.opts.transitionDuration).ease(this.opts.ease).attrTween('d', function (d) {
+        return arcSimpleTween(arc, d.prev, d);
       }).attr('fill', function (d, i) {
         return _this3.opts.arcWedgeFillScale(d.id || i);
       });
 
-      arcs.exit().transition().duration(this.opts.transitionDuration).style('opacity', 0.01).remove();
+      arcs.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0.01).remove();
     }
   }, {
     key: '_updateBackground',
@@ -5617,14 +6193,6 @@ var ArcChart = function (_PolarChart) {
   }]);
   return ArcChart;
 }(PolarChart);
-
-function arcTween(arc, from, to) {
-  var i = d3.interpolate(from, to);
-
-  return function (t) {
-    return arc(i(t));
-  };
-}
 
 function needleRoundedEnd() /* options */{
   return function needleRoundedEndDyn(needleHeight, needleBaseWidth) {
@@ -5711,8 +6279,8 @@ function needleRect(options) {
 var GAUGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-gauge-chart',
   piePadAngle: 0,
-  pieStartAngle: pi * -0.55,
-  pieEndAngle: pi * 0.55,
+  pieStartAngle: -HALF_PI,
+  pieEndAngle: HALF_PI,
 
   arcBgCssScale: noop,
   arcBgFillScale: noop,
@@ -5723,13 +6291,16 @@ var GAUGE_CHART_DEFAULTS = {
   },
   needlePath: needleRoundedEnd(),
 
-  cornerRadius: 0,
-  outerRadius: 180,
-  innerRadius: 160,
-  labelRadius: 140,
+  innerRadius: function innerRadius(w, h) {
+    return radiusContrain(w, h) * 0.9;
+  },
+  labelRadius: function labelRadius(w, h) {
+    return radiusContrain(w, h) * 0.8;
+  },
 
   segmentsProp: 'segments',
   itemValueProp: 'interval',
+  startValueProp: 'start',
   segmentLabelProp: 'label'
 };
 
@@ -5750,17 +6321,23 @@ var GaugeChart = function (_ArcChart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [GAUGE_CHART_DEFAULTS]));
+      (_babelHelpers$get = get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [GAUGE_CHART_DEFAULTS]));
     }
   }, {
     key: '_initCore',
     value: function _initCore() {
-      get$2(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initCore', this).call(this);
+      get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initCore', this).call(this);
 
+      this._prevNeedleAngleValueData = 0;
       this.needleValueData = 0;
       this.needleValueAngleData = 0;
+    }
+  }, {
+    key: '_initRender',
+    value: function _initRender() {
+      get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initRender', this).call(this);
 
-      this.bgArc = d3.arc().startAngle(this.opts.pieStartAngle).endAngle(this.opts.pieEndAngle).innerRadius(0).outerRadius(this.opts.outerRadius).cornerRadius(this.opts.cornerRadius);
+      this.bgArc = d3.arc().startAngle(this.tryInvoke(this.opts.pieStartAngle)).endAngle(this.tryInvoke(this.opts.pieEndAngle)).innerRadius(0).outerRadius(this.tryInvoke(this.opts.outerRadius, this.width, this.height)).cornerRadius(this.tryInvoke(this.opts.cornerRadius));
 
       this.angleScale = d3.scaleLinear().range([this.opts.pieStartAngle, this.opts.pieEndAngle]);
     }
@@ -5773,14 +6350,15 @@ var GaugeChart = function (_ArcChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get$2(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, ['updateNeedle', 'updateBackgroundArc', 'updateLabels' // Gauge events
+      (_babelHelpers$get2 = get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, ['updateNeedle', 'updateBackgroundArc', 'updateLabels' // Gauge events
       ]));
     }
   }, {
     key: '_getLayerTranslate',
     value: function _getLayerTranslate() {
+      var or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
       var l = this.width / 2 + this.margin.left;
-      var t = this.height - (this.height - this.opts.outerRadius) + this.margin.top;
+      var t = this.height - (this.height - or) + this.margin.top;
       return 'translate(' + l + ', ' + t + ')';
     }
   }, {
@@ -5789,12 +6367,15 @@ var GaugeChart = function (_ArcChart) {
       var _this2 = this;
 
       this.needleValue(data[this.opts.itemValueProp]);
-      get$2(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_data', this).call(this, data[this.opts.segmentsProp]);
+      get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_data', this).call(this, data[this.opts.segmentsProp]);
 
       var intervalSum = this.displayData.reduce(function (acc, d) {
-        return acc + d[_this2.opts.itemValueProp];
+        return acc + Math.abs(d[_this2.opts.itemValueProp]);
       }, 0);
-      this.angleScale.domain([0, intervalSum]);
+
+      // this.angleScale.domain([0, intervalSum]);
+      var start = data[this.opts.startValueProp] || 0;
+      this.angleScale.domain([start, start + intervalSum]);
     }
   }, {
     key: 'needleValue',
@@ -5803,6 +6384,7 @@ var GaugeChart = function (_ArcChart) {
         return this.needleValueData;
       }
 
+      this._prevNeedleAngleValueData = this.needleValueAngleData;
       this.needleValueData = value;
       this.needleValueAngleData = this.angleScale(value);
       this.update();
@@ -5810,9 +6392,16 @@ var GaugeChart = function (_ArcChart) {
       return this;
     }
   }, {
+    key: 'needleValueAngle',
+    value: function needleValueAngle() {
+      // TODO: Add support for directly setting the angle? (Use scale's `invert()`?)
+
+      return this.needleValueAngleData;
+    }
+  }, {
     key: '_update',
     value: function _update() {
-      get$2(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_update', this).call(this);
+      get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_update', this).call(this);
 
       if (!this.hasRendered) {
         this._updateBackgroundArc();
@@ -5837,9 +6426,10 @@ var GaugeChart = function (_ArcChart) {
       var _this4 = this;
 
       var labels = this.support.selectAll('.monte-gauge-label').data(this.pieDisplayData);
+      var labelRadius = this.tryInvoke(this.opts.labelRadius, this.width, this.height);
 
       labels.enter().append('text').attr('class', 'monte-gauge-label').attr('text-anchor', 'middle').attr('dy', '0.35em').merge(labels).attr('transform', function (d) {
-        return 'translate(' + GaugeChart.getCoord(_this4.opts.labelRadius, d.endAngle) + ')';
+        return 'translate(' + GaugeChart.getCoord(labelRadius, d.endAngle) + ')';
       }).text(function (d) {
         return d.data[_this4.opts.segmentLabelProp];
       });
@@ -5849,9 +6439,13 @@ var GaugeChart = function (_ArcChart) {
   }, {
     key: '_updateNeedle',
     value: function _updateNeedle() {
-      var baseWidth = this.opts.needleBase;
-      var height = this.optInvoke(this.opts.needleHeight, this.opts.outerRadius, this.opts.innerRadius);
-      var path = this.optInvoke(this.opts.needlePath, height, baseWidth);
+      var _this5 = this;
+
+      var baseWidth = this.tryInvoke(this.opts.needleBase);
+      var or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
+      var ir = this.tryInvoke(this.opts.innerRadius, this.width, this.height);
+      var height = this.tryInvoke(this.opts.needleHeight, or, ir);
+      var path = this.tryInvoke(this.opts.needlePath, height, baseWidth);
 
       var needle = this.overlay.selectAll('.monte-gauge-needle').data([this.needleValueAngleData || 0]);
 
@@ -5859,89 +6453,20 @@ var GaugeChart = function (_ArcChart) {
         return 'rotate(' + d + 'rad)';
       });
 
-      needle.transition().duration(this.opts.transitionDuration).style('transform', function (d) {
-        return 'rotate(' + d + 'rad)';
+      needle.transition().duration(this.opts.transitionDuration).ease(this.opts.ease).styleTween('transform', function (d) {
+        var a = _this5._prevNeedleAngleValueData;
+        var b = d;
+
+        return function (t) {
+          var r = a * (1 - t) + b * t;
+          return 'rotate(' + r + 'rad)';
+        };
       });
 
       this.__notify('updateNeedle');
     }
   }]);
   return GaugeChart;
-}(ArcChart);
-
-var SEGMENT_CHART_DEFAULTS = {
-  chartCss: 'monte-arc-chart monte-segment-chart',
-  piePadAngle: 0,
-  pieStartAngle: halfPi,
-  pieEndAngle: -halfPi,
-
-  arcBgCssScale: noop,
-  arcBgFillScale: noop
-};
-
-var SegmentChart = function (_ArcChart) {
-  inherits(SegmentChart, _ArcChart);
-
-  function SegmentChart() {
-    classCallCheck(this, SegmentChart);
-    return possibleConstructorReturn(this, (SegmentChart.__proto__ || Object.getPrototypeOf(SegmentChart)).apply(this, arguments));
-  }
-
-  createClass(SegmentChart, [{
-    key: '_initOptions',
-    value: function _initOptions() {
-      var _babelHelpers$get;
-
-      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
-        options[_key] = arguments[_key];
-      }
-
-      (_babelHelpers$get = get$2(SegmentChart.prototype.__proto__ || Object.getPrototypeOf(SegmentChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [SEGMENT_CHART_DEFAULTS]));
-    }
-  }, {
-    key: '_initCore',
-    value: function _initCore() {
-      get$2(SegmentChart.prototype.__proto__ || Object.getPrototypeOf(SegmentChart.prototype), '_initCore', this).call(this);
-
-      this.pie.sortValues(function (a, b) {
-        return b.value - a.value;
-      });
-    }
-  }, {
-    key: '_updateBounds',
-    value: function _updateBounds() {
-      var _this2 = this;
-
-      get$2(SegmentChart.prototype.__proto__ || Object.getPrototypeOf(SegmentChart.prototype), '_updateBounds', this).call(this);
-
-      this.layers.forEach(function (l) {
-        return l.attr('transform', 'translate(' + (_this2.width / 2 + _this2.margin.left) + ', ' + (_this2.height - (_this2.height - _this2.opts.outerRadius) + _this2.margin.top) + ')');
-      });
-    }
-  }, {
-    key: '_update',
-    value: function _update() {
-      get$2(SegmentChart.prototype.__proto__ || Object.getPrototypeOf(SegmentChart.prototype), '_update', this).call(this);
-
-      this._updateBackgroundArc();
-    }
-  }, {
-    key: '_updateBackgroundArc',
-    value: function _updateBackgroundArc() {
-      var _this3 = this;
-
-      var bg = this.support.selectAll('.monte-segment-bg').data(this.pie([defineProperty({}, this.opts.value, 100)])); // 100 as in 100%
-
-      bg.enter().append('path').merge(bg).attr('d', function (d) {
-        return _this3.arc(d);
-      }).attr('fill', function (d, i) {
-        return _this3.opts.arcBgFillScale(d.id || i);
-      }).attr('class', function (d, i) {
-        return ['monte-segment-bg', _this3.opts.arcBgCssScale(d.id || i)].join(' ');
-      });
-    }
-  }]);
-  return SegmentChart;
 }(ArcChart);
 
 // import { noop } from '../tools/noop';
@@ -5979,12 +6504,12 @@ var WedgeChart = function (_ArcChart) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(WedgeChart.prototype.__proto__ || Object.getPrototypeOf(WedgeChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [WEDGE_CHART_DEFAULTS]));
+      (_babelHelpers$get = get(WedgeChart.prototype.__proto__ || Object.getPrototypeOf(WedgeChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [WEDGE_CHART_DEFAULTS]));
     }
   }, {
     key: '_initCore',
     value: function _initCore() {
-      get$2(WedgeChart.prototype.__proto__ || Object.getPrototypeOf(WedgeChart.prototype), '_initCore', this).call(this);
+      get(WedgeChart.prototype.__proto__ || Object.getPrototypeOf(WedgeChart.prototype), '_initCore', this).call(this);
 
       this.pie.sortValues(function (a, b) {
         return a.value - b.value;
@@ -5993,23 +6518,19 @@ var WedgeChart = function (_ArcChart) {
   }, {
     key: '_data',
     value: function _data(data) {
-      var _babelHelpers$get2;
+      var _ref, _ref2, _babelHelpers$get2;
 
       this.wedgeValueData = data;
+      var itemValueProp = this.tryInvoke(this.opts.itemValueProp);
 
       // Data is expected to be a single value between 0 & 100.
-      var pieData = [
-      // Wrapped value to
-      { value: data, css: 'monte-wedge' },
-
-      // The special case wedge to scale
-      { value: 100 - data, css: 'monte-arc-placeholder' }];
+      var pieData = [(_ref = {}, defineProperty(_ref, itemValueProp, data), defineProperty(_ref, 'css', 'monte-wedge'), _ref), (_ref2 = {}, defineProperty(_ref2, itemValueProp, 100 - data), defineProperty(_ref2, 'css', 'monte-arc-placeholder'), _ref2)];
 
       for (var _len2 = arguments.length, tail = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
         tail[_key2 - 1] = arguments[_key2];
       }
 
-      return (_babelHelpers$get2 = get$2(WedgeChart.prototype.__proto__ || Object.getPrototypeOf(WedgeChart.prototype), '_data', this)).call.apply(_babelHelpers$get2, [this, pieData].concat(tail));
+      return (_babelHelpers$get2 = get(WedgeChart.prototype.__proto__ || Object.getPrototypeOf(WedgeChart.prototype), '_data', this)).call.apply(_babelHelpers$get2, [this, pieData].concat(tail));
     }
   }, {
     key: 'wedgeValue',
@@ -6021,31 +6542,53 @@ var WedgeChart = function (_ArcChart) {
       this.data(value);
       return this;
     }
-
-    // _update() {
-    //   super._update();
-    //
-    //   this._updateBackgroundCircle();
-    // }
-
-    // _updateBackgroundCircle() {
-    //   const or = this.optInvoke(this.opts.outerRadius, this.width, this.height);
-    //   const wedge = this.bg.selectAll('.monte-wedge-bg').data([or]);
-    //
-    //   wedge.enter()
-    //       .append('circle')
-    //     .merge(wedge)
-    //       .attr('r', (d) => d)
-    //       .attr('fill', (d, i) => this.opts.arcBgWedgeFillScale(d.id || i))
-    //       .attr('class', (d, i) =>
-    //          ['monte-wedge-bg',
-    //           this.opts.arcBgWedgeCssScale(d.id || i),
-    //           ].join(' '));
-    // }
-
   }]);
   return WedgeChart;
 }(ArcChart);
+
+var HORIZONTAL = 'horizontal';
+var VERTICAL = 'vertical';
+
+var direction = Object.freeze({
+	HORIZONTAL: HORIZONTAL,
+	VERTICAL: VERTICAL
+});
+
+
+
+var index = Object.freeze({
+	D3: d3$1,
+	DIRECTION: direction,
+	MATH: math,
+	CLICK: CLICK,
+	TOUCHSTART: TOUCHSTART,
+	TOUCHEND: TOUCHEND,
+	MOUSEOVER: MOUSEOVER,
+	MOUSEOUT: MOUSEOUT,
+	SUPPRESSED_ERROR: SUPPRESSED_ERROR,
+	EXTENSION: EXTENSION,
+	RENDERING: RENDERING,
+	RENDERED: RENDERED,
+	UPDATING: UPDATING,
+	UPDATED: UPDATED,
+	UPDATING_BOUNDS: UPDATING_BOUNDS,
+	UPDATED_BOUNDS: UPDATED_BOUNDS,
+	CLEARING: CLEARING,
+	CLEARED: CLEARED,
+	CSS_DOMAINS_RESETING: CSS_DOMAINS_RESETING,
+	CSS_DOMAINS_RESET: CSS_DOMAINS_RESET,
+	DESTROYING: DESTROYING,
+	DESTROYED: DESTROYED,
+	INTERACTION_EVENTS: INTERACTION_EVENTS,
+	CHART_SUPPORT_EVENTS: CHART_SUPPORT_EVENTS,
+	CHART_LIFECYCLE_EVENTS: CHART_LIFECYCLE_EVENTS,
+	ACTION_ADD: ACTION_ADD,
+	ACTION_REMOVE: ACTION_REMOVE,
+	ACTION_CSS_OVER: ACTION_CSS_OVER,
+	ACTION_CSS_TOUCH: ACTION_CSS_TOUCH,
+	INTERACTION_EVENT_CSS_MAP: INTERACTION_EVENT_CSS_MAP,
+	UNDEF: UNDEF
+});
 
 var DEFAULTS$2 = {
   // The layer for drawing operations
@@ -6131,11 +6674,15 @@ var Extension = function () {
         this.layer = this.chart[this.opts.layer];
       }
 
-      if (event === 'destroy') {
-        this._destroy();
-      } else {
-        this._update.apply(this, arguments);
-        this.emit('updated');
+      try {
+        if (event === 'destroy') {
+          this._destroy();
+        } else {
+          this._update.apply(this, arguments);
+          this.emit('updated');
+        }
+      } catch (e) {
+        this.chart.emit('suppressedError', e, e.stack || 'No stack available.');
       }
     }
   }, {
@@ -6148,8 +6695,8 @@ var Extension = function () {
     // Access an option that may need to be invoked as a function or that may be a literal value.
 
   }, {
-    key: 'optInvoke',
-    value: function optInvoke(value) {
+    key: 'tryInvoke',
+    value: function tryInvoke(value) {
       try {
         for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
           args[_key3 - 1] = arguments[_key3];
@@ -6191,7 +6738,7 @@ var Extension = function () {
       var sources = Array.isArray(cssSources) ? cssSources : [cssSources];
 
       sources.forEach(function (source) {
-        cssClasses.push(_this.optInvoke(source, d.id || i));
+        cssClasses.push(_this.tryInvoke(source, d.id || i));
       });
 
       return cssClasses.join(' ');
@@ -6211,12 +6758,150 @@ var Extension = function () {
   return Extension;
 }();
 
-var HORIZONTAL = 'horizontal';
-var VERTICAL = 'vertical';
+var ARC_DEFAULTS = {
+  eventPrefix: 'arc',
+  startAngle: 0,
+  endAngle: TAU,
+  arcCss: 'monte-ext-arc',
+  innerRadius: 0,
+  outerRadius: 100,
+  cornerRadius: 0
+};
 
-// In d3-axis, there are hard coded shifts of 0.5. This shift is used for grid alignment and other
-// axis alignments.
-var AXIS_SHIFT = 0.5;
+var Arc = function (_Extension) {
+  inherits(Arc, _Extension);
+
+  function Arc() {
+    classCallCheck(this, Arc);
+    return possibleConstructorReturn(this, (Arc.__proto__ || Object.getPrototypeOf(Arc)).apply(this, arguments));
+  }
+
+  createClass(Arc, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(Arc.prototype.__proto__ || Object.getPrototypeOf(Arc.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [ARC_DEFAULTS]));
+
+      this.arc = d3.arc().innerRadius(this.tryInvoke(this.opts.innerRadius)).outerRadius(this.tryInvoke(this.opts.outerRadius)).cornerRadius(this.tryInvoke(this.opts.cornerRadius));
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var _this2 = this;
+
+      var css = this.tryInvoke(this.opts.arcCss);
+      var startAngle = this.tryInvoke(this.opts.startAngle);
+      var endAngle = this.tryInvoke(this.opts.endAngle);
+      var arcAngles = isDefined(startAngle) && isDefined(endAngle) ? {
+        startAngle: startAngle,
+        endAngle: endAngle
+      } : {
+        startAngle: isDefined(startAngle) ? startAngle : endAngle,
+        endAngle: isDefined(startAngle) ? startAngle : endAngle
+      };
+
+      var segment = this.layer.selectAll('.' + css).data([arcAngles]);
+      var duration = this.tryInvoke(this.chart.opts.transitionDuration);
+      var ease = this.chart.opts.ease;
+      segment.enter().append('path').attr('class', css).attr('d', function (d) {
+        return _this2.arc(d);
+      });
+
+      segment.transition().duration(duration).ease(ease).attrTween('d', function (d) {
+        return arcSimpleTween(_this2.arc, _this2.prev, d);
+      }).on('end', function (d) {
+        return _this2.prev = d;
+      });
+
+      segment.exit().transition().duration(duration).ease(ease).style('opacity', 0.01).remove();
+    }
+  }]);
+  return Arc;
+}(Extension);
+
+var FRAME_DEFAULTS = {
+  eventPrefix: 'frame',
+  frameLineCss: 'monte-ext-frame-line',
+  edges: ['top', 'right', 'bottom', 'left'],
+  alignmentShift: AXIS_SHIFT };
+
+// BG Frame (drawn by edges) and observes the "Margin Convention".
+var Frame = function (_Extension) {
+  inherits(Frame, _Extension);
+
+  function Frame() {
+    classCallCheck(this, Frame);
+    return possibleConstructorReturn(this, (Frame.__proto__ || Object.getPrototypeOf(Frame)).apply(this, arguments));
+  }
+
+  createClass(Frame, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(Frame.prototype.__proto__ || Object.getPrototypeOf(Frame.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [FRAME_DEFAULTS]));
+    }
+  }, {
+    key: '_shouldOptionUpdate',
+    value: function _shouldOptionUpdate(prop) {
+      return prop === 'edges' || prop === 'alignmentShift';
+    }
+  }, {
+    key: 'clear',
+    value: function clear() {
+      // Remove all elements
+      var css = this.opts.frameLineCss;
+      var edges = this.layer.selectAll('.' + css);
+      edges.remove();
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var chart = this.chart;
+      var css = this.opts.frameLineCss;
+      var edges = this.layer.selectAll('.' + css).data(this.opts.edges).order();
+      var shift = this.opts.alignmentShift;
+      var coords = {
+        top: [[0 + shift, 0 + shift], [chart.width + shift, 0 + shift]],
+        right: [[chart.width + shift, 0 + shift], [chart.width + shift, chart.height + shift]],
+        bottom: [[0 + shift, chart.height + shift], [chart.width + shift, chart.height + shift]],
+        left: [[0 + shift, 0 + shift], [0 + shift, chart.height + shift]]
+      };
+
+      edges.enter().append('line').attr('class', css).attr('x1', function (d) {
+        return coords[d][0][0];
+      }).attr('y1', function (d) {
+        return coords[d][0][1];
+      }).attr('x2', function (d) {
+        return coords[d][1][0];
+      }).attr('y2', function (d) {
+        return coords[d][1][1];
+      });
+
+      edges.transition().duration(chart.option('transitionDuration')).attr('x1', function (d) {
+        return coords[d][0][0];
+      }).attr('y1', function (d) {
+        return coords[d][0][1];
+      }).attr('x2', function (d) {
+        return coords[d][1][0];
+      }).attr('y2', function (d) {
+        return coords[d][1][1];
+      });
+
+      edges.exit().remove();
+    }
+  }]);
+  return Frame;
+}(Extension);
 
 var GRID_DEFAULTS = {
   eventPrefix: 'grid',
@@ -6225,7 +6910,7 @@ var GRID_DEFAULTS = {
     'x': 'v-line',
     'y': 'h-line'
   },
-  lineCss: 'monte-grid-line',
+  lineCss: 'monte-ext-grid-line',
   binding: ['axisRendered'],
   x1Adjust: 0,
   x2Adjust: 0,
@@ -6251,7 +6936,7 @@ var Grid = function (_Extension) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(Grid.prototype.__proto__ || Object.getPrototypeOf(Grid.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [GRID_DEFAULTS]));
+      (_babelHelpers$get = get(Grid.prototype.__proto__ || Object.getPrototypeOf(Grid.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [GRID_DEFAULTS]));
     }
   }, {
     key: '_update',
@@ -6287,17 +6972,17 @@ var Grid = function (_Extension) {
     key: '_updateTicks',
     value: function _updateTicks(ticks, axisTransition, cfg) {
       var fullCss = [cfg.lineCss, cfg.css].join(' ');
-      var x1 = this.optInvoke(this.opts.x1Adjust);
-      var x2 = this.optInvoke(this.opts.x2Adjust);
-      var y1 = this.optInvoke(this.opts.y1Adjust);
-      var y2 = this.optInvoke(this.opts.y2Adjust);
+      var x1 = this.tryInvoke(this.opts.x1Adjust);
+      var x2 = this.tryInvoke(this.opts.x2Adjust);
+      var y1 = this.tryInvoke(this.opts.y1Adjust);
+      var y2 = this.tryInvoke(this.opts.y2Adjust);
 
       if (cfg.orient === HORIZONTAL) {
         ticks.enter().append('line').attr('class', fullCss).attr('x1', 0 + x1).attr('y1', AXIS_SHIFT + y1).attr('x2', cfg.axesChart.width + x2).attr('y2', AXIS_SHIFT + y2).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
         });
 
-        ticks.transition(axisTransition).attr('x2', function () {
+        ticks.transition(axisTransition).duration(this.chart.opts.transitionDuration).ease(this.chart.opts.ease).attr('x2', function () {
           return cfg.axesChart.width + x2;
         }).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
@@ -6307,7 +6992,7 @@ var Grid = function (_Extension) {
           return 'translate(' + cfg.scale(d) + ', 0)';
         });
 
-        ticks.transition(axisTransition).attr('y2', function () {
+        ticks.transition(axisTransition).duration(this.chart.opts.transitionDuration).ease(this.chart.opts.ease).attr('y2', function () {
           return cfg.axesChart.height + y2;
         }).attr('transform', function (d) {
           return 'translate(' + cfg.scale(d) + ', 0)';
@@ -6347,7 +7032,7 @@ var HorizontalLines = function (_Grid) {
     key: '_updateTicks',
     value: function _updateTicks(ticks, axisTransition, cfg) {
       if (cfg.orient === HORIZONTAL) {
-        get$2(HorizontalLines.prototype.__proto__ || Object.getPrototypeOf(HorizontalLines.prototype), '_updateTicks', this).call(this, ticks, axisTransition, cfg);
+        get(HorizontalLines.prototype.__proto__ || Object.getPrototypeOf(HorizontalLines.prototype), '_updateTicks', this).call(this, ticks, axisTransition, cfg);
       }
     }
   }]);
@@ -6366,19 +7051,78 @@ var VerticalLines = function (_Grid2) {
     key: '_updateTicks',
     value: function _updateTicks(ticks, axisTransition, cfg) {
       if (cfg.orient === VERTICAL) {
-        get$2(VerticalLines.prototype.__proto__ || Object.getPrototypeOf(VerticalLines.prototype), '_updateTicks', this).call(this, ticks, axisTransition, cfg);
+        get(VerticalLines.prototype.__proto__ || Object.getPrototypeOf(VerticalLines.prototype), '_updateTicks', this).call(this, ticks, axisTransition, cfg);
       }
     }
   }]);
   return VerticalLines;
 }(Grid);
 
+var LABEL_DEFAULTS = {
+  eventPrefix: 'label',
+  labelCss: 'monte-ext-label-id',
+  commonCss: 'monte-ext-label',
+  text: '',
+  x: 0,
+  y: 0,
+  dy: '0.35em',
+  dx: 0,
+  anchor: 'start',
+  labelCustomize: noop
+};
+
+var Label = function (_Extension) {
+  inherits(Label, _Extension);
+
+  function Label() {
+    classCallCheck(this, Label);
+    return possibleConstructorReturn(this, (Label.__proto__ || Object.getPrototypeOf(Label)).apply(this, arguments));
+  }
+
+  createClass(Label, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(Label.prototype.__proto__ || Object.getPrototypeOf(Label.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [LABEL_DEFAULTS]));
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var _this2 = this;
+
+      var selectorCss = this.tryInvoke(this.opts.labelCss);
+      var commonCss = this.tryInvoke(this.opts.commonCss);
+      var text = this.tryInvoke(this.opts.text);
+
+      var lbl = this.layer.selectAll('.' + selectorCss).data([text]);
+
+      lbl.enter().append('text').attr('class', selectorCss + ' ' + commonCss).merge(lbl).attr('x', this.tryInvoke(this.opts.x)).attr('y', this.tryInvoke(this.opts.y)).attr('dx', this.tryInvoke(this.opts.dx)).attr('dy', this.tryInvoke(this.opts.dy)).attr('text-anchor', this.tryInvoke(this.opts.anchor)).text(function (d) {
+        return d;
+      }).call(function () {
+        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+          args[_key2] = arguments[_key2];
+        }
+
+        _this2.tryInvoke.apply(_this2, [_this2.opts.labelCustomize].concat(args));
+      });
+
+      lbl.exit().remove();
+    }
+  }]);
+  return Label;
+}(Extension);
+
 var POLAR_GRID_DEFAULTS = {
   eventPrefix: 'polargrid',
   startAngle: 0,
-  endAngle: tau,
+  endAngle: TAU,
   ringRadii: [100],
-  ringCss: 'monte-polar-ring',
+  ringCss: 'monte-ext-polar-ring',
   ringSpecificCss: null,
   ringSort: function ringSort(a, b) {
     return b - a;
@@ -6402,7 +7146,7 @@ var PolarGrid = function (_Extension) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(PolarGrid.prototype.__proto__ || Object.getPrototypeOf(PolarGrid.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_GRID_DEFAULTS]));
+      (_babelHelpers$get = get(PolarGrid.prototype.__proto__ || Object.getPrototypeOf(PolarGrid.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_GRID_DEFAULTS]));
     }
   }, {
     key: '_update',
@@ -6410,6 +7154,7 @@ var PolarGrid = function (_Extension) {
       var data = this.opts.ringRadii.sort(this.opts.ringSort);
       var rings = this.layer.selectAll('.' + this.opts.ringCss).data(data);
 
+      // TODO: Change from using SVG circles to using arcs.
       rings.enter().append('circle').merge(rings).attr('class', this.opts.ringCss).attr('r', function (d) {
         return d;
       });
@@ -6418,10 +7163,72 @@ var PolarGrid = function (_Extension) {
   return PolarGrid;
 }(Extension);
 
+var POLAR_LINE_DEFAULTS = {
+  eventPrefix: 'polarline',
+  layer: 'overlay',
+  angle: 0, // Straight up
+  lineCss: 'monte-ext-polar-line',
+  innerRadius: 0,
+  outerRadius: 100
+};
+
+var PolarLine = function (_Extension) {
+  inherits(PolarLine, _Extension);
+
+  function PolarLine() {
+    classCallCheck(this, PolarLine);
+    return possibleConstructorReturn(this, (PolarLine.__proto__ || Object.getPrototypeOf(PolarLine)).apply(this, arguments));
+  }
+
+  createClass(PolarLine, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(PolarLine.prototype.__proto__ || Object.getPrototypeOf(PolarLine.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_LINE_DEFAULTS]));
+
+      this.innerArc = d3.arc().innerRadius(this.opts.innerRadius).outerRadius(this.opts.innerRadius);
+      this.outerArc = d3.arc().innerRadius(this.opts.outerRadius).outerRadius(this.opts.outerRadius);
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var _this2 = this;
+
+      var css = this.tryInvoke(this.opts.lineCss);
+      var angle = this.tryInvoke(this.opts.angle);
+      var line = this.layer.selectAll('.' + css).data([{ startAngle: angle, endAngle: angle }]);
+      var newLine = line.enter().append('line').attr('class', css);
+      var duration = this.tryInvoke(this.chart.opts.transitionDuration);
+
+      if (isDefined(angle)) {
+        newLine.merge(line).transition().duration(duration).attr('x1', function (d) {
+          return _this2.innerArc.centroid(d)[0];
+        }).attr('y1', function (d) {
+          return _this2.innerArc.centroid(d)[1];
+        }).attr('x2', function (d) {
+          return _this2.outerArc.centroid(d)[0];
+        }).attr('y2', function (d) {
+          return _this2.outerArc.centroid(d)[1];
+        });
+      } else {
+        newLine.merge(line).attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 0);
+      }
+
+      line.exit().remove();
+    }
+  }]);
+  return PolarLine;
+}(Extension);
+
 var POLAR_TICKS_DEFAULTS$1 = {
   startAngle: 0,
-  endAngle: tau,
-  tickInterval: 1 / 4 * tau, // Every 90deg
+  endAngle: TAU,
+  tickInterval: 1 / 4 * TAU, // Every 90deg
   innerRadius: 0,
   outerRadius: 100,
   tickCss: 'monte-polar-tick',
@@ -6430,9 +7237,9 @@ var POLAR_TICKS_DEFAULTS$1 = {
 
 // https://sites.google.com/site/mymathclassroom/testing-if-two-angles-are-coterminal
 function areCoterminalAngles(a1, a2) {
-  var n = (a1 - a2) / tau;
+  var n = (a1 - a2) / TAU;
 
-  // Angles are coterminal if n is an integer; otherwise .
+  // Angles are coterminal if n is an integer; otherwise not.
   return Number.isInteger(n);
 }
 
@@ -6496,11 +7303,11 @@ var PolarTicks$1 = function () {
 var POLAR_TICKS_DEFAULTS = {
   eventPrefix: 'polarticks',
   startAngle: 0,
-  endAngle: tau,
-  tickInterval: 1 / 8 * tau, // 8 ticks, one every 45 deg
+  endAngle: TAU,
+  tickInterval: 1 / 8 * TAU, // 8 ticks, one every 45 deg
   innerRadius: 0,
   outerRadius: 100,
-  tickCss: 'monte-polar-tick'
+  tickCss: 'monte-ext-polar-tick'
 };
 
 var PolarTicks$$1 = function (_Extension) {
@@ -6520,7 +7327,7 @@ var PolarTicks$$1 = function (_Extension) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(PolarTicks$$1.prototype.__proto__ || Object.getPrototypeOf(PolarTicks$$1.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_TICKS_DEFAULTS]));
+      (_babelHelpers$get = get(PolarTicks$$1.prototype.__proto__ || Object.getPrototypeOf(PolarTicks$$1.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_TICKS_DEFAULTS]));
     }
   }, {
     key: '_update',
@@ -6535,94 +7342,14 @@ var PolarTicks$$1 = function (_Extension) {
   return PolarTicks$$1;
 }(Extension);
 
-var FRAME_DEFAULTS = {
-  eventPrefix: 'frame',
-  frameLineCss: 'monte-frame-line',
-  edges: ['top', 'right', 'bottom', 'left'],
-  alignmentShift: AXIS_SHIFT };
-
-// BG Frame (drawn by edges) and observes the "Margin Convention".
-var Frame = function (_Extension) {
-  inherits(Frame, _Extension);
-
-  function Frame() {
-    classCallCheck(this, Frame);
-    return possibleConstructorReturn(this, (Frame.__proto__ || Object.getPrototypeOf(Frame)).apply(this, arguments));
-  }
-
-  createClass(Frame, [{
-    key: '_initOptions',
-    value: function _initOptions() {
-      var _babelHelpers$get;
-
-      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
-        options[_key] = arguments[_key];
-      }
-
-      (_babelHelpers$get = get$2(Frame.prototype.__proto__ || Object.getPrototypeOf(Frame.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [FRAME_DEFAULTS]));
-    }
-  }, {
-    key: '_shouldOptionUpdate',
-    value: function _shouldOptionUpdate(prop) {
-      return prop === 'edges' || prop === 'alignmentShift';
-    }
-  }, {
-    key: 'clear',
-    value: function clear() {
-      // Remove all elements
-      var css = this.opts.frameLineCss;
-      var edges = this.layer.selectAll('.' + css);
-      edges.remove();
-    }
-  }, {
-    key: '_update',
-    value: function _update() {
-      var chart = this.chart;
-      var css = this.opts.frameLineCss;
-      var edges = this.layer.selectAll('.' + css).data(this.opts.edges).order();
-      var shift = this.opts.alignmentShift;
-      var coords = {
-        top: [[0 + shift, 0 + shift], [chart.width + shift, 0 + shift]],
-        right: [[chart.width + shift, 0 + shift], [chart.width + shift, chart.height + shift]],
-        bottom: [[0 + shift, chart.height + shift], [chart.width + shift, chart.height + shift]],
-        left: [[0 + shift, 0 + shift], [0 + shift, chart.height + shift]]
-      };
-
-      edges.enter().append('line').attr('class', css).attr('x1', function (d) {
-        return coords[d][0][0];
-      }).attr('y1', function (d) {
-        return coords[d][0][1];
-      }).attr('x2', function (d) {
-        return coords[d][1][0];
-      }).attr('y2', function (d) {
-        return coords[d][1][1];
-      });
-
-      edges.transition().duration(chart.option('transitionDuration')).attr('x1', function (d) {
-        return coords[d][0][0];
-      }).attr('y1', function (d) {
-        return coords[d][0][1];
-      }).attr('x2', function (d) {
-        return coords[d][1][0];
-      }).attr('y2', function (d) {
-        return coords[d][1][1];
-      });
-
-      edges.exit().remove();
-    }
-  }]);
-  return Frame;
-}(Extension);
-
-// import { tau } from '../const/math';
-
 var BAR_BG_DEFAULTS = {
   eventPrefix: 'barbg',
-  barBgCss: 'monte-bar-bg',
+  barBgCss: 'monte-ext-bar-bg',
   data: null,
   maxValue: null, // Maximum value
   maxValueProp: null, // Maximum value taken from chart data
-  enlarge: 0.05
+  enlarge: 0.05,
+  cornerRadius: 0
 };
 
 var BarBg = function (_Extension) {
@@ -6642,7 +7369,7 @@ var BarBg = function (_Extension) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(BarBg.prototype.__proto__ || Object.getPrototypeOf(BarBg.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [BAR_BG_DEFAULTS]));
+      (_babelHelpers$get = get(BarBg.prototype.__proto__ || Object.getPrototypeOf(BarBg.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [BAR_BG_DEFAULTS]));
     }
   }, {
     key: '_update',
@@ -6673,6 +7400,8 @@ var BarBg = function (_Extension) {
         return v;
       }).attr('height', function () {
         return barChart._barHeight.bind(barChart).apply(undefined, arguments) + _this2._heightAdjust(sizeAdjust);
+      }).attr('rx', function (d, i) {
+        return _this2.tryInvoke(_this2.opts.cornerRadius, d, i);
       });
     }
   }, {
@@ -6779,7 +7508,7 @@ var HorizontalBarBg = function (_BarBg) {
 
 var REF_LINE_DEFAULTS = {
   eventPrefix: 'refline',
-  css: 'monte-ref-line-grp',
+  css: 'monte-ext-ref-line-grp',
   data: noop,
   layer: 'overlay',
   labelPlacement: 'nw',
@@ -6830,9 +7559,13 @@ var LABEL_PLACEMENT = {
 var ReferenceLine = function (_Extension) {
   inherits(ReferenceLine, _Extension);
 
-  function ReferenceLine() {
+  function ReferenceLine(options) {
     classCallCheck(this, ReferenceLine);
-    return possibleConstructorReturn(this, (ReferenceLine.__proto__ || Object.getPrototypeOf(ReferenceLine)).apply(this, arguments));
+
+    var _this = possibleConstructorReturn(this, (ReferenceLine.__proto__ || Object.getPrototypeOf(ReferenceLine)).call(this, options));
+
+    _this.lineData = [];
+    return _this;
   }
 
   createClass(ReferenceLine, [{
@@ -6844,20 +7577,20 @@ var ReferenceLine = function (_Extension) {
         options[_key] = arguments[_key];
       }
 
-      (_babelHelpers$get = get$2(ReferenceLine.prototype.__proto__ || Object.getPrototypeOf(ReferenceLine.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [REF_LINE_DEFAULTS]));
+      (_babelHelpers$get = get(ReferenceLine.prototype.__proto__ || Object.getPrototypeOf(ReferenceLine.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [REF_LINE_DEFAULTS]));
     }
   }, {
     key: '_update',
     value: function _update() {
       var _this2 = this;
 
-      var lineData = this.optInvoke(this.opts.data, this.chart.data());
+      this.lineData = this.tryInvoke(this.opts.data, this.chart.data());
 
-      if (!isArray$2(lineData)) {
-        lineData = [lineData];
+      if (!isArray$2(this.lineData)) {
+        this.lineData = [this.lineData];
       }
 
-      var lines = this.layer.selectAll('.' + this.opts.css).data(lineData);
+      var lines = this.layer.selectAll('.' + this.opts.css).data(this.lineData);
 
       // Enter
       var enter = lines.enter().append('g').attr('class', this.opts.css);
@@ -6877,7 +7610,7 @@ var ReferenceLine = function (_Extension) {
       });
 
       update.select('text').attr('text-anchor', this.opts.textAnchor).text(function (d) {
-        return d[_this2.opts.textProp];
+        return _this2.getProp('text', d);
       }).each(this._placeLabel.bind(this));
 
       // Exit
@@ -6887,7 +7620,7 @@ var ReferenceLine = function (_Extension) {
     key: '_placeLabel',
     value: function _placeLabel(d, i, nodes) {
       var text = d3.select(nodes[i]);
-      var labelPlacement = this.optInvoke(this.opts.labelPlacement, d, i, nodes);
+      var labelPlacement = this.tryInvoke(this.opts.labelPlacement, d, i, nodes);
       var placement = LABEL_PLACEMENT[labelPlacement];
       var coords = {
         x1: this.getProp('x1', d),
@@ -6895,6 +7628,7 @@ var ReferenceLine = function (_Extension) {
         y1: this.getProp('y1', d),
         y2: this.getProp('y2', d)
       };
+
       placement.call(this, text, coords);
     }
   }]);
@@ -6940,7 +7674,7 @@ function readTransforms(t) {
 
 
 
-var index = Object.freeze({
+var index$1 = Object.freeze({
 	isArray: isArray$2,
 	isDefined: isDefined,
 	isFunc: isFunc,
@@ -7086,33 +7820,41 @@ var VerticalResizer = function (_Resizer4) {
   return VerticalResizer;
 }(Resizer);
 
+// Const
 // Tools
 
-exports.tools = index;
+exports.constants = index;
+exports.tools = index$1;
 exports.version = version;
 exports.Chart = Chart;
 exports.AxesChart = AxesChart;
 exports.PolarChart = PolarChart;
 exports.LineChart = LineChart;
 exports.AreaChart = AreaChart;
+exports.SparklineChart = SparklineChart;
 exports.BarChart = BarChart;
 exports.HorizontalBarChart = HorizontalBarChart;
+exports.SimpleBarChart = SimpleBarChart;
+exports.HorizontalSimpleBarChart = HorizontalSimpleBarChart;
+exports.SegmentBarChart = SegmentBarChart;
 exports.ScatterPlot = ScatterPlot;
-exports.SparklineChart = SparklineChart;
+exports.IconArray = IconArray;
 exports.ArcChart = ArcChart;
 exports.GaugeChart = GaugeChart;
-exports.SegmentChart = SegmentChart;
 exports.WedgeChart = WedgeChart;
 exports.EventWatcher = EventWatcher;
 exports.MonteError = MonteError;
 exports.MonteOptionError = MonteOptionError;
 exports.Extension = Extension;
+exports.ExtArc = Arc;
+exports.ExtFrame = Frame;
 exports.ExtGrid = Grid;
 exports.ExtHorizontalLines = HorizontalLines;
 exports.ExtVerticalLines = VerticalLines;
+exports.ExtLabel = Label;
 exports.ExtPolarGrid = PolarGrid;
+exports.ExtPolarLine = PolarLine;
 exports.ExtPolarTicks = PolarTicks$$1;
-exports.ExtFrame = Frame;
 exports.ExtBarBg = BarBg;
 exports.ExtHorizontalBarBg = HorizontalBarBg;
 exports.ExtReferenceLine = ReferenceLine;

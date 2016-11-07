@@ -1,13 +1,20 @@
-import { INTERACTION_EVENTS, INTERACTION_EVENT_CSS_MAP } from '../const/events';
+import { CHART_LIFECYCLE_EVENTS, CHART_SUPPORT_EVENTS, INTERACTION_EVENTS, INTERACTION_EVENT_CSS_MAP } from '../const/events';
 import { get as _get, set as _set } from '../external/lodash';
 import { isDefined, isFunc, isObject } from '../tools/is';
 import { EventWatcher } from '../support/EventWatcher';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
-import { mergeOptions } from '../tools/mergeOptions';
+import { TRANSITION_DURATION_MS } from '../const/d3';
 import { UNDEF } from '../const/undef';
+import { mergeOptions } from '../tools/mergeOptions';
+import { noop } from '../tools/noop';
 
 const global = window ? window.MonteGlobals = {} : {};
+
+// TODO: Begin adoption of generic scale accessors. Every scale should be accompained with a property
+//       `<scaleProperty>Accessor` that translates which value to pass to the scale.
+
+const CLIP_PATH_ID = 'drawPath';
 
 const DEFAULTS = {
   css: '',
@@ -23,7 +30,8 @@ const DEFAULTS = {
   customEvents: [],
   extensions: [],
 
-  transitionDuration: 250,
+  transitionDuration: TRANSITION_DURATION_MS,
+  ease: d3.easeCubic,
 
   resize: null,
 
@@ -72,20 +80,11 @@ export class Chart {
 
     // Setup the Public events.
     this._initPublicEvents(
-      // Interaction events
       ...INTERACTION_EVENTS,
+      ...CHART_SUPPORT_EVENTS,
+      ...CHART_LIFECYCLE_EVENTS,
 
-      // Support events
-      'suppressedError', 'extension',
-
-      // Lifecycle event pairs
-      'rendering', 'rendered',
-      'updating', 'updated',
-      'updatingBounds', 'updatedBounds',
-      'cssDomainsReseting', 'cssDomainsReset',
-      'destroying', 'destroyed',
-
-      // Custom events
+      // Custom events provided by the user
       ...this.opts.customEvents);
 
     // Put chart in developer mode if opted into on a chart or global basis
@@ -118,9 +117,9 @@ export class Chart {
   _initOptions(...options) {
     this.opts = {};
     const opts = mergeOptions(...options, DEFAULTS);
-    for (let prop in opts) {
-      if (opts.hasOwnProperty(prop)) {
-        this.option(prop, opts[prop]);
+    for (let key in opts) {
+      if (opts.hasOwnProperty(key)) {
+        this.option(key, opts[key]);
       }
     }
 
@@ -145,7 +144,7 @@ export class Chart {
 
     // Drawing area path clipping
     this.clip = this.defs.append('clipPath')
-        .attr('id', 'drawClip');
+        .attr('id', CLIP_PATH_ID);
 
     this.clipRect = this.clip.append('rect');
 
@@ -220,7 +219,7 @@ export class Chart {
         .attr('height', this.opts.boundingHeightAttr || this.opts.boundingHeight);
     }
 
-    // Update drawing clip // TODO: Apply translate?
+    // Update drawing clip
     if (this.clipRect) {
       this.clipRect.attr('width', this.width)
         .attr('height', this.height);
@@ -269,11 +268,29 @@ export class Chart {
 
   _destroy() {}
 
+  /*
+   * Adds a layer to the chart. The layer is the top most by default.
+   *
+   * @Chainable
+   */
   addLayer(layerName) {
     const layer = this.bound.append('g').attr('class', `monte-${layerName}`);
 
     this[layerName] = layer;
     this.layers.push(layer);
+
+    return this;
+  }
+
+  /*
+   * Makes a layer use a defined `clipPath`.
+   *
+   * @Chainable
+   */
+  layerUseClipPath(layerName, pathId=CLIP_PATH_ID) {
+    this[layerName].attr('clip-path', `url(#${pathId})`);
+
+    return this;
   }
 
   _getLayerTranslate() { return `translate(${this.margin.left}, ${this.margin.top})`; }
@@ -349,14 +366,14 @@ export class Chart {
    *
    * @Chainable
    */
-  option(prop, value) {
-    if (value === undefined) {
-      return _get(this.opts, prop);
+  option(key, value) {
+    if (value === UNDEF) {
+      return _get(this.opts, key);
     }
 
-    _set(this.opts, prop, value);
+    _set(this.opts, key, value);
 
-    if (prop === 'margin') {
+    if (key === 'margin') {
       if (typeof value !== 'object') {
         this.opts.margin = { top: value, left: value, right: value, bottom: value };
       }
@@ -370,26 +387,38 @@ export class Chart {
     return this;
   }
 
-  optionReader(prop) {
-    if (!this._optionReaderCache[prop]) {
-      this._optionReaderCache[prop] = (...args) => {
-        this.optInvoke(this.opts[prop], ...args);
-      };
+  /**
+   * Generates a function (or uses and existing one from cache) for a given option property. The
+   * generated function attempts to access the property (uses `tryInvoke`). If the property is a
+   * function it invokes the function with all parameters passed at the time on invocation.
+   *
+   * Generally this is good allowing D3 Selection chain methods (`attr`, `style`, etc...) to
+   * directly read chart options.
+   *
+   * For example:
+   *  `.attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.fillScale, d, i, nodes))`
+   * is equvilient to
+   *  `.attr('fill', this.optionReaderFunc('fillScale')')`
+   */
+  optionReaderFunc(optionKey) {
+    if (!this._optionReaderCache[optionKey]) {
+      this._optionReaderCache[optionKey] = (...args) =>
+        this.tryInvoke(this.opts[optionKey], ...args);
     }
 
-    return this._optionReaderCache[prop];
+    return this._optionReaderCache[optionKey];
   }
 
   /**
    * Invoke a `value` (generally from the chart options) with the given arguments. Static values
    * are returned directly.
    */
-  optInvoke(value, ...args) {
+  tryInvoke(value, ...args) {
     if (value === null) {
       return null;
     }
     else if (value === UNDEF) {
-      throw new MonteOptionError('Option not initialized.');
+      throw new MonteOptionError('Value not initialized.');
     }
 
     try {
@@ -439,8 +468,17 @@ export class Chart {
       throw new MonteError(`Incorrect number of arguments. Expected 2 or 3 recieved ${arguments.length}`);
     }
 
-    if (!isFunc(this[scaleName])) {
+    const scale = _get(this, scaleName);
+    if (!scale) {
       throw new MonteError(`Scale "${scaleName}" is not defined.`);
+    }
+    else if (scale === noop) {
+      // A noop function means no possible return value.
+      return UNDEF;
+    }
+    else if (!isFunc(scale)) {
+      // Treat scale like a static value (likely string or number) and return early.
+      return scale;
     }
     else if (isObject(d)) {
       // Assume `d` is a datum related to the chart data.
@@ -451,20 +489,30 @@ export class Chart {
       val = d;
     }
 
-    return this[scaleName](val);
+    return scale(val);
   }
-
-  _clearDataElements() {}
 
   /**
    * Remove the data, remove the data elements, and clear the CSS domains.
+   *
+   * @Chainable
    */
   clear() {
+    this.__notify('clearing');
+
     this.displayData = null;
     this._clearDataElements();
 
     if (this.opts.autoResetCssDomains) { this.resetCssDomains(); }
+
+    this.__notify('cleared');
+    return this;
   }
+
+  /**
+   * Internal implementation of the `clear` method.
+   */
+  _clearDataElements() {}
 
   /**
    * Resets domains related to CSS scales.
@@ -480,15 +528,28 @@ export class Chart {
     return this;
   }
 
+  /**
+   * Internal implementation of the `resetCssDomains` method.
+   */
   _resetCssDomains() {}
 
-  _buildCss(cssSources, d, i) {
+  /**
+   * Builds a string of class names to insert into a `class` attribute on a DOM element (typically
+   * SVG). The strings are inidividual class names and *not* selectors (no `.` or compound class
+   * names).
+   *
+   * @param {array} cssSources The sources (strings or functions) for inidividual class names.
+   * @param {object} d The datum to pass to function sources.
+   * @param {object} i The node index to pass to function sources.
+   * @param {array} nodes The node list to pass to function sources.
+   */
+  _buildCss(cssSources, d, i, nodes) {
     const cssClasses = [];
     const sources = Array.isArray(cssSources) ? cssSources : [cssSources];
 
     sources.forEach((source) => {
       if (isDefined(source)) {
-        cssClasses.push(this.optInvoke(source, (d && d.id) || i));
+        cssClasses.push(this.tryInvoke(source, d, i, nodes));
       }
     });
 
@@ -529,12 +590,12 @@ export class Chart {
   }
 
   /**
-   * Set the data for the chart to display and trigger the "Updtate cycle".
+   * Set the data for the chart to display and trigger the "Update cycle".
    *
    * @Chainable
    */
   data(data, isUpdate=false, suppressUpdate=false) {
-    if (data === undefined) {
+    if (data === UNDEF) {
       // No data to assign return the current data.
       return this.displayData;
     }
@@ -552,9 +613,13 @@ export class Chart {
 
   /**
    * Add an extension instance to the chart instance.
+   *
+   * @Chainable
    */
   addExt(...exts) {
     this._bindExt(exts);
+
+    return this;
   }
 
   /**
@@ -586,6 +651,8 @@ export class Chart {
    * previous scale.
    *
    * For example: changing between a linear and logarithmic scale to allow users to identify trends.
+   *
+   * @Chainable
    */
   replaceScale(scaleName, newScaleConstructor) {
     const scale = newScaleConstructor();
@@ -593,15 +660,22 @@ export class Chart {
       .domain(this[scaleName].domain());
     this[scaleName] = scale;
     this.update();
+
+    return this;
   }
 
   /**
    * (Re)renders the chart by invoking the "Update cycle" which is consistent with the D3
    * "Enter-Update-Exit" pattern.
+   *
+   * @Chainable
    */
   update() {
     if (!this.data()) { return; } // Don't allow update if data has not been set.
-    if (!this.hasRendered) { this.__notify('rendering'); }
+    if (!this.hasRendered) {
+      this.__notify('rendering');
+      this._render();
+    }
 
     this.__notify('updating');
     this._update();
@@ -613,10 +687,17 @@ export class Chart {
     }
 
     this.__notify('updated');
+
+    return this;
   }
 
   /**
-   * A specific charts implementation of the "Update cycle"
+   * A specific chart's one-time only setup drawing pass.
+   */
+  _render() {}
+
+  /**
+   * A specific chart's implementation of the "Update cycle"
    */
   _update() {
     if (!this.opts.directUse) {
@@ -641,7 +722,7 @@ export class Chart {
    * Using notify ensures that extensions are notified before outside listeners are.
    */
   __notify(eventName, ...args) {
-    this.__updateExt(eventName, this, ...args);
+    this.__updateExt(eventName, ...args);
     this.dispatch.call(eventName, this, ...args);
   }
 

@@ -1,13 +1,14 @@
 import { ArcChart } from './ArcChart';
+import { HALF_PI } from '../../const/math';
 import { needleRoundedEnd } from '../../util/needle';
 import { noop } from '../../tools/noop';
-import { pi } from '../../const/math';
+import { radiusContrain } from '../../util/dimension';
 
 const GAUGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-gauge-chart',
   piePadAngle: 0,
-  pieStartAngle: pi * -0.55,
-  pieEndAngle: pi * 0.55,
+  pieStartAngle: -HALF_PI,
+  pieEndAngle: HALF_PI,
 
   arcBgCssScale: noop,
   arcBgFillScale: noop,
@@ -18,13 +19,12 @@ const GAUGE_CHART_DEFAULTS = {
   },
   needlePath: needleRoundedEnd(),
 
-  cornerRadius: 0,
-  outerRadius: 180,
-  innerRadius: 160,
-  labelRadius: 140,
+  innerRadius: (w, h) => radiusContrain(w, h) * 0.9,
+  labelRadius: (w, h) => radiusContrain(w, h) * 0.8,
 
   segmentsProp: 'segments',
   itemValueProp: 'interval',
+  startValueProp: 'start',
   segmentLabelProp: 'label',
 };
 
@@ -36,15 +36,20 @@ export class GaugeChart extends ArcChart {
   _initCore() {
     super._initCore();
 
+    this._prevNeedleAngleValueData = 0;
     this.needleValueData = 0;
     this.needleValueAngleData = 0;
+  }
+
+  _initRender() {
+    super._initRender();
 
     this.bgArc = d3.arc()
-      .startAngle(this.opts.pieStartAngle)
-      .endAngle(this.opts.pieEndAngle)
+      .startAngle(this.tryInvoke(this.opts.pieStartAngle))
+      .endAngle(this.tryInvoke(this.opts.pieEndAngle))
       .innerRadius(0)
-      .outerRadius(this.opts.outerRadius)
-      .cornerRadius(this.opts.cornerRadius);
+      .outerRadius(this.tryInvoke(this.opts.outerRadius, this.width, this.height))
+      .cornerRadius(this.tryInvoke(this.opts.cornerRadius));
 
     this.angleScale = d3.scaleLinear().range([this.opts.pieStartAngle, this.opts.pieEndAngle]);
   }
@@ -56,8 +61,9 @@ export class GaugeChart extends ArcChart {
   }
 
   _getLayerTranslate() {
+    const or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
     const l = this.width / 2 + this.margin.left;
-    const t = this.height - (this.height - this.opts.outerRadius) + this.margin.top;
+    const t = this.height - (this.height - or) + this.margin.top;
     return `translate(${l}, ${t})`;
   }
 
@@ -65,8 +71,12 @@ export class GaugeChart extends ArcChart {
     this.needleValue(data[this.opts.itemValueProp]);
     super._data(data[this.opts.segmentsProp]);
 
-    const intervalSum = this.displayData.reduce((acc, d) => acc + d[this.opts.itemValueProp], 0);
-    this.angleScale.domain([0, intervalSum]);
+    const intervalSum = this.displayData.reduce((acc, d) =>
+      acc + Math.abs(d[this.opts.itemValueProp]), 0);
+
+    // this.angleScale.domain([0, intervalSum]);
+    let start = data[this.opts.startValueProp] || 0;
+    this.angleScale.domain([start, start + intervalSum]);
   }
 
   needleValue(value) {
@@ -74,11 +84,18 @@ export class GaugeChart extends ArcChart {
       return this.needleValueData;
     }
 
+    this._prevNeedleAngleValueData = this.needleValueAngleData;
     this.needleValueData = value;
     this.needleValueAngleData = this.angleScale(value);
     this.update();
 
     return this;
+  }
+
+  needleValueAngle() {
+    // TODO: Add support for directly setting the angle? (Use scale's `invert()`?)
+
+    return this.needleValueAngleData;
   }
 
   _update() {
@@ -103,6 +120,7 @@ export class GaugeChart extends ArcChart {
 
   _updateLabels() {
     const labels = this.support.selectAll('.monte-gauge-label').data(this.pieDisplayData);
+    const labelRadius = this.tryInvoke(this.opts.labelRadius, this.width, this.height);
 
     labels.enter().append('text')
         .attr('class', 'monte-gauge-label')
@@ -110,17 +128,18 @@ export class GaugeChart extends ArcChart {
         .attr('dy', '0.35em')
       .merge(labels)
         .attr('transform', (d) =>
-          'translate(' + GaugeChart.getCoord(this.opts.labelRadius, d.endAngle) +')')
+          'translate(' + GaugeChart.getCoord(labelRadius, d.endAngle) +')')
         .text((d) => d.data[this.opts.segmentLabelProp]);
 
     this.__notify('updateLabels');
   }
 
   _updateNeedle() {
-    const baseWidth = this.opts.needleBase;
-    const height = this.optInvoke(this.opts.needleHeight, this.opts.outerRadius,
-      this.opts.innerRadius);
-    const path = this.optInvoke(this.opts.needlePath, height, baseWidth);
+    const baseWidth = this.tryInvoke(this.opts.needleBase);
+    const or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
+    const ir = this.tryInvoke(this.opts.innerRadius, this.width, this.height);
+    const height = this.tryInvoke(this.opts.needleHeight, or, ir);
+    const path = this.tryInvoke(this.opts.needlePath, height, baseWidth);
 
     const needle = this.overlay.selectAll('.monte-gauge-needle').data([this.needleValueAngleData || 0]);
 
@@ -132,7 +151,16 @@ export class GaugeChart extends ArcChart {
     needle
       .transition()
         .duration(this.opts.transitionDuration)
-        .style('transform', (d) => 'rotate(' + d + 'rad)');
+        .ease(this.opts.ease)
+        .styleTween('transform', (d) => {
+          const a = this._prevNeedleAngleValueData;
+          const b = d;
+
+          return function(t) {
+            const r = a * (1 - t) + b * t;
+            return 'rotate(' + r + 'rad)';
+          };
+        });
 
     this.__notify('updateNeedle');
   }

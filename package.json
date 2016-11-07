@@ -1,6 +1,6 @@
 {
   "name": "monte",
-  "version": "0.0.0-alpha12",
+  "version": "0.0.0-alpha13",
   "description": "A set of common charts based on D3 built for extension and modification.",
   "main": "build/monte.js",
   "jsnext:main": "index.js",
@@ -29,7 +29,9 @@
     "bar",
     "pie",
     "donut",
-    "doughnut"
+    "doughnut",
+    "icon",
+    "iconarray"
   ],
   "license": "GPL-3.0",
   "bugs": {

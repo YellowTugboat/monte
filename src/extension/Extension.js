@@ -62,12 +62,17 @@ export class Extension {
 
     if (!this.layer) { this.layer = this.chart[this.opts.layer]; }
 
-    if (event === 'destroy') {
-      this._destroy();
+    try {
+      if (event === 'destroy') {
+        this._destroy();
+      }
+      else {
+        this._update(...args);
+        this.emit('updated');
+      }
     }
-    else {
-      this._update(...args);
-      this.emit('updated');
+    catch (e) {
+      this.chart.emit('suppressedError', e, e.stack || 'No stack available.');
     }
   }
 
@@ -76,7 +81,7 @@ export class Extension {
   }
 
   // Access an option that may need to be invoked as a function or that may be a literal value.
-  optInvoke(value, ...args) {
+  tryInvoke(value, ...args) {
     try {
       return isFunc(value) ? value.call(this, ...args) : value;
     }
@@ -105,7 +110,7 @@ export class Extension {
     const sources = Array.isArray(cssSources) ? cssSources : [cssSources];
 
     sources.forEach((source) => {
-      cssClasses.push(this.optInvoke(source, d.id || i));
+      cssClasses.push(this.tryInvoke(source, d.id || i));
     });
 
     return cssClasses.join(' ');

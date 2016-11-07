@@ -9,17 +9,25 @@ export { PolarChart } from './src/chart/polarChart/PolarChart';
 // Cartesian coordinates
 export { LineChart } from './src/chart/axesChart/LineChart';
 export { AreaChart } from './src/chart/axesChart/AreaChart';
+export { SparklineChart } from './src/chart/axesChart/SparklineChart';
+
 export { BarChart } from './src/chart/axesChart/BarChart';
 export { HorizontalBarChart } from './src/chart/axesChart/HorizontalBarChart';
+export { SimpleBarChart } from './src/chart/axesChart/SimpleBarChart';
+export { HorizontalSimpleBarChart } from './src/chart/axesChart/SimpleHorizontalBarChart';
+export { SegmentBarChart } from './src/chart/axesChart/SegmentBarChart';
+
 export { ScatterPlot } from './src/chart/axesChart/ScatterPlotChart';
-export { SparklineChart } from './src/chart/axesChart/SparklineChart';
 export { IconArray } from './src/chart/axesChart/IconArray';
 
 // Polar coordinates
 export { ArcChart } from './src/chart/polarChart/ArcChart';
 export { GaugeChart } from './src/chart/polarChart/GaugeChart';
-export { SegmentChart } from './src/chart/polarChart/SegmentChart';
 export { WedgeChart } from './src/chart/polarChart/WedgeChart';
+
+// Const
+import * as constants from './src/const';
+export { constants };
 
 // Support
 export {
@@ -30,6 +38,8 @@ export {
 
 // Extensions
 export { Extension } from './src/extension/Extension';
+export { Arc as ExtArc } from './src/extension/Arc';
+export { Frame as ExtFrame } from './src/extension/Frame';
 
 export {
   Grid as ExtGrid,
@@ -37,11 +47,10 @@ export {
   VerticalLines as ExtVerticalLines,
 } from './src/extension/Grid';
 
+export { Label as ExtLabel } from './src/extension/Label';
 export { PolarGrid as ExtPolarGrid } from './src/extension/PolarGrid';
-
+export { PolarLine as ExtPolarLine } from './src/extension/PolarLine';
 export { PolarTicks as ExtPolarTicks } from './src/extension/PolarTicks';
-
-export { Frame as ExtFrame } from './src/extension/Frame';
 
 export {
   BarBg as ExtBarBg,

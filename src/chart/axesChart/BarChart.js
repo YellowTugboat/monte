@@ -14,10 +14,12 @@ const BAR_CHART_DEFAULTS = {
     left: 40,
   },
 
-  // Scale function for CSS class to apply per line. Input: line index, Output: String of CSS Class.
   barCssScale: noop,
-
   barFillScale: noop,
+
+  barFillScaleAccessor: function(d) {
+    return this.getScaledProp('opts.barFillScale', 'x', d);
+  },
 
   // Static CSS class(es) to apply to every line.
   barCss: 'bar',
@@ -110,18 +112,23 @@ export class BarChart extends AxesChart {
         .attr('height', barHeight)
         .call(this.__bindCommonEvents('bar'))
       .merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
-        .attr('class', (d, i) =>
+        .attr('class', (d, i) => this._buildCss(
           [this.opts.barCss,
-           this.opts.barCssScale(d.id || i),
-           d.css].join(' ')
-        )
+           this.opts.barCssScale,
+           d.css], d, i))
       .transition()
         .duration(this.opts.transitionDuration)
-        .attr('fill', (d, i, nodes) => this.optInvoke(this.opts.barFillScale, d, i, nodes));
+        .ease(this.opts.ease)
+        .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScaleAccessor, d, i, nodes));
+        // .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScale, d, i, nodes));
+
+        // TODO: Begin adoption `optionReaderFunc`
+        // i.e.: .attr('fill', this.optionReaderFunc('barFillScale'));
 
     barGrps.select('rect')
       .transition()
         .duration(this.opts.transitionDuration)
+        .ease(this.opts.ease)
         .attr('x', barX)
         .attr('y', barY)
         .attr('width', barWidth)
@@ -131,6 +138,7 @@ export class BarChart extends AxesChart {
     barGrps.exit()
       .transition()
         .duration(this.opts.transitionDuration)
+        .ease(this.opts.ease)
         .style('opacity', 0)
       .remove();
 
@@ -145,12 +153,12 @@ export class BarChart extends AxesChart {
     lbl.enter().append('text')
       .attr('class', 'monte-bar-label')
       .merge(lbl)
-        .attr('fill', (d1) => this.optInvoke(this.opts.labelFillScale, d1, i, nodes))
-        .attr('x', (d1) => this.optInvoke(this.opts.labelX, d1, i, nodes))
-        .attr('dx', (d1) => this.optInvoke(this.opts.labelXAdjust, d1, i, nodes))
-        .attr('y', (d1) => this.optInvoke(this.opts.labelY, d1, i, nodes))
-        .attr('dy', (d1) => this.optInvoke(this.opts.labelYAdjust, d1, i, nodes))
-        .text((d1) => this.optInvoke(this.opts.label, d1, i, nodes));
+        .attr('fill', (d1) => this.tryInvoke(this.opts.labelFillScale, d1, i, nodes))
+        .attr('x', (d1) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
+        .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
+        .attr('y', (d1) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
+        .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
+        .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes));
 
     lbl.exit().remove();
   }

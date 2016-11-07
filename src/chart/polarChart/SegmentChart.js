@@ -1,12 +1,12 @@
 import { ArcChart } from './ArcChart';
-import { halfPi } from '../../const/math';
+import { HALF_PI } from '../../const/math';
 import { noop } from '../../tools/noop';
 
 const SEGMENT_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-segment-chart',
   piePadAngle: 0,
-  pieStartAngle: halfPi,
-  pieEndAngle: -halfPi,
+  pieStartAngle: HALF_PI,
+  pieEndAngle: -HALF_PI,
 
   arcBgCssScale: noop,
   arcBgFillScale: noop,

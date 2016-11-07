@@ -95,6 +95,7 @@ export class ScatterPlot extends AxesChart {
             d.css], d, i))
       .transition()
         .duration(this.opts.transitionDuration)
+        .ease(this.opts.ease)
         .call(this.opts.pointEnterStart)
         .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
         .call(this.opts.pointEnterEnd);
@@ -103,6 +104,7 @@ export class ScatterPlot extends AxesChart {
     points.exit()
       .transition()
       .duration(this.opts.transitionDuration)
+      .ease(this.opts.ease)
       .call(this.opts.pointExitStart)
       .style('opacity', 0)
       .call(this.opts.pointExitEnd)

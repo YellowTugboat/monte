@@ -2,7 +2,7 @@ import { Extension } from './Extension';
 
 const BAR_BG_DEFAULTS = {
   eventPrefix: 'barbg',
-  barBgCss: 'monte-bar-bg',
+  barBgCss: 'monte-ext-bar-bg',
   data: null,
   maxValue: null,  // Maximum value
   maxValueProp: null, // Maximum value taken from chart data
@@ -42,7 +42,7 @@ export class BarBg extends Extension {
           return v;
         })
         .attr('height', (...args) => barChart._barHeight.bind(barChart)(...args) + this._heightAdjust(sizeAdjust))
-        .attr('rx', (d, i) => this.optInvoke(this.opts.cornerRadius, d, i));
+        .attr('rx', (d, i) => this.tryInvoke(this.opts.cornerRadius, d, i));
   }
 
   _buildData(barChart, chartData) {

@@ -1,18 +1,16 @@
 import { PolarChart } from './PolarChart';
+import { TAU } from '../../const/math';
+import { arcSimpleTween } from '../../util/tween';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
-import { tau } from '../../const/math';
+import { radiusContrain } from '../../util/dimension';
 
 const ARC_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart',
 
   cornerRadius: 0,
   innerRadius: 0,
-  outerRadius: (width, height) => {
-    const wr = width / 2;
-    const hr = height / 2;
-    return wr < hr ? wr : hr; // Constrain to smallest draw-area dimension
-  },
+  outerRadius: radiusContrain,
 
   arcCustomize: null,
   arcCss: 'arc',
@@ -35,7 +33,7 @@ const ARC_CHART_DEFAULTS = {
 
   itemValueProp: 'value',
   pieStartAngle: 0,
-  pieEndAngle: tau,
+  pieEndAngle: TAU,
   piePadAngle: 0.02,
 };
 
@@ -49,7 +47,6 @@ export class ArcChart extends PolarChart {
 
     // Initialize the arc generator
     this.arc = d3.arc()
-      .innerRadius(this.opts.innerRadius)
       .cornerRadius(this.opts.cornerRadius);
 
     this.pie = d3.pie().value((d) => d[this.opts.itemValueProp])
@@ -74,7 +71,9 @@ export class ArcChart extends PolarChart {
   _updateBounds() {
     super._updateBounds();
 
-    this.arc.outerRadius(this.optInvoke(this.opts.outerRadius, this.width, this.height));
+    this.arc
+      .innerRadius(this.tryInvoke(this.opts.innerRadius, this.width, this.height))
+      .outerRadius(this.tryInvoke(this.opts.outerRadius, this.width, this.height));
   }
 
   _data(data) {
@@ -102,9 +101,10 @@ export class ArcChart extends PolarChart {
           .transition()
             .delay(this.opts.transitionDuration)
             .duration(this.opts.transitionDuration)
+            .ease(this.opts.ease)
             .attrTween('d', (d) => {
-              const start = this.optInvoke(this.opts.arcWedgeEnter, d);
-              return arcTween(arc, start, d);
+              const start = this.tryInvoke(this.opts.arcWedgeEnter, d);
+              return arcSimpleTween(arc, start, d);
             })
             .attr('fill', (d, i) => this.opts.arcWedgeFillScale(d.id || i));
 
@@ -119,22 +119,24 @@ export class ArcChart extends PolarChart {
 
           delete nd.prev; // Remove old records to prevent building a history tree.
         })
-        .attr('class', (d, i) =>
+        .attr('class', (d, i) => this._buildCss(
           ['monte-arc-wedge',
            this.opts.arcWedgeCss,
-           this.opts.arcWedgeCssScale(d.id || i),
-           d.data.css].join(' '))
+           this.opts.arcWedgeCssScale,
+           d.data.css], d, i))
         .transition()
           .delay(this.opts.transitionDuration)
           .duration(this.opts.transitionDuration)
+          .ease(this.opts.ease)
           .attrTween('d', function(d) {
-            return arcTween(arc, d.prev, d);
+            return arcSimpleTween(arc, d.prev, d);
           })
           .attr('fill', (d, i) => this.opts.arcWedgeFillScale(d.id || i));
 
     arcs.exit()
       .transition()
         .duration(this.opts.transitionDuration)
+        .ease(this.opts.ease)
         .style('opacity', 0.01)
         .remove();
   }
@@ -158,10 +160,4 @@ export class ArcChart extends PolarChart {
            ['monte-wedge-bg',
             this.opts.arcBgWedgeCssScale()].join(' '));
   }
-}
-
-function arcTween(arc, from, to) {
-  const i = d3.interpolate(from, to);
-
-  return (t) => arc(i(t));
 }
