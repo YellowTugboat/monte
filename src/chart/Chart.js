@@ -30,8 +30,10 @@ const DEFAULTS = {
   customEvents: [],
   extensions: [],
 
+  // TODO: Rework transition features to support the various Update pattern stages.
   transitionDuration: TRANSITION_DURATION_MS,
   ease: d3.easeCubic,
+  delay: 0,
 
   resize: null,
 

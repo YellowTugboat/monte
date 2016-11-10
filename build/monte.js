@@ -3047,8 +3047,10 @@ var DEFAULTS = {
   customEvents: [],
   extensions: [],
 
+  // TODO: Rework transition features to support the various Update pattern stages.
   transitionDuration: TRANSITION_DURATION_MS,
   ease: d3.easeCubic,
+  delay: 0,
 
   resize: null,
 
@@ -5512,9 +5514,7 @@ var SegmentBarChart = function (_AxesChart) {
         var nestedData = d[prop];
         var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
 
-        innerRects.enter().append('rect').call(_this5.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this5.opts.transitionDuration).delay(function (d, i, nodes) {
-          return (nodes.length - i) * 300;
-        }).ease(_this5.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
+        innerRects.enter().append('rect').call(_this5.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this5.opts.transitionDuration).delay(_this5.opts.delay).ease(_this5.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
       });
 
       barGrps.exit().remove();
@@ -5541,9 +5541,7 @@ var SegmentBarChart = function (_AxesChart) {
         var nestedData = d[prop];
         var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
 
-        innerRects.enter().append('rect').call(_this6.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this6.opts.transitionDuration).delay(function (d, i) {
-          return i * 300;
-        }).ease(_this6.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
+        innerRects.enter().append('rect').call(_this6.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this6.opts.transitionDuration).delay(_this6.opts.delay).ease(_this6.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
       });
 
       barGrps.exit().remove();
