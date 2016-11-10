@@ -114,8 +114,8 @@ export class BarChart extends AxesChart {
       .merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
         .attr('class', (d, i) => this._buildCss(
           [this.opts.barCss,
-           this.opts.barCssScale,
-           d.css], d, i))
+            this.opts.barCssScale,
+            d.css], d, i))
       .transition()
         .duration(this.opts.transitionDuration)
         .ease(this.opts.ease)

@@ -5499,28 +5499,22 @@ var SegmentBarChart = function (_AxesChart) {
         return d.id || i;
       });
 
-      var barX = this._barX.bind(this);
-      // const barY = this._barY.bind(this);
       var barXInner = this._barXInnerStacked.bind(this);
       var barYInner = this._barYInnerStacked.bind(this);
-      var barWidth = this._barWidth.bind(this);
-      var barHeight = this._barHeightInner.bind(this);
+      var barWidth = this._barWidthStacked.bind(this);
+      var barHeight = this._barHeightStacked.bind(this);
+      var translate = this._barGroupTranslate.bind(this);
 
       barGrps.enter().append('g').attr('class', 'monte-segment-bar-grp').call(this.__bindCommonEvents('bargrp')).merge(barGrps).attr('transform', function (d) {
-        return 'translate(' + barX(d) + ', 0)';
+        return 'translate(' + translate(d) + ')';
       }).each(function (d, i, nodes) {
-        var prop = _this5.tryInvoke(_this5.opts.yProp);
+        var prop = _this5._barProp();
         var nestedData = d[prop];
         var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
 
-        var yShift = 0;
-        innerRects.enter().append('rect').call(_this5.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this5.opts.transitionDuration).ease(_this5.opts.ease).attr('x', barXInner).attr('y', function (d) {
-          var baseY = barYInner(d);
-          var y = yShift + baseY;
-          yShift -= barHeight(d);
-
-          return y;
-        }).attr('width', barWidth).attr('height', barHeight);
+        innerRects.enter().append('rect').call(_this5.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this5.opts.transitionDuration).delay(function (d, i, nodes) {
+          return (nodes.length - i) * 300;
+        }).ease(_this5.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
       });
 
       barGrps.exit().remove();
@@ -5534,22 +5528,22 @@ var SegmentBarChart = function (_AxesChart) {
         return d.id || i;
       });
 
-      // const barX = this._barX.bind(this);
-      // const barY = this._barY.bind(this);
       var barXInner = this._barXInnerGrouped.bind(this);
       var barYInner = this._barYInnerGrouped.bind(this);
-      var barWidth = this._barWidthInner.bind(this);
-      var barHeight = this._barHeightInner.bind(this);
+      var barWidth = this._barWidthGrouped.bind(this);
+      var barHeight = this._barHeightGrouped.bind(this);
       var translate = this._barGroupTranslate.bind(this);
 
       barGrps.enter().append('g').attr('class', 'monte-segment-bar-grp').call(this.__bindCommonEvents('bargrp')).merge(barGrps).attr('transform', function (d) {
         return 'translate(' + translate(d) + ')';
       }).each(function (d, i, nodes) {
-        var prop = _this6.tryInvoke(_this6.opts.yProp);
+        var prop = _this6._barProp();
         var nestedData = d[prop];
         var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
 
-        innerRects.enter().append('rect').call(_this6.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this6.opts.transitionDuration).ease(_this6.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
+        innerRects.enter().append('rect').call(_this6.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this6.opts.transitionDuration).delay(function (d, i) {
+          return i * 300;
+        }).ease(_this6.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
       });
 
       barGrps.exit().remove();
@@ -5581,6 +5575,11 @@ var SegmentBarChart = function (_AxesChart) {
       lbl.exit().remove();
     }
   }, {
+    key: '_barProp',
+    value: function _barProp() {
+      return this.tryInvoke(this.opts.yProp);
+    }
+  }, {
     key: '_barGroupTranslate',
     value: function _barGroupTranslate(d) {
       return this._barX(d) + ', 0';
@@ -5601,13 +5600,13 @@ var SegmentBarChart = function (_AxesChart) {
       return 0;
     }
   }, {
-    key: '_barWidth',
-    value: function _barWidth() {
+    key: '_barWidthStacked',
+    value: function _barWidthStacked() {
       return this.x.bandwidth();
     }
   }, {
-    key: '_barWidthInner',
-    value: function _barWidthInner() {
+    key: '_barWidthGrouped',
+    value: function _barWidthGrouped() {
       return this.xInner.bandwidth();
     }
   }, {
@@ -5618,21 +5617,230 @@ var SegmentBarChart = function (_AxesChart) {
   }, {
     key: '_barYInnerGrouped',
     value: function _barYInnerGrouped(d) {
-      return this.height - this._barHeightInner(d);
+      return this.height - this._barHeightGrouped(d);
     }
   }, {
     key: '_barYInnerStacked',
-    value: function _barYInnerStacked(d) {
-      return this.getScaledProp('y', 'yInner', d);
+    value: function _barYInnerStacked(d, i, nodes) {
+      var baseY = this.getScaledProp('y', 'yInner', d);
+      var yShift = 0;
+
+      for (var j = 0; j < i; j++) {
+        var n = d3.select(nodes[j]);
+        var d1 = n.datum();
+        yShift -= this._barHeightStacked(d1);
+      }
+
+      return baseY + yShift;
     }
   }, {
-    key: '_barHeightInner',
-    value: function _barHeightInner(d) {
+    key: '_barHeightGrouped',
+    value: function _barHeightGrouped(d) {
+      return this.height - this.getScaledProp('y', 'yInner', d);
+    }
+  }, {
+    key: '_barHeightStacked',
+    value: function _barHeightStacked(d) {
       return this.height - this.getScaledProp('y', 'yInner', d);
     }
   }]);
   return SegmentBarChart;
 }(AxesChart);
+
+// import { commonEventNames } from '../../tools/commonEventNames';
+// import { resetScaleDomain } from '../../tools/resetScaleDomain';
+
+var HSEGMENT_BAR_CHART_DEFAULTS = {
+  chartCss: 'monte-horizontal-segement-bar-chart',
+  barSegmentCss: 'bar-segment',
+
+  margin: {
+    top: 10,
+    right: 0,
+    bottom: 30,
+    left: 40
+  },
+
+  segmentBarMode: SEGMENT_BAR_MODE.STACKED,
+
+  yProp: 'id',
+  xProp: 'values',
+  yInnerProp: 'type',
+  xInnerProp: 'value',
+
+  xScale: d3.scaleLinear,
+
+  yInnerScale: function yInnerScale() {
+    return d3.scaleBand().paddingInner(0.1).paddingOuter(0.1).round(true);
+  },
+
+  yScale: function yScale() {
+    return d3.scaleBand().paddingInner(0.1).round(true);
+  },
+
+  xDomainCustomize: extentBalanced,
+  yDomainCustomize: null,
+
+  includeLabels: false,
+
+  labelProp: 'value',
+  labelFillScale: noop,
+  label: function label(d) {
+    return this.getProp('label', d);
+  },
+  labelXAdjust: '',
+  labelX: function labelX(d) {
+    return this._barX(d) + this.x.bandwidth() / 2;
+  },
+  labelYAdjust: '-0.05em',
+  labelY: function labelY(d) {
+    return this._barY(d);
+  }
+};
+
+var HorizontalSegmentBarChart = function (_SegmentBarChart) {
+  inherits(HorizontalSegmentBarChart, _SegmentBarChart);
+
+  function HorizontalSegmentBarChart() {
+    classCallCheck(this, HorizontalSegmentBarChart);
+    return possibleConstructorReturn(this, (HorizontalSegmentBarChart.__proto__ || Object.getPrototypeOf(HorizontalSegmentBarChart)).apply(this, arguments));
+  }
+
+  createClass(HorizontalSegmentBarChart, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(HorizontalSegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(HorizontalSegmentBarChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [HSEGMENT_BAR_CHART_DEFAULTS]));
+    }
+  }, {
+    key: '_initInnerScales',
+    value: function _initInnerScales() {
+      this.yInner = this.opts.yInnerScale();
+    }
+  }, {
+    key: '_updateXInnerRange',
+    value: function _updateXInnerRange() {}
+  }, {
+    key: '_updateXInnerDomain',
+    value: function _updateXInnerDomain() {}
+  }, {
+    key: '_updateYInnerRange',
+    value: function _updateYInnerRange() {
+      this.yInner.range([0, this.y.bandwidth()]);
+    }
+  }, {
+    key: '_updateYInnerDomain',
+    value: function _updateYInnerDomain() {
+      var data = this.data();
+      var xProp = this.tryInvoke(this.opts.xProp);
+      var yInnerProp = this.tryInvoke(this.opts.yInnerProp);
+      var yInnerDomain = data[0][xProp].map(function (d) {
+        return d[yInnerProp];
+      });
+      this.yInner.domain(yInnerDomain);
+    }
+  }, {
+    key: '_domainExtent',
+    value: function _domainExtent(data, scaleName) {
+      var _this2 = this;
+
+      var extent = null;
+
+      if (scaleName === 'y') {
+        extent = data.map(function (d) {
+          return _this2.getProp('y', d);
+        });
+      } else if (scaleName === 'x') {
+        var mode = this.tryInvoke(this.opts.segmentBarMode);
+
+        if (mode === SEGMENT_BAR_MODE.GROUPED) {
+          extent = this._extentInner(data, 'x');
+        } else if (mode === SEGMENT_BAR_MODE.STACKED) {
+          extent = this._extentMaxes(data, 'x');
+        } else {
+          throw MonteOptionError.InvalidEnumOption('segmentBarMode', mode);
+        }
+      }
+
+      return extent;
+    }
+  }, {
+    key: '_barProp',
+    value: function _barProp() {
+      return this.tryInvoke(this.opts.xProp);
+    }
+  }, {
+    key: '_barGroupTranslate',
+    value: function _barGroupTranslate(d) {
+      return '0, ' + this._barY(d);
+    }
+  }, {
+    key: '_barX',
+    value: function _barX(d) {
+      return this.getScaledProp('x', d);
+    }
+  }, {
+    key: '_barXInnerGrouped',
+    value: function _barXInnerGrouped() {
+      return 0;
+    }
+  }, {
+    key: '_barXInnerStacked',
+    value: function _barXInnerStacked(d, i, nodes) {
+      var baseX = 0;
+      var xShift = 0;
+
+      for (var j = 0; j < i; j++) {
+        var n = d3.select(nodes[j]);
+        var d1 = n.datum();
+        xShift += this._barWidthStacked(d1);
+      }
+
+      return baseX + xShift;
+    }
+  }, {
+    key: '_barWidthGrouped',
+    value: function _barWidthGrouped(d) {
+      return this.getScaledProp('x', 'xInner', d);
+    }
+  }, {
+    key: '_barWidthStacked',
+    value: function _barWidthStacked(d) {
+      return this.getScaledProp('x', 'xInner', d);
+    }
+  }, {
+    key: '_barY',
+    value: function _barY(d) {
+      return this.getScaledProp('y', d);
+    }
+  }, {
+    key: '_barYInnerGrouped',
+    value: function _barYInnerGrouped(d) {
+      return this.getScaledProp('yInner', d);
+    }
+  }, {
+    key: '_barYInnerStacked',
+    value: function _barYInnerStacked() {
+      return 0;
+    }
+  }, {
+    key: '_barHeightGrouped',
+    value: function _barHeightGrouped() {
+      return this.yInner.bandwidth();
+    }
+  }, {
+    key: '_barHeightStacked',
+    value: function _barHeightStacked() {
+      return this.y.bandwidth();
+    }
+  }]);
+  return HorizontalSegmentBarChart;
+}(SegmentBarChart);
 
 var SCATTER_PLOT_DEFAULTS = {
   chartCss: 'monte-scatter-plot',
@@ -6682,6 +6890,9 @@ var Extension = function () {
           this.emit('updated');
         }
       } catch (e) {
+        if (console && console.log) {
+          console.log(e);
+        } // eslint-disable-line no-console
         this.chart.emit('suppressedError', e, e.stack || 'No stack available.');
       }
     }
@@ -6976,23 +7187,25 @@ var Grid = function (_Extension) {
       var x2 = this.tryInvoke(this.opts.x2Adjust);
       var y1 = this.tryInvoke(this.opts.y1Adjust);
       var y2 = this.tryInvoke(this.opts.y2Adjust);
+      var duration = this.tryInvoke(this.chart.opts.transitionDuration);
+      var ease = this.chart.opts.ease;
 
       if (cfg.orient === HORIZONTAL) {
-        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0 + x1).attr('y1', AXIS_SHIFT + y1).attr('x2', cfg.axesChart.width + x2).attr('y2', AXIS_SHIFT + y2).attr('transform', function (d) {
+        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition().duration(duration).ease(ease).attr('x1', 0 + x1).attr('y1', AXIS_SHIFT + y1).attr('x2', cfg.axesChart.width + x2).attr('y2', AXIS_SHIFT + y2).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
         });
 
-        ticks.transition(axisTransition).duration(this.chart.opts.transitionDuration).ease(this.chart.opts.ease).attr('x2', function () {
+        ticks.transition(axisTransition).duration(duration).ease(ease).attr('x2', function () {
           return cfg.axesChart.width + x2;
         }).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
         });
       } else if (cfg.orient === VERTICAL) {
-        ticks.enter().append('line').attr('class', fullCss).attr('x1', AXIS_SHIFT + x1).attr('y1', 0 + y1).attr('x2', AXIS_SHIFT + x2).attr('y2', cfg.axesChart.height + y2).attr('transform', function (d) {
+        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition().duration(duration).ease(ease).attr('x1', AXIS_SHIFT + x1).attr('y1', 0 + y1).attr('x2', AXIS_SHIFT + x2).attr('y2', cfg.axesChart.height + y2).attr('transform', function (d) {
           return 'translate(' + cfg.scale(d) + ', 0)';
         });
 
-        ticks.transition(axisTransition).duration(this.chart.opts.transitionDuration).ease(this.chart.opts.ease).attr('y2', function () {
+        ticks.transition(axisTransition).duration(duration).ease(ease).attr('y2', function () {
           return cfg.axesChart.height + y2;
         }).attr('transform', function (d) {
           return 'translate(' + cfg.scale(d) + ', 0)';
@@ -7586,8 +7799,10 @@ var ReferenceLine = function (_Extension) {
 
       this.lineData = this.tryInvoke(this.opts.data, this.chart.data());
 
-      if (!isArray$2(this.lineData)) {
+      if (!isArray$2(this.lineData) && isDefined(this.lineData)) {
         this.lineData = [this.lineData];
+      } else if (isDefined(this.lineData)) {
+        this.lineData = [];
       }
 
       var lines = this.layer.selectAll('.' + this.opts.css).data(this.lineData);
@@ -7837,6 +8052,7 @@ exports.HorizontalBarChart = HorizontalBarChart;
 exports.SimpleBarChart = SimpleBarChart;
 exports.HorizontalSimpleBarChart = HorizontalSimpleBarChart;
 exports.SegmentBarChart = SegmentBarChart;
+exports.HorizontalSegmentBarChart = HorizontalSegmentBarChart;
 exports.ScatterPlot = ScatterPlot;
 exports.IconArray = IconArray;
 exports.ArcChart = ArcChart;

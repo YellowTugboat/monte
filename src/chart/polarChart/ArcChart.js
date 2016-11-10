@@ -93,7 +93,8 @@ export class ArcChart extends PolarChart {
     arcs.enter().append('g')
         .attr('class', `monte-arc ${this.opts.arcCss}`)
         .append('path')
-          .attr('class', (d, i) => this._buildCss(['monte-arc-wedge',
+          .attr('class', (d, i) => this._buildCss(
+            ['monte-arc-wedge',
               this.opts.arcWedgeCss,
               this.opts.arcWedgeCssScale,
               d.data.css], d, i))
@@ -121,9 +122,9 @@ export class ArcChart extends PolarChart {
         })
         .attr('class', (d, i) => this._buildCss(
           ['monte-arc-wedge',
-           this.opts.arcWedgeCss,
-           this.opts.arcWedgeCssScale,
-           d.data.css], d, i))
+            this.opts.arcWedgeCss,
+            this.opts.arcWedgeCssScale,
+            d.data.css], d, i))
         .transition()
           .delay(this.opts.transitionDuration)
           .duration(this.opts.transitionDuration)
@@ -158,6 +159,6 @@ export class ArcChart extends PolarChart {
         .attr('fill', () => this.opts.arcBgWedgeFillScale())
         .attr('class', () =>
            ['monte-wedge-bg',
-            this.opts.arcBgWedgeCssScale()].join(' '));
+             this.opts.arcBgWedgeCssScale()].join(' '));
   }
 }

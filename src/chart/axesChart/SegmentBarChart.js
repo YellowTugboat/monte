@@ -191,38 +191,31 @@ export class SegmentBarChart extends AxesChart {
     const barGrps = this.draw.selectAll('.monte-segment-bar-grp')
       .data(this.displayData, (d, i) => d.id || i);
 
-    const barX = this._barX.bind(this);
-    // const barY = this._barY.bind(this);
     const barXInner = this._barXInnerStacked.bind(this);
     const barYInner = this._barYInnerStacked.bind(this);
-    const barWidth = this._barWidth.bind(this);
-    const barHeight = this._barHeightInner.bind(this);
+    const barWidth = this._barWidthStacked.bind(this);
+    const barHeight = this._barHeightStacked.bind(this);
+    const translate = this._barGroupTranslate.bind(this);
 
     barGrps.enter().append('g')
       .attr('class', 'monte-segment-bar-grp')
       .call(this.__bindCommonEvents('bargrp'))
       .merge(barGrps)
-        .attr('transform', (d) => `translate(${barX(d)}, 0)`)
+        .attr('transform', (d) => `translate(${translate(d)})`)
         .each((d, i, nodes) => {
-          const prop = this.tryInvoke(this.opts.yProp);
+          const prop = this._barProp();
           const nestedData = d[prop];
           const innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
 
-          let yShift = 0;
           innerRects.enter().append('rect')
             .call(this.__bindCommonEvents('barseg'))
             .merge(innerRects)
               .transition()
                 .duration(this.opts.transitionDuration)
+                .delay((d, i, nodes) => (nodes.length - i) * 300)
                 .ease(this.opts.ease)
                 .attr('x', barXInner)
-                .attr('y', (d) => {
-                  const baseY = barYInner(d);
-                  const y = yShift + baseY;
-                  yShift -= barHeight(d);
-
-                  return y;
-                })
+                .attr('y', barYInner)
                 .attr('width', barWidth)
                 .attr('height', barHeight);
         });
@@ -234,12 +227,10 @@ export class SegmentBarChart extends AxesChart {
     const barGrps = this.draw.selectAll('.monte-segment-bar-grp')
       .data(this.displayData, (d, i) => d.id || i);
 
-    // const barX = this._barX.bind(this);
-    // const barY = this._barY.bind(this);
     const barXInner = this._barXInnerGrouped.bind(this);
     const barYInner = this._barYInnerGrouped.bind(this);
-    const barWidth = this._barWidthInner.bind(this);
-    const barHeight = this._barHeightInner.bind(this);
+    const barWidth = this._barWidthGrouped.bind(this);
+    const barHeight = this._barHeightGrouped.bind(this);
     const translate = this._barGroupTranslate.bind(this);
 
     barGrps.enter().append('g')
@@ -248,7 +239,7 @@ export class SegmentBarChart extends AxesChart {
       .merge(barGrps)
         .attr('transform', (d) => `translate(${translate(d)})`)
         .each((d, i, nodes) => {
-          const prop = this.tryInvoke(this.opts.yProp);
+          const prop = this._barProp();
           const nestedData = d[prop];
           const innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
 
@@ -257,6 +248,7 @@ export class SegmentBarChart extends AxesChart {
             .merge(innerRects)
               .transition()
                 .duration(this.opts.transitionDuration)
+                .delay((d, i) => i * 300)
                 .ease(this.opts.ease)
                 .attr('x', barXInner)
                 .attr('y', barYInner)
@@ -284,14 +276,27 @@ export class SegmentBarChart extends AxesChart {
     lbl.exit().remove();
   }
 
+  _barProp() { return this.tryInvoke(this.opts.yProp); }
   _barGroupTranslate(d) { return `${this._barX(d)}, 0`; }
   _barX(d) { return this.getScaledProp('x', d); }
   _barXInnerGrouped(d) { return this.getScaledProp('xInner', d); }
   _barXInnerStacked() { return 0; }
-  _barWidth() { return this.x.bandwidth(); }
-  _barWidthInner() { return this.xInner.bandwidth(); }
+  _barWidthStacked() { return this.x.bandwidth(); }
+  _barWidthGrouped() { return this.xInner.bandwidth(); }
   _barY(d) { return this.getScaledProp('y', d); }
-  _barYInnerGrouped(d) { return this.height - this._barHeightInner(d); }
-  _barYInnerStacked(d) { return this.getScaledProp('y', 'yInner', d); }
-  _barHeightInner(d) { return this.height - this.getScaledProp('y', 'yInner', d); }
+  _barYInnerGrouped(d) { return this.height - this._barHeightGrouped(d); }
+  _barYInnerStacked(d, i, nodes) {
+    const baseY = this.getScaledProp('y', 'yInner', d);
+    let yShift = 0;
+
+    for (let j = 0; j < i; j++) {
+      const n = d3.select(nodes[j]);
+      const d1 = n.datum();
+      yShift -= this._barHeightStacked(d1);
+    }
+
+    return baseY + yShift;
+  }
+  _barHeightGrouped(d) { return this.height - this.getScaledProp('y', 'yInner', d); }
+  _barHeightStacked(d) { return this.height - this.getScaledProp('y', 'yInner', d); }
 }

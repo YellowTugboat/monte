@@ -89,7 +89,7 @@ export class ScatterPlot extends AxesChart {
         .attr('fill', (d, i) => this.opts.pointFillScale(d.id || i))
         .attr('stroke', (d, i) => this.opts.pointStrokeScale(d.id || i))
         .attr('class', (d, i) => this._buildCss(
-           ['monte-point',
+          ['monte-point',
             this.opts.pointCss,
             this.opts.pointCssScale,
             d.css], d, i))

@@ -124,9 +124,9 @@ export class LineChart extends AxesChart {
       .merge(lineGrps.select('.monte-line')) // Update existing lines and set values on new lines.
         .attr('class', (d, i) => this._buildCss(
           ['monte-line',
-           this.opts.lineCss,
-           this.opts.lineCssScale,
-           d.css], d, i))
+            this.opts.lineCss,
+            this.opts.lineCssScale,
+            d.css], d, i))
         .transition()
           .duration(this.opts.transitionDuration)
           .ease(this.opts.ease)
@@ -165,7 +165,7 @@ export class LineChart extends AxesChart {
       .merge(points) // Update existing points and set values on new points.
         .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
         .attr('class', (d) => this._buildCss(
-           ['monte-point',
+          ['monte-point',
             lineDatum.css,
             this.opts.lineCssScale,
             this.opts.pointCss,

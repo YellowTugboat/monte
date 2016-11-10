@@ -93,7 +93,7 @@ export class AreaChart extends LineChart {
         .call(this.__bindCommonEvents('area'))
       .merge(area) // Update existing points and set values on new points.
         .attr('class', (d) => this._buildCss(
-           ['monte-area',
+          ['monte-area',
             lineDatum.css,
             this.opts.lineCssScale,
             this.opts.areaCss,

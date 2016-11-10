@@ -59,34 +59,50 @@ export class Grid extends Extension {
     const x2 = this.tryInvoke(this.opts.x2Adjust);
     const y1 = this.tryInvoke(this.opts.y1Adjust);
     const y2 = this.tryInvoke(this.opts.y2Adjust);
+    const duration = this.tryInvoke(this.chart.opts.transitionDuration);
+    const ease = this.chart.opts.ease;
 
     if (cfg.orient === HORIZONTAL) {
       ticks.enter().append('line')
         .attr('class', fullCss)
-        .attr('x1', 0 + x1)
-        .attr('y1', AXIS_SHIFT + y1)
-        .attr('x2', cfg.axesChart.width + x2)
-        .attr('y2', AXIS_SHIFT + y2)
-        .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
+        .attr('x1', 0)
+        .attr('x2', 0)
+        .attr('y1', 0)
+        .attr('y2', 0)
+        .transition()
+          .duration(duration)
+          .ease(ease)
+          .attr('x1', 0 + x1)
+          .attr('y1', AXIS_SHIFT + y1)
+          .attr('x2', cfg.axesChart.width + x2)
+          .attr('y2', AXIS_SHIFT + y2)
+          .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
 
       ticks.transition(axisTransition)
-        .duration(this.chart.opts.transitionDuration)
-        .ease(this.chart.opts.ease)
+        .duration(duration)
+        .ease(ease)
         .attr('x2', () => cfg.axesChart.width + x2)
         .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
     }
     else if (cfg.orient === VERTICAL) {
       ticks.enter().append('line')
         .attr('class', fullCss)
-        .attr('x1', AXIS_SHIFT + x1)
-        .attr('y1', 0 + y1)
-        .attr('x2', AXIS_SHIFT + x2)
-        .attr('y2', cfg.axesChart.height + y2)
-        .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
+        .attr('x1', 0)
+        .attr('x2', 0)
+        .attr('y1', 0)
+        .attr('y2', 0)
+        .transition()
+          .duration(duration)
+          .ease(ease)
+          .attr('x1', AXIS_SHIFT + x1)
+          .attr('y1', 0 + y1)
+          .attr('x2', AXIS_SHIFT + x2)
+          .attr('y2', cfg.axesChart.height + y2)
+          .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
 
       ticks.transition(axisTransition)
-        .duration(this.chart.opts.transitionDuration)
-        .ease(this.chart.opts.ease)
+        .duration(duration)
+        .ease(ease)
         .attr('y2', () => cfg.axesChart.height + y2)
         .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
     }

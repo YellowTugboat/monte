@@ -49,7 +49,7 @@ export class SegmentChart extends ArcChart {
         .attr('fill', (d, i) => this.opts.arcBgFillScale(d.id || i))
         .attr('class', (d, i) =>
            ['monte-segment-bg',
-            this.opts.arcBgCssScale(d.id || i),
-            ].join(' '));
+             this.opts.arcBgCssScale(d.id || i),
+           ].join(' '));
   }
 }

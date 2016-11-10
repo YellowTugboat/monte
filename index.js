@@ -16,6 +16,7 @@ export { HorizontalBarChart } from './src/chart/axesChart/HorizontalBarChart';
 export { SimpleBarChart } from './src/chart/axesChart/SimpleBarChart';
 export { HorizontalSimpleBarChart } from './src/chart/axesChart/SimpleHorizontalBarChart';
 export { SegmentBarChart } from './src/chart/axesChart/SegmentBarChart';
+export { HorizontalSegmentBarChart } from './src/chart/axesChart/HorizontalSegmentBarChart';
 
 export { ScatterPlot } from './src/chart/axesChart/ScatterPlotChart';
 export { IconArray } from './src/chart/axesChart/IconArray';

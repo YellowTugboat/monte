@@ -72,6 +72,7 @@ export class Extension {
       }
     }
     catch (e) {
+      if (console && console.log) { console.log(e); } // eslint-disable-line no-console
       this.chart.emit('suppressedError', e, e.stack || 'No stack available.');
     }
   }

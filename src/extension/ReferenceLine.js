@@ -1,5 +1,5 @@
+import { isArray, isDefined } from '../tools/is';
 import { Extension } from './Extension';
-import { isArray } from '../tools/is';
 import { noop } from '../tools/noop';
 
 const REF_LINE_DEFAULTS = {
@@ -66,7 +66,12 @@ export class ReferenceLine extends Extension {
   _update() {
     this.lineData = this.tryInvoke(this.opts.data, this.chart.data());
 
-    if (!isArray(this.lineData)) { this.lineData = [this.lineData]; }
+    if (!isArray(this.lineData) && isDefined(this.lineData)) {
+      this.lineData = [this.lineData];
+    }
+    else if (isDefined(this.lineData)) {
+      this.lineData = [];
+    }
 
     const lines = this.layer.selectAll(`.${this.opts.css}`).data(this.lineData);
 
