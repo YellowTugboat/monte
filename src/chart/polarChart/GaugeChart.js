@@ -25,6 +25,7 @@ const GAUGE_CHART_DEFAULTS = {
   segmentsProp: 'segments',
   itemValueProp: 'interval',
   startValueProp: 'start',
+  needleValueProp: 'value',
   segmentLabelProp: 'label',
 };
 
@@ -68,18 +69,20 @@ export class GaugeChart extends ArcChart {
   }
 
   _data(data) {
-    this.needleValue(data[this.opts.itemValueProp]);
-    super._data(data[this.opts.segmentsProp]);
+    const segmentsProp = this.tryInvoke(this.opts.segmentsProp);
+    const startProp = this.tryInvoke(this.opts.startValueProp);
+    const itemValueProp = this.tryInvoke(this.opts.itemValueProp);
+    const needleValueProp = this.tryInvoke(this.opts.needleValueProp);
 
-    const intervalSum = this.displayData.reduce((acc, d) =>
-      acc + Math.abs(d[this.opts.itemValueProp]), 0);
+    super._data(data[segmentsProp]);
+    const intervalSum = this.displayData.reduce((acc, d) => acc + Math.abs(d[itemValueProp]), 0);
+    const start = data[startProp] || 0;
 
-    // this.angleScale.domain([0, intervalSum]);
-    let start = data[this.opts.startValueProp] || 0;
     this.angleScale.domain([start, start + intervalSum]);
+    this.needleValue(data[needleValueProp], true);
   }
 
-  needleValue(value) {
+  needleValue(value, suppressUpdate = false) {
     if (value === undefined) {
       return this.needleValueData;
     }
@@ -87,7 +90,8 @@ export class GaugeChart extends ArcChart {
     this._prevNeedleAngleValueData = this.needleValueAngleData;
     this.needleValueData = value;
     this.needleValueAngleData = this.angleScale(value);
-    this.update();
+
+    if (!suppressUpdate) { this.update(); }
 
     return this;
   }
@@ -109,13 +113,12 @@ export class GaugeChart extends ArcChart {
   _updateBackgroundArc() {
     this.bg.append('path')
       .attr('fill', this.opts.arcBgFillScale)
-      .attr('class', (d, i) =>
+      .attr('class', (d, i) => this._buildCss(
         ['monte-gauge-bg',
-          this.opts.arcBgCssScale(d, i),
-        ].join(' '))
+          this.opts.arcBgCssScale], d, i))
       .attr('d', this.bgArc());
 
-    this.__notify('updateBackgroundArc');
+    this.emit('updateBackgroundArc');
   }
 
   _updateLabels() {
@@ -131,7 +134,7 @@ export class GaugeChart extends ArcChart {
           'translate(' + GaugeChart.getCoord(labelRadius, d.endAngle) +')')
         .text((d) => d.data[this.opts.segmentLabelProp]);
 
-    this.__notify('updateLabels');
+    this.emit('updateLabels');
   }
 
   _updateNeedle() {
@@ -162,6 +165,6 @@ export class GaugeChart extends ArcChart {
           };
         });
 
-    this.__notify('updateNeedle');
+    this.emit('updateNeedle');
   }
 }

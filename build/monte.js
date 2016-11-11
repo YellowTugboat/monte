@@ -4,7 +4,7 @@
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha13";
+var version = "0.0.0-alpha14";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -6507,6 +6507,7 @@ var GAUGE_CHART_DEFAULTS = {
   segmentsProp: 'segments',
   itemValueProp: 'interval',
   startValueProp: 'start',
+  needleValueProp: 'value',
   segmentLabelProp: 'label'
 };
 
@@ -6570,22 +6571,25 @@ var GaugeChart = function (_ArcChart) {
   }, {
     key: '_data',
     value: function _data(data) {
-      var _this2 = this;
+      var segmentsProp = this.tryInvoke(this.opts.segmentsProp);
+      var startProp = this.tryInvoke(this.opts.startValueProp);
+      var itemValueProp = this.tryInvoke(this.opts.itemValueProp);
+      var needleValueProp = this.tryInvoke(this.opts.needleValueProp);
 
-      this.needleValue(data[this.opts.itemValueProp]);
-      get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_data', this).call(this, data[this.opts.segmentsProp]);
-
+      get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_data', this).call(this, data[segmentsProp]);
       var intervalSum = this.displayData.reduce(function (acc, d) {
-        return acc + Math.abs(d[_this2.opts.itemValueProp]);
+        return acc + Math.abs(d[itemValueProp]);
       }, 0);
+      var start = data[startProp] || 0;
 
-      // this.angleScale.domain([0, intervalSum]);
-      var start = data[this.opts.startValueProp] || 0;
       this.angleScale.domain([start, start + intervalSum]);
+      this.needleValue(data[needleValueProp], true);
     }
   }, {
     key: 'needleValue',
     value: function needleValue(value) {
+      var suppressUpdate = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
       if (value === undefined) {
         return this.needleValueData;
       }
@@ -6593,7 +6597,10 @@ var GaugeChart = function (_ArcChart) {
       this._prevNeedleAngleValueData = this.needleValueAngleData;
       this.needleValueData = value;
       this.needleValueAngleData = this.angleScale(value);
-      this.update();
+
+      if (!suppressUpdate) {
+        this.update();
+      }
 
       return this;
     }
@@ -6618,18 +6625,18 @@ var GaugeChart = function (_ArcChart) {
   }, {
     key: '_updateBackgroundArc',
     value: function _updateBackgroundArc() {
-      var _this3 = this;
+      var _this2 = this;
 
       this.bg.append('path').attr('fill', this.opts.arcBgFillScale).attr('class', function (d, i) {
-        return ['monte-gauge-bg', _this3.opts.arcBgCssScale(d, i)].join(' ');
+        return _this2._buildCss(['monte-gauge-bg', _this2.opts.arcBgCssScale], d, i);
       }).attr('d', this.bgArc());
 
-      this.__notify('updateBackgroundArc');
+      this.emit('updateBackgroundArc');
     }
   }, {
     key: '_updateLabels',
     value: function _updateLabels() {
-      var _this4 = this;
+      var _this3 = this;
 
       var labels = this.support.selectAll('.monte-gauge-label').data(this.pieDisplayData);
       var labelRadius = this.tryInvoke(this.opts.labelRadius, this.width, this.height);
@@ -6637,15 +6644,15 @@ var GaugeChart = function (_ArcChart) {
       labels.enter().append('text').attr('class', 'monte-gauge-label').attr('text-anchor', 'middle').attr('dy', '0.35em').merge(labels).attr('transform', function (d) {
         return 'translate(' + GaugeChart.getCoord(labelRadius, d.endAngle) + ')';
       }).text(function (d) {
-        return d.data[_this4.opts.segmentLabelProp];
+        return d.data[_this3.opts.segmentLabelProp];
       });
 
-      this.__notify('updateLabels');
+      this.emit('updateLabels');
     }
   }, {
     key: '_updateNeedle',
     value: function _updateNeedle() {
-      var _this5 = this;
+      var _this4 = this;
 
       var baseWidth = this.tryInvoke(this.opts.needleBase);
       var or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
@@ -6660,7 +6667,7 @@ var GaugeChart = function (_ArcChart) {
       });
 
       needle.transition().duration(this.opts.transitionDuration).ease(this.opts.ease).styleTween('transform', function (d) {
-        var a = _this5._prevNeedleAngleValueData;
+        var a = _this4._prevNeedleAngleValueData;
         var b = d;
 
         return function (t) {
@@ -6669,7 +6676,7 @@ var GaugeChart = function (_ArcChart) {
         };
       });
 
-      this.__notify('updateNeedle');
+      this.emit('updateNeedle');
     }
   }]);
   return GaugeChart;
