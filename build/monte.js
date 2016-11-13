@@ -4,7 +4,7 @@
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha14";
+var version = "0.0.0-alpha16";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -5048,7 +5048,7 @@ var BarChart = function (_AxesChart) {
 }(AxesChart);
 
 var HBAR_CHART_DEFAULTS = {
-  chartCss: 'monte-hort-bar-chart',
+  chartCss: 'monte-horizontal-bar-chart',
 
   margin: {
     top: 0,
@@ -5202,7 +5202,7 @@ var SimpleBarChart = function (_BarChart) {
 }(BarChart);
 
 var SIMPLE_HORT_BAR_CHART_DEFAULTS = {
-  chartCss: 'monte-simple-hort-bar-chart',
+  chartCss: 'monte-simple-horizontal-bar-chart',
   boundingWidth: 100,
   boundingHeight: 10,
 
@@ -5268,7 +5268,7 @@ var SEGMENT_BAR_MODE = {
 };
 
 var SEGMENT_BAR_CHART_DEFAULTS = {
-  chartCss: 'monte-segement-bar-chart',
+  chartCss: 'monte-segment-bar-chart',
   barSegmentCss: 'bar-segment',
 
   margin: {
@@ -5289,8 +5289,8 @@ var SEGMENT_BAR_CHART_DEFAULTS = {
     return d3.scaleBand().paddingInner(0.1).paddingOuter(0.1).round(true);
   },
 
-  barCssScale: noop,
-  barFillScale: noop,
+  barSegCssScale: noop,
+  barSegFillScale: noop,
 
   // TODO: Begin adoption of generic scale accessors.
   barFillScaleAccessor: function barFillScaleAccessor(d) {
@@ -5312,11 +5312,23 @@ var SEGMENT_BAR_CHART_DEFAULTS = {
   },
   labelXAdjust: '',
   labelX: function labelX(d) {
-    return this._barX(d) + this.x.bandwidth() / 2;
+    var mode = this.option('segmentBarMode');
+
+    if (mode === SEGMENT_BAR_MODE.STACKED) {
+      return this.x.bandwidth() / 2;
+    } else if (mode === SEGMENT_BAR_MODE.GROUPED) {
+      return this._barXInnerGrouped(d) + this.xInner.bandwidth() / 2;
+    }
   },
-  labelYAdjust: '-0.05em',
-  labelY: function labelY(d) {
-    return this._barY(d);
+  labelYAdjust: '1.05em',
+  labelY: function labelY(d, i, nodes) {
+    var mode = this.option('segmentBarMode');
+
+    if (mode === SEGMENT_BAR_MODE.STACKED) {
+      return this._barYInnerStacked(d, i, nodes); // + this._barHeightStacked(d, i, nodes);
+    } else if (mode === SEGMENT_BAR_MODE.GROUPED) {
+      return this._barYInnerGrouped(d);
+    }
   }
 };
 
@@ -5482,57 +5494,67 @@ var SegmentBarChart = function (_AxesChart) {
   }, {
     key: '_update',
     value: function _update() {
+      var _this5 = this;
+
       var mode = this.tryInvoke(this.opts.segmentBarMode);
+      var barGrps = void 0,
+          transition = void 0;
 
       if (mode === SEGMENT_BAR_MODE.STACKED) {
-        this._updateStackedBars();
+        var _updateStackedBars2 = this._updateStackedBars();
+
+        barGrps = _updateStackedBars2.barGrps;
+        transition = _updateStackedBars2.transition;
       } else if (mode === SEGMENT_BAR_MODE.GROUPED) {
-        this._updateGroupedBars();
+        var _updateGroupedBars2 = this._updateGroupedBars();
+
+        barGrps = _updateGroupedBars2.barGrps;
+        transition = _updateGroupedBars2.transition;
       } else {
         throw MonteOptionError.InvalidEnumOption('segmentBarMode', mode);
+      }
+
+      if (this.opts.includeLabels && barGrps) {
+        if (barGrps.size()) {
+          this._updateLabels(barGrps, transition);
+        } else {
+          transition.on('end', function () {
+            _this5._updateLabels(_this5.draw.selectAll('.monte-segment-bar-grp'), d3.transition());
+          });
+        }
       }
     }
   }, {
     key: '_updateStackedBars',
     value: function _updateStackedBars() {
-      var _this5 = this;
-
-      var barGrps = this.draw.selectAll('.monte-segment-bar-grp').data(this.displayData, function (d, i) {
-        return d.id || i;
-      });
-
       var barXInner = this._barXInnerStacked.bind(this);
       var barYInner = this._barYInnerStacked.bind(this);
       var barWidth = this._barWidthStacked.bind(this);
       var barHeight = this._barHeightStacked.bind(this);
-      var translate = this._barGroupTranslate.bind(this);
 
-      barGrps.enter().append('g').attr('class', 'monte-segment-bar-grp').call(this.__bindCommonEvents('bargrp')).merge(barGrps).attr('transform', function (d) {
-        return 'translate(' + translate(d) + ')';
-      }).each(function (d, i, nodes) {
-        var prop = _this5._barProp();
-        var nestedData = d[prop];
-        var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
-
-        innerRects.enter().append('rect').call(_this5.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this5.opts.transitionDuration).delay(_this5.opts.delay).ease(_this5.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
-      });
-
-      barGrps.exit().remove();
+      return this._updateBars(barXInner, barYInner, barWidth, barHeight);
     }
   }, {
     key: '_updateGroupedBars',
     value: function _updateGroupedBars() {
-      var _this6 = this;
-
-      var barGrps = this.draw.selectAll('.monte-segment-bar-grp').data(this.displayData, function (d, i) {
-        return d.id || i;
-      });
-
       var barXInner = this._barXInnerGrouped.bind(this);
       var barYInner = this._barYInnerGrouped.bind(this);
       var barWidth = this._barWidthGrouped.bind(this);
       var barHeight = this._barHeightGrouped.bind(this);
+
+      return this._updateBars(barXInner, barYInner, barWidth, barHeight);
+    }
+  }, {
+    key: '_updateBars',
+    value: function _updateBars(barXInner, barYInner, barWidth, barHeight) {
+      var _this6 = this;
+
       var translate = this._barGroupTranslate.bind(this);
+      var barGrps = this.draw.selectAll('.monte-segment-bar-grp').data(this.displayData, function (d, i) {
+        return d.id || i;
+      });
+
+      var trans = d3.transition().duration(this.opts.transitionDuration).delay(this.opts.delay).ease(this.opts.ease);
 
       barGrps.enter().append('g').attr('class', 'monte-segment-bar-grp').call(this.__bindCommonEvents('bargrp')).merge(barGrps).attr('transform', function (d) {
         return 'translate(' + translate(d) + ')';
@@ -5541,33 +5563,52 @@ var SegmentBarChart = function (_AxesChart) {
         var nestedData = d[prop];
         var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
 
-        innerRects.enter().append('rect').call(_this6.__bindCommonEvents('barseg')).merge(innerRects).transition().duration(_this6.opts.transitionDuration).delay(_this6.opts.delay).ease(_this6.opts.ease).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
+        innerRects.enter().append('rect').call(_this6.__bindCommonEvents('barseg')).merge(innerRects).attr('class', function (d, i) {
+          return _this6._buildCss(['monte-segment-bar-seg', _this6.opts.barSegCss, _this6.opts.barSegCssScale, d.css], d, i);
+        }).transition(trans).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
       });
 
       barGrps.exit().remove();
+
+      return {
+        barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp')),
+        transition: trans
+      };
     }
-
-    // TODO: Check if it works with both layouts.
-
   }, {
-    key: '_updateBarLabel',
-    value: function _updateBarLabel(barGrp, d, i, nodes) {
+    key: '_segLabels',
+    value: function _segLabels(d) {
+      return this.getProp('y', d);
+    }
+  }, {
+    key: '_updateLabels',
+    value: function _updateLabels(barGrps, transition) {
       var _this7 = this;
 
-      var lbl = barGrp.selectAll('.monte-bar-label').data([d]);
+      barGrps.each(function (d, i, nodes) {
+        var barGrp = d3.select(nodes[i]);
+        _this7._updateBarSegLabel(barGrp, transition, d, i, nodes);
+      });
+    }
+  }, {
+    key: '_updateBarSegLabel',
+    value: function _updateBarSegLabel(barGrp, transition, barData) {
+      var _this8 = this;
 
-      lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).attr('fill', function (d1) {
-        return _this7.tryInvoke(_this7.opts.labelFillScale, d1, i, nodes);
-      }).attr('x', function (d1) {
-        return _this7.tryInvoke(_this7.opts.labelX, d1, i, nodes);
-      }).attr('dx', function (d1) {
-        return _this7.tryInvoke(_this7.opts.labelXAdjust, d1, i, nodes);
-      }).attr('y', function (d1) {
-        return _this7.tryInvoke(_this7.opts.labelY, d1, i, nodes);
-      }).attr('dy', function (d1) {
-        return _this7.tryInvoke(_this7.opts.labelYAdjust, d1, i, nodes);
-      }).text(function (d1) {
-        return _this7.tryInvoke(_this7.opts.label, d1, i, nodes);
+      var lbl = barGrp.selectAll('.monte-bar-label').data(this._segLabels(barData));
+
+      lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).text(function (d1, i, nodes) {
+        return _this8.tryInvoke(_this8.opts.label, d1, i, nodes);
+      }).transition(transition).attr('fill', function (d1, i, nodes) {
+        return _this8.tryInvoke(_this8.opts.labelFillScale, d1, i, nodes);
+      }).attr('x', function (d1, i, nodes) {
+        return _this8.tryInvoke(_this8.opts.labelX, d1, i, nodes);
+      }).attr('dx', function (d1, i, nodes) {
+        return _this8.tryInvoke(_this8.opts.labelXAdjust, d1, i, nodes);
+      }).attr('y', function (d1, i, nodes) {
+        return _this8.tryInvoke(_this8.opts.labelY, d1, i, nodes);
+      }).attr('dy', function (d1, i, nodes) {
+        return _this8.tryInvoke(_this8.opts.labelYAdjust, d1, i, nodes);
       });
 
       lbl.exit().remove();
@@ -5649,13 +5690,13 @@ var SegmentBarChart = function (_AxesChart) {
 // import { resetScaleDomain } from '../../tools/resetScaleDomain';
 
 var HSEGMENT_BAR_CHART_DEFAULTS = {
-  chartCss: 'monte-horizontal-segement-bar-chart',
+  chartCss: 'monte-horizontal-segment-bar-chart',
   barSegmentCss: 'bar-segment',
 
   margin: {
-    top: 10,
-    right: 0,
-    bottom: 30,
+    top: 0,
+    right: 10,
+    bottom: 20,
     left: 40
   },
 
@@ -5686,13 +5727,25 @@ var HSEGMENT_BAR_CHART_DEFAULTS = {
   label: function label(d) {
     return this.getProp('label', d);
   },
-  labelXAdjust: '',
-  labelX: function labelX(d) {
-    return this._barX(d) + this.x.bandwidth() / 2;
+  labelXAdjust: '-0.1em',
+  labelX: function labelX(d, i, nodes) {
+    var mode = this.option('segmentBarMode');
+
+    if (mode === SEGMENT_BAR_MODE.STACKED) {
+      return this._barXInnerStacked(d, i, nodes) + this._barWidthStacked(d);
+    } else if (mode === SEGMENT_BAR_MODE.GROUPED) {
+      return this._barWidthGrouped(d);
+    }
   },
-  labelYAdjust: '-0.05em',
+  labelYAdjust: '0.35em',
   labelY: function labelY(d) {
-    return this._barY(d);
+    var mode = this.option('segmentBarMode');
+
+    if (mode === SEGMENT_BAR_MODE.STACKED) {
+      return this.y.bandwidth() / 2;
+    } else if (mode === SEGMENT_BAR_MODE.GROUPED) {
+      return this._barYInnerGrouped(d) + this.yInner.bandwidth() / 2;
+    }
   }
 };
 
@@ -5766,6 +5819,11 @@ var HorizontalSegmentBarChart = function (_SegmentBarChart) {
       }
 
       return extent;
+    }
+  }, {
+    key: '_segLabels',
+    value: function _segLabels(d) {
+      return this.getProp('x', d);
     }
   }, {
     key: '_barProp',

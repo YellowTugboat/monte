@@ -1,6 +1,6 @@
 {
   "name": "monte",
-  "version": "0.0.0-alpha15",
+  "version": "0.0.0-alpha16",
   "description": "A set of common charts based on D3 built for extension and modification.",
   "main": "build/monte.js",
   "jsnext:main": "index.js",

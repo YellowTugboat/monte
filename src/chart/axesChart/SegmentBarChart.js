@@ -11,7 +11,7 @@ export const SEGMENT_BAR_MODE = {
 };
 
 const SEGMENT_BAR_CHART_DEFAULTS = {
-  chartCss: 'monte-segement-bar-chart',
+  chartCss: 'monte-segment-bar-chart',
   barSegmentCss: 'bar-segment',
 
   margin: {
@@ -32,8 +32,8 @@ const SEGMENT_BAR_CHART_DEFAULTS = {
     return d3.scaleBand().paddingInner(0.1).paddingOuter(0.1).round(true);
   },
 
-  barCssScale: noop,
-  barFillScale: noop,
+  barSegCssScale: noop,
+  barSegFillScale: noop,
 
   // TODO: Begin adoption of generic scale accessors.
   barFillScaleAccessor: function(d) {
@@ -55,11 +55,25 @@ const SEGMENT_BAR_CHART_DEFAULTS = {
   },
   labelXAdjust: '',
   labelX: function(d) {
-    return this._barX(d) + this.x.bandwidth() / 2;
+    const mode = this.option('segmentBarMode');
+
+    if (mode === SEGMENT_BAR_MODE.STACKED) {
+      return this.x.bandwidth() / 2;
+    }
+    else if (mode === SEGMENT_BAR_MODE.GROUPED) {
+      return this._barXInnerGrouped(d) + this.xInner.bandwidth() / 2;
+    }
   },
-  labelYAdjust: '-0.05em',
-  labelY: function(d) {
-    return this._barY(d);
+  labelYAdjust: '1.05em',
+  labelY: function(d, i, nodes) {
+    const mode = this.option('segmentBarMode');
+
+    if (mode === SEGMENT_BAR_MODE.STACKED) {
+      return this._barYInnerStacked(d, i, nodes); // + this._barHeightStacked(d, i, nodes);
+    }
+    else if (mode === SEGMENT_BAR_MODE.GROUPED) {
+      return this._barYInnerGrouped(d);
+    }
   },
 };
 
@@ -70,7 +84,7 @@ export class SegmentBarChart extends AxesChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('bargrp'),   // Bar group events
+      ...commonEventNames('bargrp'),  // Bar group events
       ...commonEventNames('barseg')   // Bar segment events
     );
   }
@@ -175,63 +189,57 @@ export class SegmentBarChart extends AxesChart {
   // Render the vis.
   _update() {
     const mode = this.tryInvoke(this.opts.segmentBarMode);
+    let barGrps, transition;
 
     if (mode === SEGMENT_BAR_MODE.STACKED) {
-      this._updateStackedBars();
+      ({ barGrps, transition } = this._updateStackedBars());
     }
     else if (mode === SEGMENT_BAR_MODE.GROUPED) {
-      this._updateGroupedBars();
+      ({ barGrps, transition } = this._updateGroupedBars());
     }
     else {
       throw MonteOptionError.InvalidEnumOption('segmentBarMode', mode);
     }
+
+    if (this.opts.includeLabels && barGrps) {
+      if (barGrps.size()) {
+        this._updateLabels(barGrps, transition);
+      }
+      else {
+        transition.on('end', () => {
+          this._updateLabels(this.draw.selectAll('.monte-segment-bar-grp'), d3.transition());
+        });
+      }
+    }
   }
 
   _updateStackedBars() {
-    const barGrps = this.draw.selectAll('.monte-segment-bar-grp')
-      .data(this.displayData, (d, i) => d.id || i);
-
     const barXInner = this._barXInnerStacked.bind(this);
     const barYInner = this._barYInnerStacked.bind(this);
     const barWidth = this._barWidthStacked.bind(this);
     const barHeight = this._barHeightStacked.bind(this);
-    const translate = this._barGroupTranslate.bind(this);
 
-    barGrps.enter().append('g')
-      .attr('class', 'monte-segment-bar-grp')
-      .call(this.__bindCommonEvents('bargrp'))
-      .merge(barGrps)
-        .attr('transform', (d) => `translate(${translate(d)})`)
-        .each((d, i, nodes) => {
-          const prop = this._barProp();
-          const nestedData = d[prop];
-          const innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
-
-          innerRects.enter().append('rect')
-            .call(this.__bindCommonEvents('barseg'))
-            .merge(innerRects)
-              .transition()
-                .duration(this.opts.transitionDuration)
-                .delay(this.opts.delay)
-                .ease(this.opts.ease)
-                .attr('x', barXInner)
-                .attr('y', barYInner)
-                .attr('width', barWidth)
-                .attr('height', barHeight);
-        });
-
-    barGrps.exit().remove();
+    return this._updateBars(barXInner, barYInner, barWidth, barHeight);
   }
 
   _updateGroupedBars() {
-    const barGrps = this.draw.selectAll('.monte-segment-bar-grp')
-      .data(this.displayData, (d, i) => d.id || i);
-
     const barXInner = this._barXInnerGrouped.bind(this);
     const barYInner = this._barYInnerGrouped.bind(this);
     const barWidth = this._barWidthGrouped.bind(this);
     const barHeight = this._barHeightGrouped.bind(this);
+
+    return this._updateBars(barXInner, barYInner, barWidth, barHeight);
+  }
+
+  _updateBars(barXInner, barYInner, barWidth, barHeight) {
     const translate = this._barGroupTranslate.bind(this);
+    const barGrps = this.draw.selectAll('.monte-segment-bar-grp')
+      .data(this.displayData, (d, i) => d.id || i);
+
+    const trans = d3.transition()
+      .duration(this.opts.transitionDuration)
+      .delay(this.opts.delay)
+      .ease(this.opts.ease);
 
     barGrps.enter().append('g')
       .attr('class', 'monte-segment-bar-grp')
@@ -246,10 +254,12 @@ export class SegmentBarChart extends AxesChart {
           innerRects.enter().append('rect')
             .call(this.__bindCommonEvents('barseg'))
             .merge(innerRects)
-              .transition()
-                .duration(this.opts.transitionDuration)
-                .delay(this.opts.delay)
-                .ease(this.opts.ease)
+              .attr('class', (d, i) => this._buildCss(
+                ['monte-segment-bar-seg',
+                  this.opts.barSegCss,
+                  this.opts.barSegCssScale,
+                  d.css], d, i))
+              .transition(trans)
                 .attr('x', barXInner)
                 .attr('y', barYInner)
                 .attr('width', barWidth)
@@ -257,21 +267,37 @@ export class SegmentBarChart extends AxesChart {
         });
 
     barGrps.exit().remove();
+
+    return {
+      barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp')),
+      transition: trans,
+    };
   }
 
-  // TODO: Check if it works with both layouts.
-  _updateBarLabel(barGrp, d, i, nodes) {
-    const lbl = barGrp.selectAll('.monte-bar-label').data([d]);
+  _segLabels(d) {
+    return this.getProp('y', d);
+  }
+
+  _updateLabels(barGrps, transition) {
+    barGrps.each((d, i, nodes) => {
+      const barGrp = d3.select(nodes[i]);
+      this._updateBarSegLabel(barGrp, transition, d, i, nodes);
+    });
+  }
+
+  _updateBarSegLabel(barGrp, transition, barData) {
+    const lbl = barGrp.selectAll('.monte-bar-label').data(this._segLabels(barData));
 
     lbl.enter().append('text')
       .attr('class', 'monte-bar-label')
       .merge(lbl)
-        .attr('fill', (d1) => this.tryInvoke(this.opts.labelFillScale, d1, i, nodes))
-        .attr('x', (d1) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
-        .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
-        .attr('y', (d1) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
-        .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
-        .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes));
+        .text((d1, i, nodes) => this.tryInvoke(this.opts.label, d1, i, nodes))
+        .transition(transition)
+          .attr('fill', (d1, i, nodes) => this.tryInvoke(this.opts.labelFillScale, d1, i, nodes))
+          .attr('x', (d1, i, nodes) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
+          .attr('dx', (d1, i, nodes) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
+          .attr('y', (d1, i, nodes) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
+          .attr('dy', (d1, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes));
 
     lbl.exit().remove();
   }

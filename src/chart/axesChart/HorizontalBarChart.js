@@ -2,7 +2,7 @@ import { BarChart } from './BarChart';
 import { extentBalanced } from '../../util/extents';
 
 const HBAR_CHART_DEFAULTS = {
-  chartCss: 'monte-hort-bar-chart',
+  chartCss: 'monte-horizontal-bar-chart',
 
   margin: {
     top: 0,

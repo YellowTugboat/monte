@@ -1,5 +1,5 @@
 export var name = "monte";
-export var version = "0.0.0-alpha14";
+export var version = "0.0.0-alpha16";
 export var description = "A set of common charts based on D3 built for extension and modification.";
 export var main = "build/monte.js";
 export var scripts = {"postpublish":"zip -j build/monte.zip -- LICENSE README.md build/monte.js build/monte.min.js","prepublish":"npm run build","test":"(browserify test/**/*-test.js | tape-run) && npm run lint","lint":"eslint src/**","package-version":"json2module package.json > build/package.js","package-umd":"rollup --config config/rollup.config.umd.js","package-umd-min":"rollup --config config/rollup.config.umd.min.js","watch":"npm run package-version && nodemon -e js -w *.js -w src -x \"npm run package-umd\"","build":"npm run package-version && npm run package-umd && npm run package-umd-min"};

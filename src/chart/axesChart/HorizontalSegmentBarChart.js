@@ -6,13 +6,13 @@ import { noop } from '../../tools/noop';
 // import { resetScaleDomain } from '../../tools/resetScaleDomain';
 
 const HSEGMENT_BAR_CHART_DEFAULTS = {
-  chartCss: 'monte-horizontal-segement-bar-chart',
+  chartCss: 'monte-horizontal-segment-bar-chart',
   barSegmentCss: 'bar-segment',
 
   margin: {
-    top: 10,
-    right: 0,
-    bottom: 30,
+    top: 0,
+    right: 10,
+    bottom: 20,
     left: 40,
   },
 
@@ -43,13 +43,27 @@ const HSEGMENT_BAR_CHART_DEFAULTS = {
   label: function(d) {
     return this.getProp('label', d);
   },
-  labelXAdjust: '',
-  labelX: function(d) {
-    return this._barX(d) + this.x.bandwidth() / 2;
+  labelXAdjust: '-0.1em',
+  labelX: function(d, i, nodes) {
+    const mode = this.option('segmentBarMode');
+
+    if (mode === SEGMENT_BAR_MODE.STACKED) {
+      return this._barXInnerStacked(d, i, nodes) + this._barWidthStacked(d);
+    }
+    else if (mode === SEGMENT_BAR_MODE.GROUPED) {
+      return this._barWidthGrouped(d);
+    }
   },
-  labelYAdjust: '-0.05em',
+  labelYAdjust: '0.35em',
   labelY: function(d) {
-    return this._barY(d);
+    const mode = this.option('segmentBarMode');
+
+    if (mode === SEGMENT_BAR_MODE.STACKED) {
+      return this.y.bandwidth() / 2;
+    }
+    else if (mode === SEGMENT_BAR_MODE.GROUPED) {
+      return this._barYInnerGrouped(d) + this.yInner.bandwidth() / 2;
+    }
   },
 };
 
@@ -99,6 +113,10 @@ export class HorizontalSegmentBarChart extends SegmentBarChart {
     }
 
     return extent;
+  }
+
+  _segLabels(d) {
+    return this.getProp('x', d);
   }
 
   _barProp() { return this.tryInvoke(this.opts.xProp); }

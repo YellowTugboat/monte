@@ -2,7 +2,7 @@ import { HorizontalBarChart } from './HorizontalBarChart';
 import { isObject } from '../../tools/is';
 
 const SIMPLE_HORT_BAR_CHART_DEFAULTS = {
-  chartCss: 'monte-simple-hort-bar-chart',
+  chartCss: 'monte-simple-horizontal-bar-chart',
   boundingWidth: 100,
   boundingHeight: 10,
 
