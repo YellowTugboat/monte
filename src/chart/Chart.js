@@ -369,21 +369,30 @@ export class Chart {
    * @Chainable
    */
   option(key, value) {
+    let updateBounds = false;
+
     if (value === UNDEF) {
       return _get(this.opts, key);
     }
 
     _set(this.opts, key, value);
 
+    // Margins cause changes to the internal sizes.
     if (key === 'margin') {
       if (typeof value !== 'object') {
         this.opts.margin = { top: value, left: value, right: value, bottom: value };
       }
 
-      // Margins affect the drawing area size so various updates are required.
-      if (this._optsSet) {
-        this._updateBounds();
-      }
+      updateBounds = true;
+    }
+    else if (/^margin\./.test(key)) {
+      // Check if key is a 'deep' margin value (ex. 'margin.left')
+      updateBounds = true;
+    }
+
+    // Margins affect the drawing area size so various updates are required.
+    if (this._optsSet && updateBounds) {
+      this._updateBounds();
     }
 
     return this;
