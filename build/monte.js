@@ -4257,7 +4257,8 @@ var AxesChart = function (_Chart) {
 
       // eslint-disable-line no-unused-vars
       var label = this.tryInvoke(this.opts[scaleName + 'Label']);
-      var lbl = this.support.select('.' + scaleName + '-axis').selectAll('.monte-axis-label').data([label]);
+      var data = label === null ? [] : [label];
+      var lbl = this.support.select('.' + scaleName + '-axis').selectAll('.monte-axis-label').data(data);
 
       lbl.enter().append('text').merge(lbl).attr('class', 'monte-axis-label').text(function (d) {
         return d;

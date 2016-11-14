@@ -211,7 +211,8 @@ export class AxesChart extends Chart {
 
   _setLabel(scaleName, transition) { // eslint-disable-line no-unused-vars
     const label = this.tryInvoke(this.opts[`${scaleName}Label`]);
-    const lbl = this.support.select(`.${scaleName}-axis`).selectAll('.monte-axis-label').data([label]);
+    const data = label === null ? [] : [label];
+    const lbl = this.support.select(`.${scaleName}-axis`).selectAll('.monte-axis-label').data(data);
 
     lbl.enter().append('text')
       .merge(lbl)
