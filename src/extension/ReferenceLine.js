@@ -69,7 +69,7 @@ export class ReferenceLine extends Extension {
     if (!isArray(this.lineData) && isDefined(this.lineData)) {
       this.lineData = [this.lineData];
     }
-    else if (isDefined(this.lineData)) {
+    else if (!isDefined(this.lineData)) {
       this.lineData = [];
     }
 
