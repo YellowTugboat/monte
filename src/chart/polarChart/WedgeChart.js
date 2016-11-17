@@ -50,4 +50,11 @@ export class WedgeChart extends ArcChart {
     this.data(value);
     return this;
   }
+
+  static createInstanceGroup(charts, ...additionalMethodsToProxy) {
+    additionalMethodsToProxy.push(GROUP_PROXY_METHODS);
+    return super.createInstanceGroup(charts, ...additionalMethodsToProxy);
+  }
 }
+
+export const GROUP_PROXY_METHODS = [ 'wedgeValue' ];

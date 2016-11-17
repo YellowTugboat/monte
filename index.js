@@ -33,6 +33,7 @@ export { constants };
 // Support
 export {
   EventWatcher,
+  InstanceGroup,
   MonteError,
   MonteOptionError,
 } from './src/support/';

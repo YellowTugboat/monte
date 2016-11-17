@@ -325,4 +325,11 @@ export class SegmentBarChart extends AxesChart {
   }
   _barHeightGrouped(d) { return this.height - this.getScaledProp('y', 'yInner', d); }
   _barHeightStacked(d) { return this.height - this.getScaledProp('y', 'yInner', d); }
+
+  static createInstanceGroup(charts, ...additionalMethodsToProxy) {
+    additionalMethodsToProxy.push(GROUP_PROXY_METHODS);
+    return super.createInstanceGroup(charts, ...additionalMethodsToProxy);
+  }
 }
+
+export const GROUP_PROXY_METHODS = [ 'setMode', 'updateAxesRanges' ];

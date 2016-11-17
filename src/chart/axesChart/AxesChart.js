@@ -222,4 +222,14 @@ export class AxesChart extends Chart {
 
     lbl.exit().remove();
   }
+
+  static createInstanceGroup(charts, ...additionalMethodsToProxy) {
+    additionalMethodsToProxy.push(GROUP_PROXY_METHODS);
+    return super.createInstanceGroup(charts, ...additionalMethodsToProxy);
+  }
 }
+
+export const GROUP_PROXY_METHODS = [
+  'forEachAxisScale', 'renderAxes', 'replaceScale', 'updateAxesDomains', 'updateAxesRanges',
+  'updateAxesTransforms',
+];

@@ -8,3 +8,5 @@ export const defaultsDeep = _.defaultsDeep;
 // Used for deep setting/getting of values in nested objects
 export const set = _.set;
 export const get = _.get;
+
+export const flattenDeep = _.flattenDeep;

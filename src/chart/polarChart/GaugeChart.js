@@ -167,4 +167,11 @@ export class GaugeChart extends ArcChart {
 
     this.emit('updateNeedle');
   }
+
+  static createInstanceGroup(charts, ...additionalMethodsToProxy) {
+    additionalMethodsToProxy.push(GROUP_PROXY_METHODS);
+    return super.createInstanceGroup(charts, ...additionalMethodsToProxy);
+  }
 }
+
+export const GROUP_PROXY_METHODS = [ 'needleValue' ];

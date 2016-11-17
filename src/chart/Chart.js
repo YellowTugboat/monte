@@ -2,6 +2,7 @@ import { CHART_LIFECYCLE_EVENTS, CHART_SUPPORT_EVENTS, INTERACTION_EVENTS, INTER
 import { get as _get, set as _set } from '../external/lodash';
 import { isDefined, isFunc, isObject } from '../tools/is';
 import { EventWatcher } from '../support/EventWatcher';
+import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
 import { TRANSITION_DURATION_MS } from '../const/d3';
@@ -762,4 +763,14 @@ export class Chart {
   toString() {
     return this.constructor.name;
   }
+
+  static createInstanceGroup(charts, ...additionalMethodsToProxy) {
+    return new InstanceGroup(charts, GROUP_PROXY_METHODS, additionalMethodsToProxy);
+  }
 }
+
+// The public methods from the base chart available for use in `ChartGroup`.
+export const GROUP_PROXY_METHODS = [
+  'addExt', 'addLayer', 'boundingRect', 'call', 'checkSize', 'classed', 'clear', 'data', 'emit',
+  'layerUseClipPath', 'on', 'option', 'replaceScale', 'resetCssDomains', 'update', 'updateData',
+];
