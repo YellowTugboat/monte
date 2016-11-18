@@ -34,6 +34,7 @@ export class SimpleBarChart extends BarChart {
 
     if (!datum.css) { datum.css = 'monte-simple-bar-value'; }
 
+    this.rawData = data;
     super._data([datum], ...tail);
   }
 }

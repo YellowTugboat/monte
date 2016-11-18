@@ -619,8 +619,23 @@ export class Chart {
     return this;
   }
 
+  /**
+   * Internal method to manage assignment of data.
+   */
   _data(data) {
     this.displayData = data;
+  }
+
+  /**
+   * Gets the original data if the chart modified the structure; otherwise returns the same as
+   * `<chart>.data()`;
+   */
+  getRawData() {
+    if (this.rawData) {
+      return this.rawData;
+    }
+
+    return this.displayData;
   }
 
   /**

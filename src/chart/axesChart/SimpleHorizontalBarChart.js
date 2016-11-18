@@ -34,6 +34,7 @@ export class HorizontalSimpleBarChart extends HorizontalBarChart {
 
     if (!datum.css) { datum.css = 'monte-simple-hort-bar-value'; }
 
+    this.rawData = data;
     super._data([datum], ...tail);
   }
 }

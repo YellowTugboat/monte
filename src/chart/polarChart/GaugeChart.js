@@ -69,6 +69,8 @@ export class GaugeChart extends ArcChart {
   }
 
   _data(data) {
+    this.rawData = data;
+
     const segmentsProp = this.tryInvoke(this.opts.segmentsProp);
     const startProp = this.tryInvoke(this.opts.startValueProp);
     const itemValueProp = this.tryInvoke(this.opts.itemValueProp);

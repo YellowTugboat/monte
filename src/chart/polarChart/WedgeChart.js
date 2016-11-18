@@ -28,6 +28,7 @@ export class WedgeChart extends ArcChart {
 
   _data(data, ...tail) {
     this.wedgeValueData = data;
+    this.rawData = data;
     const itemValueProp = this.tryInvoke(this.opts.itemValueProp);
 
     // Data is expected to be a single value between 0 & 100.

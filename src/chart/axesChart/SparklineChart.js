@@ -23,6 +23,7 @@ export class SparklineChart extends LineChart {
   }
 
   _data(data, ...tail) {
+    this.rawData = data;
     super._data([data], ...tail);
   }
 }
