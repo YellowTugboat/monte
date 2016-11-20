@@ -390,6 +390,8 @@ export class Chart {
 
     _set(this.opts, key, value);
 
+    // TODO: If the new margin values match the old margin values do not update bounds. This will
+    //       help prevent an infinity loop if the margin is adjusted in the update cycle.
     // Margins cause changes to the internal sizes.
     if (key === 'margin') {
       if (typeof value !== 'object') {
@@ -423,7 +425,7 @@ export class Chart {
    *
    * For example:
    *  `.attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.fillScale, d, i, nodes))`
-   * is equvilient to
+   * is equivalent to
    *  `.attr('fill', this.optionReaderFunc('fillScale')')`
    */
   optionReaderFunc(optionKey) {
@@ -582,7 +584,29 @@ export class Chart {
   }
 
   /**
+   * Get / set the attribute of the bounding element.
+   *
+   * A convenience method that is roughly equivalent to `<chart>.bound.attr(<name>, <value>)`,
+   * but returns the chart instead of the `<chart>.bound` selection.
+   *
+   * @Chainable
+   */
+  attr(name, value) {
+    if (value === UNDEF) {
+      // return this attib
+      return this.bound.attr(name);
+    }
+
+    this.bound.attr(name, value);
+
+    return this;
+  }
+
+  /**
    * Set the CSS classes on the SVG element.
+   *
+   * A convenience method that is roughly equivalent to `<chart>.bound.classed(<names>, <value>)`,
+   * but returns the chart instead of the `<chart>.bound` selection.
    *
    * @Chainable
    */

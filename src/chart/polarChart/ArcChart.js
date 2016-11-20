@@ -157,8 +157,8 @@ export class ArcChart extends PolarChart {
       .merge(wedge)
         .attr('d', (d) => d)
         .attr('fill', () => this.opts.arcBgWedgeFillScale())
-        .attr('class', () =>
-           ['monte-wedge-bg',
-             this.opts.arcBgWedgeCssScale()].join(' '));
+        .attr('class', (d, i) => this._buildCss(
+          ['monte-wedge-bg',
+            this.opts.arcBgWedgeCssScale], d, i));
   }
 }

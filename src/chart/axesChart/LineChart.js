@@ -170,7 +170,7 @@ export class LineChart extends AxesChart {
             this.opts.lineCssScale,
             this.opts.pointCss,
             this.opts.pointCssScale,
-            d.css], lineDatum.id, lineIndex));
+            d.css], lineDatum, lineIndex));
 
     points.transition()
         .duration(this.opts.transitionDuration)

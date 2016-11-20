@@ -1,5 +1,5 @@
 import { ArcChart } from './ArcChart';
-// import { noop } from '../tools/noop';
+import { UNDEF } from '../../const/undef';
 
 const WEDGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-wedge-chart',
@@ -44,7 +44,7 @@ export class WedgeChart extends ArcChart {
   }
 
   wedgeValue(value) {
-    if (value === undefined) {
+    if (value === UNDEF) {
       return this.wedgeValueData;
     }
 

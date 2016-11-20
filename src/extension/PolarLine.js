@@ -10,6 +10,10 @@ const POLAR_LINE_DEFAULTS = {
   outerRadius: 100,
 };
 
+/**
+ * Draws a line oriented from the origin outward. The line begins at the `innerRadius` and ends at
+ * the `outerRadius`.
+ */
 export class PolarLine extends Extension {
   _initOptions(...options) {
     super._initOptions(...options, POLAR_LINE_DEFAULTS);
