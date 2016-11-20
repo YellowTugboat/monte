@@ -1,6 +1,7 @@
-import { CHART_LIFECYCLE_EVENTS, CHART_SUPPORT_EVENTS, INTERACTION_EVENTS, INTERACTION_EVENT_CSS_MAP } from '../const/events';
+import * as EV from '../const/events';
+// import { CHART_LIFECYCLE_EVENTS, CHART_SUPPORT_EVENTS, INTERACTION_EVENTS, INTERACTION_EVENT_CSS_MAP } from '../const/events';
 import { get as _get, set as _set } from '../external/lodash';
-import { isDefined, isFunc, isObject } from '../tools/is';
+import { isArray, isDefined, isFunc, isObject } from '../tools/is';
 import { EventWatcher } from '../support/EventWatcher';
 import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
@@ -83,9 +84,9 @@ export class Chart {
 
     // Setup the Public events.
     this._initPublicEvents(
-      ...INTERACTION_EVENTS,
-      ...CHART_SUPPORT_EVENTS,
-      ...CHART_LIFECYCLE_EVENTS,
+      ...EV.INTERACTION_EVENTS,
+      ...EV.CHART_SUPPORT_EVENTS,
+      ...EV.CHART_LIFECYCLE_EVENTS,
 
       // Custom events provided by the user
       ...this.opts.customEvents);
@@ -166,7 +167,7 @@ export class Chart {
     const chart = this;
 
     // Setup interaction events for the overall chart.
-    INTERACTION_EVENTS.forEach((ev) => {
+    EV.INTERACTION_EVENTS.forEach((ev) => {
       this.bound.on(ev, function(...args) { chart.__notify(ev, this, ...args); });
     });
 
@@ -198,7 +199,14 @@ export class Chart {
       console.log(`[${this}] "${eventName}": ${a}`); // eslint-disable-line no-console
     };
 
-    this._events.forEach((eventName) => this.on(eventName, echo.bind(this, eventName)));
+    const events = isArray(this.opts.developerMode || global.developerMode) ?
+      (this.opts.developerMode || global.developerMode) :
+      this._events;
+
+    events.forEach((eventName) => {
+      console.log(`[${this}] Adding listener for "${eventName}"`); // eslint-disable-line no-console
+      this.on(`${eventName}.developerMode`, echo.bind(this, eventName));
+    });
   }
 
   _initCustomize() {}
@@ -206,7 +214,7 @@ export class Chart {
   _initRender() {}
 
   _updateBounds(suppressNotify=false, suppressUpdate=false) {
-    this.__notify('updatingBounds');
+    this.__notify(EV.UPDATING_BOUNDS);
 
     // Margin Convention and calculate drawing area size
     this.margin = this.opts.margin;
@@ -228,7 +236,7 @@ export class Chart {
         .attr('height', this.height);
     }
 
-    const notify = () => { if (this._constructed) { this.__notify('updatedBounds'); } };
+    const notify = () => { if (this._constructed) { this.__notify(EV.UPDATED_BOUNDS); } };
     const update = () => { if (this.hasRendered) { this.update(); } };
 
     if (!suppressNotify) { notify(); }
@@ -250,7 +258,7 @@ export class Chart {
   }
 
   destroy() {
-    this.__notify('destroying');
+    this.__notify(EV.DESTROYING);
 
     if (this._resizeHandler) {
       global.resizeWatch.remove(this._resizeHandler);
@@ -266,7 +274,7 @@ export class Chart {
       this.bound.remove();
     }
 
-    this.__notify('destroyed');
+    this.__notify(EV.DESTROYED);
   }
 
   _destroy() {}
@@ -376,6 +384,10 @@ export class Chart {
       return _get(this.opts, key);
     }
 
+    if (this._optsSet) {
+      this.__notify(EV.OPTION_CHANGING, key);
+    }
+
     _set(this.opts, key, value);
 
     // Margins cause changes to the internal sizes.
@@ -391,9 +403,11 @@ export class Chart {
       updateBounds = true;
     }
 
-    // Margins affect the drawing area size so various updates are required.
-    if (this._optsSet && updateBounds) {
-      this._updateBounds();
+    if (this._optsSet) {
+      // Margins affect the drawing area size so various updates are required.
+      if (updateBounds) { this._updateBounds(); }
+
+      this.__notify(EV.OPTION_CHANGED, key);
     }
 
     return this;
@@ -437,7 +451,7 @@ export class Chart {
       return isFunc(value) ? value.call(this, ...args) : value;
     }
     catch (e) {
-      this.__notify('suppressedError', e);
+      this.__notify(EV.SUPPRESSED_ERROR, e);
       return null;
     }
   }
@@ -510,14 +524,14 @@ export class Chart {
    * @Chainable
    */
   clear() {
-    this.__notify('clearing');
+    this.__notify(EV.CLEARING);
 
     this.displayData = null;
     this._clearDataElements();
 
     if (this.opts.autoResetCssDomains) { this.resetCssDomains(); }
 
-    this.__notify('cleared');
+    this.__notify(EV.CLEARED);
     return this;
   }
 
@@ -532,11 +546,10 @@ export class Chart {
    * @Chainable
    */
   resetCssDomains() {
-    this.__notify('cssDomainsReseting');
-
+    this.__notify(EV.CSS_DOMAINS_RESETTING);
     this._resetCssDomains();
+    this.__notify(EV.CSS_DOMAINS_RESET);
 
-    this.__notify('cssDomainsReset');
     return this;
   }
 
@@ -659,7 +672,7 @@ export class Chart {
         this.extensions.push(ext);
       }
       else {
-        this.__notify('suppressedError', 'Extensions must have the `binding` option specified.');
+        this.__notify(EV.SUPPRESSED_ERROR, 'Extensions must have the `binding` option specified.');
       }
     });
   }
@@ -669,7 +682,7 @@ export class Chart {
    */
   __updateExt(bindingName, ...extArgs) {
     this.extensions.forEach((ext) => {
-      if (ext.opts.binding.indexOf(bindingName) > -1) { ext.update(bindingName, ...extArgs); }
+      if (ext.opts.binding.indexOf(bindingName) > -1) { ext.fire(bindingName, ...extArgs); }
     });
   }
 
@@ -700,20 +713,15 @@ export class Chart {
   update() {
     if (!this.data()) { return; } // Don't allow update if data has not been set.
     if (!this.hasRendered) {
-      this.__notify('rendering');
+      this.__notify(EV.RENDERING);
       this._render();
-    }
-
-    this.__notify('updating');
-    this._update();
-
-    // Notify if first rendered
-    if (!this.hasRendered) {
       this.hasRendered = true;
-      this.__notify('rendered');
+      this.__notify(EV.RENDERED);
     }
 
-    this.__notify('updated');
+    this.__notify(EV.UPDATING);
+    this._update();
+    this.__notify(EV.UPDATED);
 
     return this;
   }
@@ -739,7 +747,7 @@ export class Chart {
     const chart = this;
 
     return function(sel) {
-      INTERACTION_EVENTS.forEach((ev) =>
+      EV.INTERACTION_EVENTS.forEach((ev) =>
         sel.on(ev, (d, i, nodes) => chart.__elemEvent(ev, `${lead}:${ev}`, d, i, nodes)));
     };
   }
@@ -758,7 +766,7 @@ export class Chart {
    */
   __elemEvent(eventType, eventNameFull, d, i, nodes) {
     const node = nodes[i];
-    const cssAction = INTERACTION_EVENT_CSS_MAP[eventType];
+    const cssAction = EV.INTERACTION_EVENT_CSS_MAP[eventType];
 
     if (cssAction) {
       if (cssAction.action === 'add') {

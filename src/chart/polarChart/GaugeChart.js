@@ -1,8 +1,22 @@
 import { ArcChart } from './ArcChart';
 import { HALF_PI } from '../../const/math';
+import { UNDEF } from '../../const/undef';
 import { needleRoundedEnd } from '../../util/needle';
 import { noop } from '../../tools/noop';
 import { radiusContrain } from '../../util/dimension';
+
+const EVENT_UPDATING_BACKGROUND_ARC = 'updatingBackgroundArc';
+const EVENT_UPDATED_BACKGROUND_ARC = 'updatedBackgroundArc';
+const EVENT_UPDATING_LABELS = 'updatingLabels';
+const EVENT_UPDATED_LABELS = 'updatedLabels';
+const EVENT_UPDATING_NEEDLE = 'updatingNeedle';
+const EVENT_UPDATED_NEEDLE = 'updatedNeedle';
+
+const EVENTS = [
+  EVENT_UPDATING_BACKGROUND_ARC, EVENT_UPDATED_BACKGROUND_ARC,
+  EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS,
+  EVENT_UPDATING_NEEDLE, EVENT_UPDATED_NEEDLE,
+];
 
 const GAUGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-gauge-chart',
@@ -57,7 +71,7 @@ export class GaugeChart extends ArcChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      'updateNeedle', 'updateBackgroundArc', 'updateLabels'   // Gauge events
+      ...EVENTS // Gauge events
     );
   }
 
@@ -85,7 +99,7 @@ export class GaugeChart extends ArcChart {
   }
 
   needleValue(value, suppressUpdate = false) {
-    if (value === undefined) {
+    if (value === UNDEF) {
       return this.needleValueData;
     }
 
@@ -98,21 +112,31 @@ export class GaugeChart extends ArcChart {
     return this;
   }
 
-  needleValueAngle() {
-    // TODO: Add support for directly setting the angle? (Use scale's `invert()`?)
+  needleValueAngle(angle) {
+    if (angle === UNDEF) {
+      return this.needleValueAngleData;
+    }
 
-    return this.needleValueAngleData;
+    this.needleValue(this.angleScale.invert(angle));
+    return this;
+  }
+
+  _render() {
+    if (!this.hasRendered) {
+      this._updateBackgroundArc();
+    }
   }
 
   _update() {
     super._update();
 
-    if (!this.hasRendered) { this._updateBackgroundArc(); }
     this._updateLabels();
     this._updateNeedle();
   }
 
   _updateBackgroundArc() {
+    this.emit(EVENT_UPDATING_BACKGROUND_ARC);
+
     this.bg.append('path')
       .attr('fill', this.opts.arcBgFillScale)
       .attr('class', (d, i) => this._buildCss(
@@ -120,12 +144,14 @@ export class GaugeChart extends ArcChart {
           this.opts.arcBgCssScale], d, i))
       .attr('d', this.bgArc());
 
-    this.emit('updateBackgroundArc');
+    this.emit(EVENT_UPDATED_BACKGROUND_ARC);
   }
 
   _updateLabels() {
     const labels = this.support.selectAll('.monte-gauge-label').data(this.pieDisplayData);
     const labelRadius = this.tryInvoke(this.opts.labelRadius, this.width, this.height);
+
+    this.emit(EVENT_UPDATING_LABELS);
 
     labels.enter().append('text')
         .attr('class', 'monte-gauge-label')
@@ -136,7 +162,7 @@ export class GaugeChart extends ArcChart {
           'translate(' + GaugeChart.getCoord(labelRadius, d.endAngle) +')')
         .text((d) => d.data[this.opts.segmentLabelProp]);
 
-    this.emit('updateLabels');
+    this.emit(EVENT_UPDATED_LABELS);
   }
 
   _updateNeedle() {
@@ -147,6 +173,8 @@ export class GaugeChart extends ArcChart {
     const path = this.tryInvoke(this.opts.needlePath, height, baseWidth);
 
     const needle = this.overlay.selectAll('.monte-gauge-needle').data([this.needleValueAngleData || 0]);
+
+    this.emit(EVENT_UPDATING_NEEDLE);
 
     needle.enter().append('path')
       .attr('class', 'monte-gauge-needle')
@@ -167,7 +195,7 @@ export class GaugeChart extends ArcChart {
           };
         });
 
-    this.emit('updateNeedle');
+    this.emit(EVENT_UPDATED_NEEDLE);
   }
 
   static createInstanceGroup(charts, ...additionalMethodsToProxy) {
@@ -175,5 +203,7 @@ export class GaugeChart extends ArcChart {
     return super.createInstanceGroup(charts, ...additionalMethodsToProxy);
   }
 }
+
+GaugeChart.EVENTS = EVENTS;
 
 export const GROUP_PROXY_METHODS = [ 'needleValue' ];

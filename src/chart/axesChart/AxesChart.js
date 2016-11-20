@@ -3,6 +3,10 @@ import { Chart } from '../Chart';
 import { MonteError } from '../../support/MonteError';
 import { noop } from '../../tools/noop';
 
+const EVENT_AXIS_RENDERED = 'axisRendered';
+const EVENT_AXIS_RENDERING = 'axisRendering';
+const EVENTS = [EVENT_AXIS_RENDERED, EVENT_AXIS_RENDERING];
+
 const AXES_CHART_DEFAULTS = {
   // The axes X and Y are generally assumed. In some cases it may be desirable to add an additional
   // axis such as 'Y2'.
@@ -85,7 +89,7 @@ export class AxesChart extends Chart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      'axisRendered' // Axis events
+      ...EVENTS // Axis events
     );
   }
 
@@ -194,9 +198,10 @@ export class AxesChart extends Chart {
         .transition()
           .duration(this.opts.transitionDuration)
           .ease(this.opts.ease)
+          .on('start', () => this.emit(EVENT_AXIS_RENDERING))
           .call(this[`${scaleName}Axis`])
           .call(this._setLabel.bind(this, scaleName))
-          .call((t) => this.emit('axisRendered', t));
+          .call((t) => this.emit(EVENT_AXIS_RENDERED, t));
     });
   }
 
@@ -228,6 +233,8 @@ export class AxesChart extends Chart {
     return super.createInstanceGroup(charts, ...additionalMethodsToProxy);
   }
 }
+
+AxesChart.EVENTS = EVENTS;
 
 export const GROUP_PROXY_METHODS = [
   'forEachAxisScale', 'renderAxes', 'replaceScale', 'updateAxesDomains', 'updateAxesRanges',

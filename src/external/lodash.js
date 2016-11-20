@@ -10,3 +10,10 @@ export const set = _.set;
 export const get = _.get;
 
 export const flattenDeep = _.flattenDeep;
+
+// String manipulation
+// Used for CSS and class method names
+export const camelCase = _.camelCase;
+export const kebabCase = _.kebabCase;
+export const snakeCase = _.snakeCase;
+export const upperFirst = _.upperFirst;

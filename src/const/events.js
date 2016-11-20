@@ -9,7 +9,7 @@ export const MOUSEOUT = 'mouseout';
 export const SUPPRESSED_ERROR = 'suppressedError';
 export const EXTENSION = 'extension';
 
-// Chart Lifecycle
+// Chart and Extension Lifecycle (extensions support a subset)
 export const RENDERING = 'rendering';
 export const RENDERED = 'rendered';
 export const UPDATING = 'updating';
@@ -18,10 +18,13 @@ export const UPDATING_BOUNDS = 'updatingBounds';
 export const UPDATED_BOUNDS = 'updatedBounds';
 export const CLEARING = 'clearing';
 export const CLEARED = 'cleared';
-export const CSS_DOMAINS_RESETING = 'cssDomainsReseting';
-export const CSS_DOMAINS_RESET = 'cssDomainsReset';
 export const DESTROYING = 'destroying';
 export const DESTROYED = 'destroyed';
+
+export const OPTION_CHANGING = 'optionChanging';
+export const OPTION_CHANGED = 'optionChanged';
+export const CSS_DOMAINS_RESETTING = 'cssDomainsResetting';
+export const CSS_DOMAINS_RESET = 'cssDomainsReset';
 
 export const INTERACTION_EVENTS = [CLICK, TOUCHSTART, TOUCHEND, MOUSEOVER, MOUSEOUT];
 
@@ -34,7 +37,15 @@ export const CHART_LIFECYCLE_EVENTS = [
   UPDATING, UPDATED,
   UPDATING_BOUNDS, UPDATED_BOUNDS,
   CLEARING, CLEARED,
-  CSS_DOMAINS_RESETING, CSS_DOMAINS_RESET,
+  CSS_DOMAINS_RESETTING, CSS_DOMAINS_RESET,
+  OPTION_CHANGING, OPTION_CHANGED,
+  DESTROYING, DESTROYED,
+];
+
+export const EXTENSION_LIFECYCLE_EVENTS = [
+  UPDATING, UPDATED,
+  CLEARING, CLEARED,
+  OPTION_CHANGING, OPTION_CHANGED,
   DESTROYING, DESTROYED,
 ];
 

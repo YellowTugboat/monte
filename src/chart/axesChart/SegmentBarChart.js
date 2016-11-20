@@ -10,6 +10,10 @@ export const SEGMENT_BAR_MODE = {
   STACKED: 'stacked',
 };
 
+const EVENT_MODE_CHANGING = 'modeChanging';
+const EVENT_MODE_CHANGED = 'modeChanged';
+const EVENTS = [EVENT_MODE_CHANGING, EVENT_MODE_CHANGED];
+
 const SEGMENT_BAR_CHART_DEFAULTS = {
   chartCss: 'monte-segment-bar-chart',
   barSegmentCss: 'bar-segment',
@@ -85,7 +89,8 @@ export class SegmentBarChart extends AxesChart {
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
       ...commonEventNames('bargrp'),  // Bar group events
-      ...commonEventNames('barseg')   // Bar segment events
+      ...commonEventNames('barseg'),  // Bar segment events
+      ...EVENTS
     );
   }
 
@@ -150,9 +155,11 @@ export class SegmentBarChart extends AxesChart {
 
   setMode(mode) {
     this.option('segmentBarMode', mode);
+    this.emit(EVENT_MODE_CHANGING);
     this.updateAxesDomains();
     this.renderAxes();
     this.update();
+    this.emit(EVENT_MODE_CHANGED);
   }
 
   updateAxesRanges() {
@@ -331,5 +338,7 @@ export class SegmentBarChart extends AxesChart {
     return super.createInstanceGroup(charts, ...additionalMethodsToProxy);
   }
 }
+
+SegmentBarChart.EVENTS = EVENTS;
 
 export const GROUP_PROXY_METHODS = [ 'setMode', 'updateAxesRanges' ];
