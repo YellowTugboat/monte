@@ -1,6 +1,7 @@
 import * as EV from '../const/events';
 // import { CHART_LIFECYCLE_EVENTS, CHART_SUPPORT_EVENTS, INTERACTION_EVENTS, INTERACTION_EVENT_CSS_MAP } from '../const/events';
 import { get as _get, set as _set } from '../external/lodash';
+import { get as _get, set as _set, isEqual } from '../external/lodash';
 import { isArray, isDefined, isFunc, isObject } from '../tools/is';
 import { EventWatcher } from '../support/EventWatcher';
 import { InstanceGroup } from '../support/InstanceGroup';
@@ -378,10 +379,10 @@ export class Chart {
    * @Chainable
    */
   option(key, value) {
-    let updateBounds = false;
+    const current = _get(this.opts, key);
 
     if (value === UNDEF) {
-      return _get(this.opts, key);
+      return current;
     }
 
     if (this._optsSet) {
@@ -390,29 +391,49 @@ export class Chart {
 
     _set(this.opts, key, value);
 
-    // TODO: If the new margin values match the old margin values do not update bounds. This will
-    //       help prevent an infinity loop if the margin is adjusted in the update cycle.
-    // Margins cause changes to the internal sizes.
-    if (key === 'margin') {
-      if (typeof value !== 'object') {
-        this.opts.margin = { top: value, left: value, right: value, bottom: value };
-      }
-
-      updateBounds = true;
-    }
-    else if (/^margin\./.test(key)) {
-      // Check if key is a 'deep' margin value (ex. 'margin.left')
-      updateBounds = true;
-    }
-
+    const updateBounds = this.__handleMarginOptions(key, value, current);
     if (this._optsSet) {
       // Margins affect the drawing area size so various updates are required.
-      if (updateBounds) { this._updateBounds(); }
+      if (updateBounds) {
+        this._updateBounds();
+      }
 
       this.__notify(EV.OPTION_CHANGED, key);
     }
 
     return this;
+  }
+
+  /**
+   * Provides extra checks for margin related options and checks if they should modify the bounds
+   * calculations of the chart.
+   */
+  __handleMarginOptions(key, value, current) {
+    let updateBounds = false;
+
+    // Margins cause changes to the internal sizes.
+    // If the new margin values match the old margin values do not update bounds. This will help
+    // prevent an infinite loop if the margin is adjusted in the update cycle.
+    if (key === 'margin') {
+      if (!isObject(value)) {
+        const newVal = { top: value, left: value, right: value, bottom: value };
+
+        if (!isEqual(current, newVal)) {
+          this.opts.margin = newVal;
+          updateBounds = true;
+        }
+      }
+      else if (!isEqual(current, value)) {
+        updateBounds = true;
+      }
+    }
+
+    // Check if key is a 'deep' margin value (ex. 'margin.left')
+    else if (/^margin\./.test(key) && current !== value) {
+      updateBounds = true;
+    }
+
+    return updateBounds;
   }
 
   /**

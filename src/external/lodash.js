@@ -11,6 +11,8 @@ export const get = _.get;
 
 export const flattenDeep = _.flattenDeep;
 
+export const isEqual = _.isEqual;
+
 // String manipulation
 // Used for CSS and class method names
 export const camelCase = _.camelCase;
