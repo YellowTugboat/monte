@@ -22,7 +22,9 @@ export class InstanceGroup {
   }
 
   addInstance(instance) {
-    this._instances.push(instance);
+    if (instance) {
+      this._instances.push(instance);
+    }
   }
 
   removeChart(instance) {
