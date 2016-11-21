@@ -62,6 +62,10 @@ export class EventWatcher {
       this.documentReady = false;
       document.addEventListener('DOMContentLoaded', ready);
       window.addEventListener('load', ready);
+
+      if (document.readyState === 'complete') {
+        ready();
+      }
     }
   }
 
