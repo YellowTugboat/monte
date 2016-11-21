@@ -10,6 +10,11 @@ export const SEGMENT_BAR_MODE = {
   STACKED: 'stacked',
 };
 
+export const SEGMENT_BAR_MODE_CSS_MAP = {
+  [SEGMENT_BAR_MODE.GROUPED]: 'monte-segment-mode-grouped',
+  [SEGMENT_BAR_MODE.STACKED]: 'monte-segment-mode-stacked',
+};
+
 const EVENT_MODE_CHANGING = 'modeChanging';
 const EVENT_MODE_CHANGED = 'modeChanged';
 const EVENTS = [EVENT_MODE_CHANGING, EVENT_MODE_CHANGED];
@@ -193,10 +198,21 @@ export class SegmentBarChart extends AxesChart {
     this._updateYInnerRange();
   }
 
+  _render() {
+    const mode = this.tryInvoke(this.opts.segmentBarMode);
+    const classToAdd = SEGMENT_BAR_MODE_CSS_MAP[mode];
+
+    this.classed(classToAdd, true);
+  }
+
   // Render the vis.
   _update() {
     const mode = this.tryInvoke(this.opts.segmentBarMode);
+    const classesToRemove = nonMatchingMapValues(SEGMENT_BAR_MODE_CSS_MAP, mode);
+    const classToAdd = SEGMENT_BAR_MODE_CSS_MAP[mode];
     let barGrps, transition;
+
+    this.classed(classToAdd, true);
 
     if (mode === SEGMENT_BAR_MODE.STACKED) {
       ({ barGrps, transition } = this._updateStackedBars());
@@ -213,10 +229,16 @@ export class SegmentBarChart extends AxesChart {
         this._updateLabels(barGrps, transition);
       }
       else {
-        transition.on('end', () => {
-          this._updateLabels(this.draw.selectAll('.monte-segment-bar-grp'), d3.transition());
+        transition.on('end.labels', () => {
+          this._updateLabels(this.draw.selectAll('.monte-segment-bar-grp'), transition);
         });
       }
+    }
+
+    if (transition) {
+      transition.on('end.classes', () => {
+        classesToRemove.forEach((classToRemove) => this.classed(classToRemove, false));
+      });
     }
   }
 
@@ -243,7 +265,7 @@ export class SegmentBarChart extends AxesChart {
     const barGrps = this.draw.selectAll('.monte-segment-bar-grp')
       .data(this.displayData, (d, i) => d.id || i);
 
-    const trans = d3.transition()
+    const trans = this.draw.transition()
       .duration(this.opts.transitionDuration)
       .delay(this.opts.delay)
       .ease(this.opts.ease);
@@ -342,3 +364,20 @@ export class SegmentBarChart extends AxesChart {
 SegmentBarChart.EVENTS = EVENTS;
 
 export const GROUP_PROXY_METHODS = [ 'setMode', 'updateAxesRanges' ];
+
+/**
+ * Get the values of all the keys that don't match
+ */
+function nonMatchingMapValues(map, keyToExclude) {
+  const values = [];
+
+  for (const key in map) {
+    if (map.hasOwnProperty(key)) {
+      if (key !== keyToExclude) {
+        values.push(map[key]);
+      }
+    }
+  }
+
+  return values;
+}
