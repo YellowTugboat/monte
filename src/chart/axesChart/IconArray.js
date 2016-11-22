@@ -1,3 +1,4 @@
+import { EXIT, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { MonteError } from '../../support/MonteError';
 import { commonEventNames } from '../../tools/commonEventNames';
@@ -146,8 +147,7 @@ export class IconArray extends AxesChart {
     // Fade out removed icons.
     icons.exit()
       .transition()
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
+        .call(this._transitionSetup('icon', EXIT))
         .style('opacity', 0)
         .remove();
   }
@@ -190,8 +190,7 @@ export class IconArray extends AxesChart {
           this.opts.iconCssScale,
           d.css], d, i))
         .transition()
-          .duration(this.opts.transitionDuration)
-          .ease(this.opts.ease)
+          .call(this._transitionSetup('icon', UPDATE))
           .attr('fill', this.opts.iconFillScale)
           .attr('stroke', this.opts.iconStrokeScale);
 

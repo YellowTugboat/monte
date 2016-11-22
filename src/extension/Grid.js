@@ -1,6 +1,7 @@
 import { HORIZONTAL, VERTICAL } from '../const/direction';
 import { AXIS_SHIFT } from '../const/d3';
 import { Extension } from './Extension';
+import { ReplacePreceding } from '../tools/mergeOptions';
 
 const GRID_DEFAULTS = {
   eventPrefix: 'grid',
@@ -10,7 +11,7 @@ const GRID_DEFAULTS = {
     'y': 'h-line',
   },
   lineCss: 'monte-ext-grid-line',
-  binding: ['axisRendered'],
+  binding: new ReplacePreceding(['axisRendered']),
   x1Adjust: 0,
   x2Adjust: 0,
   y1Adjust: 0,
@@ -32,7 +33,6 @@ export class Grid extends Extension {
       const css = this.getCss(scaleName);
       const scale = axesChart[scaleName];
       const axis = axesChart[scaleName + 'Axis'];
-      // const axisGrp = axesChart.support.select(`.${scaleName}-axis`);
       const orient = scaleName[0] === 'x' ? VERTICAL : HORIZONTAL; // Draw vertical lines for X, and horziontal for Y
 
       if (css && scale && axis) {
@@ -59,8 +59,6 @@ export class Grid extends Extension {
     const x2 = this.tryInvoke(this.opts.x2Adjust);
     const y1 = this.tryInvoke(this.opts.y1Adjust);
     const y2 = this.tryInvoke(this.opts.y2Adjust);
-    const duration = this.tryInvoke(this.chart.opts.transitionDuration);
-    const ease = this.chart.opts.ease;
 
     if (cfg.orient === HORIZONTAL) {
       ticks.enter().append('line')
@@ -69,9 +67,7 @@ export class Grid extends Extension {
         .attr('x2', 0)
         .attr('y1', 0)
         .attr('y2', 0)
-        .transition()
-          .duration(duration)
-          .ease(ease)
+        .transition(axisTransition)
           .attr('x1', 0 + x1)
           .attr('y1', AXIS_SHIFT + y1)
           .attr('x2', cfg.axesChart.width + x2)
@@ -79,8 +75,6 @@ export class Grid extends Extension {
           .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
 
       ticks.transition(axisTransition)
-        .duration(duration)
-        .ease(ease)
         .attr('x2', () => cfg.axesChart.width + x2)
         .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
     }
@@ -91,9 +85,7 @@ export class Grid extends Extension {
         .attr('x2', 0)
         .attr('y1', 0)
         .attr('y2', 0)
-        .transition()
-          .duration(duration)
-          .ease(ease)
+        .transition(axisTransition)
           .attr('x1', AXIS_SHIFT + x1)
           .attr('y1', 0 + y1)
           .attr('x2', AXIS_SHIFT + x2)
@@ -101,8 +93,6 @@ export class Grid extends Extension {
           .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
 
       ticks.transition(axisTransition)
-        .duration(duration)
-        .ease(ease)
         .attr('y2', () => cfg.axesChart.height + y2)
         .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
     }
@@ -116,7 +106,7 @@ export class Grid extends Extension {
         const hasPrefix = scaleName.substr(0, prefix.length) === prefix;
 
         if (hasPrefix) {
-          return this.opts.prefixCssMap[prefix];
+          return this.tryInvoke(this.opts.prefixCssMap[prefix]);
         }
       }
     }

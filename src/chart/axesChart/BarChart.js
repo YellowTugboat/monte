@@ -1,3 +1,4 @@
+import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { extentBalanced } from '../../util/extents';
@@ -117,8 +118,7 @@ export class BarChart extends AxesChart {
             this.opts.barCssScale,
             d.css], d, i))
       .transition()
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
+        .call(this._transitionSetup(ENTER))
         .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScaleAccessor, d, i, nodes));
         // .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScale, d, i, nodes));
 
@@ -127,8 +127,7 @@ export class BarChart extends AxesChart {
 
     barGrps.select('rect')
       .transition()
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
+        .call(this._transitionSetup(UPDATE))
         .attr('x', barX)
         .attr('y', barY)
         .attr('width', barWidth)
@@ -137,8 +136,7 @@ export class BarChart extends AxesChart {
     // Fade out removed lines.
     barGrps.exit()
       .transition()
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
+        .call(this._transitionSetup(EXIT))
         .style('opacity', 0)
       .remove();
 

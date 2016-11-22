@@ -1,3 +1,4 @@
+import { EXIT, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
@@ -86,25 +87,23 @@ export class ScatterPlot extends AxesChart {
           const symbol = this.opts.pointSymbol(symbase, d, i);
           return symbol(d, i);
         })
-        .attr('fill', (d, i) => this.opts.pointFillScale(d.id || i))
-        .attr('stroke', (d, i) => this.opts.pointStrokeScale(d.id || i))
         .attr('class', (d, i) => this._buildCss(
           ['monte-point',
             this.opts.pointCss,
             this.opts.pointCssScale,
             d.css], d, i))
       .transition()
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
+        .call(this._transitionSetup('point', UPDATE))
         .call(this.opts.pointEnterStart)
+        .attr('fill', (d, i) => this.opts.pointFillScale(d.id || i))
+        .attr('stroke', (d, i) => this.opts.pointStrokeScale(d.id || i))
         .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
         .call(this.opts.pointEnterEnd);
 
     // Fade out removed points.
     points.exit()
       .transition()
-      .duration(this.opts.transitionDuration)
-      .ease(this.opts.ease)
+      .call(this._transitionSetup('point', EXIT))
       .call(this.opts.pointExitStart)
       .style('opacity', 0)
       .call(this.opts.pointExitEnd)

@@ -1,3 +1,4 @@
+import { EXIT, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { MonteOptionError } from '../../support/MonteOptionError';
 import { commonEventNames } from '../../tools/commonEventNames';
@@ -266,9 +267,7 @@ export class SegmentBarChart extends AxesChart {
       .data(this.displayData, (d, i) => d.id || i);
 
     const trans = this.draw.transition()
-      .duration(this.opts.transitionDuration)
-      .delay(this.opts.delay)
-      .ease(this.opts.ease);
+      .call(this._transitionSetup('bars', UPDATE));
 
     barGrps.enter().append('g')
       .attr('class', 'monte-segment-bar-grp')
@@ -295,7 +294,10 @@ export class SegmentBarChart extends AxesChart {
                 .attr('height', barHeight);
         });
 
-    barGrps.exit().remove();
+    barGrps.exit()
+      .transition()
+      .call(this._transitionSetup(EXIT))
+      .remove();
 
     return {
       barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp')),
@@ -328,7 +330,10 @@ export class SegmentBarChart extends AxesChart {
           .attr('y', (d1, i, nodes) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
           .attr('dy', (d1, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes));
 
-    lbl.exit().remove();
+    lbl.exit()
+      .transition()
+      .call(this._transitionSetup(EXIT))
+      .remove();
   }
 
   _barProp() { return this.tryInvoke(this.opts.yProp); }

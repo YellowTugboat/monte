@@ -1,3 +1,4 @@
+import { EXIT, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
@@ -128,15 +129,14 @@ export class LineChart extends AxesChart {
             this.opts.lineCssScale,
             d.css], d, i))
         .transition()
-          .duration(this.opts.transitionDuration)
-          .ease(this.opts.ease)
+          .call(this._transitionSetup('line', UPDATE))
           .attr('d', (d) => this.line(d[this.opts.valuesProp]))
           .attr('stroke', this.opts.lineStrokeScale);
 
     // Fade out removed lines.
     lineGrps.exit()
       .transition()
-        .duration(this.opts.transitionDuration)
+        .call(this._transitionSetup('line', EXIT))
         .style('opacity', 0)
       .remove();
 
@@ -173,8 +173,7 @@ export class LineChart extends AxesChart {
             d.css], lineDatum, lineIndex));
 
     points.transition()
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
+        .call(this._transitionSetup('point', UPDATE))
         .attr('fill', this.opts.pointFillScale)
         .attr('stroke', this.opts.pointStrokeScale)
         .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
@@ -183,8 +182,7 @@ export class LineChart extends AxesChart {
     // Fade out removed points.
     points.exit()
       .transition()
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
+        .call(this._transitionSetup('point', EXIT))
         .style('opacity', 0)
         .remove();
   }

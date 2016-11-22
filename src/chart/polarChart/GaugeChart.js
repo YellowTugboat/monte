@@ -1,3 +1,4 @@
+import { EXIT, UPDATE } from '../../const/d3';
 import { ArcChart } from './ArcChart';
 import { HALF_PI } from '../../const/math';
 import { UNDEF } from '../../const/undef';
@@ -158,9 +159,15 @@ export class GaugeChart extends ArcChart {
         .attr('text-anchor', 'middle')
         .attr('dy', '0.35em')
       .merge(labels)
+        .transition()
+        .call(this._transitionSetup('label', UPDATE))
         .attr('transform', (d) =>
           'translate(' + GaugeChart.getCoord(labelRadius, d.endAngle) +')')
         .text((d) => d.data[this.opts.segmentLabelProp]);
+
+    labels.exit()
+      .transition(EXIT)
+      .remove();
 
     this.emit(EVENT_UPDATED_LABELS);
   }
@@ -181,19 +188,17 @@ export class GaugeChart extends ArcChart {
       .attr('d', path)
       .style('transform', (d) => 'rotate(' + d + 'rad)');
 
-    needle
-      .transition()
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
-        .styleTween('transform', (d) => {
-          const a = this._prevNeedleAngleValueData;
-          const b = d;
+    needle.transition()
+      .call(this._transitionSetup('needle', UPDATE))
+      .styleTween('transform', (d) => {
+        const a = this._prevNeedleAngleValueData;
+        const b = d;
 
-          return function(t) {
-            const r = a * (1 - t) + b * t;
-            return 'rotate(' + r + 'rad)';
-          };
-        });
+        return function(t) {
+          const r = a * (1 - t) + b * t;
+          return 'rotate(' + r + 'rad)';
+        };
+      });
 
     this.emit(EVENT_UPDATED_NEEDLE);
   }

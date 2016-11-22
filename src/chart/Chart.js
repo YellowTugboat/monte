@@ -1,14 +1,13 @@
 import * as EV from '../const/events';
-// import { CHART_LIFECYCLE_EVENTS, CHART_SUPPORT_EVENTS, INTERACTION_EVENTS, INTERACTION_EVENT_CSS_MAP } from '../const/events';
-import { get as _get, set as _set } from '../external/lodash';
+import { TRANSITION_DELAY_MS, TRANSITION_DURATION_MS, TRANSITION_EASE } from '../const/d3';
 import { get as _get, set as _set, isEqual } from '../external/lodash';
 import { isArray, isDefined, isFunc, isObject } from '../tools/is';
 import { EventWatcher } from '../support/EventWatcher';
 import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
-import { TRANSITION_DURATION_MS } from '../const/d3';
 import { UNDEF } from '../const/undef';
+import { getDepthFirst } from '../tools/getDepthFirst';
 import { mergeOptions } from '../tools/mergeOptions';
 import { noop } from '../tools/noop';
 
@@ -37,6 +36,12 @@ const DEFAULTS = {
   transitionDuration: TRANSITION_DURATION_MS,
   ease: d3.easeCubic,
   delay: 0,
+
+  transition: {
+    duration: TRANSITION_DURATION_MS,
+    ease: d3.easeCubic,
+    delay: 0,
+  },
 
   resize: null,
 
@@ -602,6 +607,25 @@ export class Chart {
     });
 
     return cssClasses.join(' ');
+  }
+
+  // Apply the transition settings (duration, delay, and ease). Attempt to match specfic settings
+  // based on the provided levels.
+  //
+  // For example given the levels `['line', 'update']` the transition settings will first be read:
+  // * `transitionSettings.line.update.<property>` then
+  // * `transitionSettings.update.<property>` then
+  // * `transitionSettings.<property>` then
+  // * `<propertDefaultValue>`
+  _transitionSetup(...levels) {
+    return (transition) => {
+      const transitionSettings = this.tryInvoke(this.opts.transition);
+      const duration = getDepthFirst(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
+      const delay = getDepthFirst(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
+      const ease = getDepthFirst(transitionSettings, levels, 'ease', TRANSITION_EASE);
+
+      transition.duration(duration).delay(delay).ease(ease);
+    };
   }
 
   /**

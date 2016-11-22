@@ -101,16 +101,14 @@ export class AreaChart extends LineChart {
             d.css], lineDatum, lineIndex));
 
     allAreas.transition()
-        .duration(this.tryInvoke(this.opts.transitionDuration, UPDATE))
-        .ease(this.opts.ease)
+        .call(this._transitionSetup(UPDATE))
         .attr('d', (d) => this.area(this.getProp('values', d)))
         .attr('fill', this.optionReaderFunc('areaFillScale'));
 
     // Fade out removed points.
     area.exit()
-      .transition(this.tryInvoke(this.opts.transitionDuration, EXIT))
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
+      .transition()
+        .call(this._transitionSetup(EXIT))
         .style('opacity', 0)
         .remove();
   }

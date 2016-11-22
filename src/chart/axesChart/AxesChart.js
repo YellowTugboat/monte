@@ -1,3 +1,4 @@
+import { ENTER, UPDATE } from '../../const/d3';
 import { isArray, isDefined, isFunc } from '../../tools/is';
 import { Chart } from '../Chart';
 import { MonteError } from '../../support/MonteError';
@@ -189,15 +190,15 @@ export class AxesChart extends Chart {
     if (suppressAxes === true) { return; }
 
     const isSuppressArray = isArray(suppressAxes);
+    const action = this.hasRendered ? UPDATE : ENTER;
+    const t = this.bound.transition().call(this._transitionSetup('axis', action));
 
     // (Re)render axes
     this.forEachAxisScale((scaleName) => {
       if (isSuppressArray && suppressAxes.indexOf(scaleName) > -1) { return; }
 
       this.support.select(`.${scaleName}-axis`)
-        .transition()
-          .duration(this.opts.transitionDuration)
-          .ease(this.opts.ease)
+        .transition(t)
           .on('start', () => this.emit(EVENT_AXIS_RENDERING))
           .call(this[`${scaleName}Axis`])
           .call(this._setLabel.bind(this, scaleName))

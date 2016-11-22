@@ -1,3 +1,4 @@
+import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { PolarChart } from './PolarChart';
 import { TAU } from '../../const/math';
 import { arcSimpleTween } from '../../util/tween';
@@ -35,6 +36,8 @@ const ARC_CHART_DEFAULTS = {
   pieStartAngle: 0,
   pieEndAngle: TAU,
   piePadAngle: 0.02,
+
+  // TODO: Add label support
 };
 
 export class ArcChart extends PolarChart {
@@ -100,9 +103,7 @@ export class ArcChart extends PolarChart {
               d.data.css], d, i))
           .call(this.__bindCommonEvents('wedge'))
           .transition()
-            .delay(this.opts.transitionDuration)
-            .duration(this.opts.transitionDuration)
-            .ease(this.opts.ease)
+            .call(this._transitionSetup('arc', ENTER))
             .attrTween('d', (d) => {
               const start = this.tryInvoke(this.opts.arcWedgeEnter, d);
               return arcSimpleTween(arc, start, d);
@@ -126,9 +127,7 @@ export class ArcChart extends PolarChart {
             this.opts.arcWedgeCssScale,
             d.data.css], d, i))
         .transition()
-          .delay(this.opts.transitionDuration)
-          .duration(this.opts.transitionDuration)
-          .ease(this.opts.ease)
+          .call(this._transitionSetup('arc', UPDATE))
           .attrTween('d', function(d) {
             return arcSimpleTween(arc, d.prev, d);
           })
@@ -136,8 +135,7 @@ export class ArcChart extends PolarChart {
 
     arcs.exit()
       .transition()
-        .duration(this.opts.transitionDuration)
-        .ease(this.opts.ease)
+        .call(this._transitionSetup('arc', EXIT))
         .style('opacity', 0.01)
         .remove();
   }

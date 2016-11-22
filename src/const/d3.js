@@ -4,6 +4,8 @@ export const AXIS_SHIFT = 0.5;
 
 // In d3-transition the default transition time is 250ms.
 export const TRANSITION_DURATION_MS = 250;
+export const TRANSITION_DELAY_MS = 0;
+export const TRANSITION_EASE = d3.easeCubic;
 
 export const ENTER = 'enter';
 export const UPDATE = 'update';
