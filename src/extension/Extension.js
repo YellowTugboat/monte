@@ -45,7 +45,6 @@ export class Extension {
 
   _initPublicEvents(...events) {
     this._events = events;
-    this.dispatch = d3.dispatch(...events);
   }
 
   setChart(chart) {
@@ -79,6 +78,10 @@ export class Extension {
    * @Chainable <setter>
    */
   on(typenames, callback) {
+    if (!this.dispatch) { // Lazy construct the dispatcher.
+      this.dispatch = d3.dispatch(...this.events);
+    }
+
     if (callback) {
       this.dispatch.on(typenames, callback);
       return this;
@@ -88,7 +91,7 @@ export class Extension {
   }
 
   /**
-   * Force the triggering of an event with the given arguments. The event is __notifyted through the
+   * Force the triggering of an event with the given arguments. The event is notified through the
    * extension's dispatcher and the parent chart's dispatcher. The `on` callbacks are invoked in
    * the context of the extension for the extension's dispatcher and in the context of the chart
    * for the chart's dispatcher.
@@ -99,7 +102,10 @@ export class Extension {
    * @Chainable
    */
   __notify(eventName, ...args) {
-    this.dispatch.call(eventName, this, ...args);
+    if (this.dispatch) {
+      this.dispatch.call(eventName, this, ...args);
+    }
+
     this.chart.emit('extension', `${this.opts.eventPrefix}:${eventName}`, this, ...args);
   }
 
@@ -145,7 +151,7 @@ export class Extension {
       }
     }
     catch (e) {
-      if (console && console.log) { console.log(e); } // eslint-disable-line no-console
+      if (console && console.error) { console.error(e); } // eslint-disable-line no-console
       this.chart.__notify(EV.SUPPRESSED_ERROR, e, e.stack || 'No stack available.');
     }
   }

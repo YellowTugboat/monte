@@ -153,10 +153,9 @@ export class Chart {
     this.defs = this.bound.append('defs');
 
     // Drawing area path clipping
-    this.clip = this.defs.append('clipPath')
-        .attr('id', CLIP_PATH_ID);
+    this.clip = this.defs.append('clipPath').attr('id', CLIP_PATH_ID);
 
-    this.clipRect = this.clip.append('rect');
+    this.clipRect = this.clip.append('rect').attr('x', 0).attr('y', 0);
 
     // Create a background area.
     this.addLayer('bg');
@@ -205,6 +204,8 @@ export class Chart {
       console.log(`[${this}] "${eventName}": ${a}`); // eslint-disable-line no-console
     };
 
+    // Determine events to watch in developer mode. If `developerMode` is an array use the provided
+    // events; otherwise use all registered events.
     const events = isArray(this.opts.developerMode || global.developerMode) ?
       (this.opts.developerMode || global.developerMode) :
       this._events;

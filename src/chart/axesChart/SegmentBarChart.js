@@ -264,7 +264,7 @@ export class SegmentBarChart extends AxesChart {
   _updateBars(barXInner, barYInner, barWidth, barHeight) {
     const translate = this._barGroupTranslate.bind(this);
     const barGrps = this.draw.selectAll('.monte-segment-bar-grp')
-      .data(this.displayData, (d, i) => d.id || i);
+      .data(this.displayData);
 
     const trans = this.draw.transition()
       .call(this._transitionSetup('bars', UPDATE));

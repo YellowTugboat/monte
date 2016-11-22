@@ -29,6 +29,7 @@ const SCATTER_PLOT_DEFAULTS = {
 
   pointSymbol: (symbol) => symbol.type(d3.symbolCircle),
 
+  // TODO: Transition to events
   pointEnterStart: noop,
   pointEnterEnd: noop,
   pointExitStart: noop,
@@ -76,7 +77,7 @@ export class ScatterPlot extends AxesChart {
 
   _updatePoints() {
     // Data join for the points
-    const points = this.draw.selectAll('.monte-point').data(this.displayData); // , (d, i) => d.id || i);
+    const points = this.draw.selectAll('.monte-point').data(this.displayData);
 
     // Create new points
     points.enter().append('path')
