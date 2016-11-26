@@ -24,6 +24,19 @@ const BAR_CHART_DEFAULTS = {
 
   // Static CSS class(es) to apply to every line.
   barCss: 'bar',
+  barGrpCss: function(d) {
+    const value = this.getProp('x', d);
+    let css = 'monte-bar-zero';
+
+    if (value > 0) {
+      css = 'monte-bar-pos';
+    }
+    else if (value < 0) {
+      css = 'monte-bar-neg';
+    }
+
+    return css;
+  },
 
   xProp: 'id',
   yProp: 'value',
@@ -36,6 +49,7 @@ const BAR_CHART_DEFAULTS = {
 
   includeLabels: false,
 
+  // TODO: Adopt label placement like arc charts?
   labelProp: 'value',
   labelFillScale: noop,
   label: function(d) {
@@ -45,9 +59,19 @@ const BAR_CHART_DEFAULTS = {
   labelX: function(d) {
     return this._barX(d) + this.x.bandwidth() / 2;
   },
-  labelYAdjust: '-0.05em',
+  labelYAdjust: function(d) {
+    const value = this.getProp('y', d);
+
+    return value > 0 ?
+      '-0.05em' :
+      '1.05em';
+  },
   labelY: function(d) {
-    return this._barY(d);
+    const value = this.getProp('y', d);
+
+    return value > 0 ?
+      this._barY(d) :
+      this._barY(d) + this._barHeight(d);
   },
 };
 
@@ -105,7 +129,9 @@ export class BarChart extends AxesChart {
     const barHeight = this._barHeight.bind(this);
 
     barGrps.enter().append('g')
-      .attr('class', 'monte-bar-grp')
+      .attr('class', (d, i) => this._buildCss([
+        'monte-bar-grp',
+        this.opts.barGrpCss], d, i))
       .append('rect')
         .attr('x', barX)
         .attr('y', barY)
@@ -113,10 +139,10 @@ export class BarChart extends AxesChart {
         .attr('height', barHeight)
         .call(this.__bindCommonEvents('bar'))
       .merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
-        .attr('class', (d, i) => this._buildCss(
-          [this.opts.barCss,
-            this.opts.barCssScale,
-            d.css], d, i))
+        .attr('class', (d, i) => this._buildCss([
+          this.opts.barCss,
+          this.opts.barCssScale,
+          d.css], d, i))
       .transition()
         .call(this._transitionSetup(ENTER))
         .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScaleAccessor, d, i, nodes));
@@ -163,6 +189,17 @@ export class BarChart extends AxesChart {
 
   _barX(d) { return this.getScaledProp('x', d); }
   _barWidth() { return this.x.bandwidth(); }
-  _barY(d) { return this.getScaledProp('y', d); }
-  _barHeight(d) { return this.height - this.getScaledProp('y', d); }
+  _barY(d) {
+    const value = this.getProp('y', d);
+
+    return value < 0 ? this.y(0) : this.getScaledProp('y', d);
+  }
+  _barHeight(d) {
+    if (this.y.domain()[0] < 0) {
+      // extent includes negative values
+      return Math.abs(this.height - this.getScaledProp('y', d) - this.y(0));
+    }
+
+    return this.height - this.getScaledProp('y', d);
+  }
 }

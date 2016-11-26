@@ -23,7 +23,11 @@ const HBAR_CHART_DEFAULTS = {
   yDomainCustomize: null,
 
   labelX: function(d) {
-    return this._barWidth(d);
+    const value = this.getProp('x', d);
+
+    return value > 0 ?
+      this._barWidth(d) + this._barX(d) :
+      this._barX(d);
   },
   labelXAdjust: '',
   labelY: function(d) {
@@ -50,8 +54,14 @@ export class HorizontalBarChart extends BarChart {
     return extent;
   }
 
-  _barX() { return 0; }
-  _barWidth(d) { return this.getScaledProp('x', d); }
+  _barX(d) {
+    const value = this.getProp('x', d);
+
+    return value > 0 ? this.x(0) : this.x(0) - this._barWidth(d);
+  }
+  _barWidth(d) {
+    return Math.abs(this.getScaledProp('x', d) - this.x(0));
+  }
   _barY(d) { return this.getScaledProp('y', d); }
   _barHeight() { return this.y.bandwidth(); }
 }
