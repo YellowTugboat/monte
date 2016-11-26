@@ -1,21 +1,19 @@
-import { EXIT, UPDATE } from '../../const/d3';
+import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { ArcChart } from './ArcChart';
 import { HALF_PI } from '../../const/math';
 import { UNDEF } from '../../const/undef';
 import { needleRoundedEnd } from '../../util/needle';
 import { noop } from '../../tools/noop';
+import { polarLabelInner } from '../../util/polarLabels';
 import { radiusContrain } from '../../util/dimension';
 
 const EVENT_UPDATING_BACKGROUND_ARC = 'updatingBackgroundArc';
 const EVENT_UPDATED_BACKGROUND_ARC = 'updatedBackgroundArc';
-const EVENT_UPDATING_LABELS = 'updatingLabels';
-const EVENT_UPDATED_LABELS = 'updatedLabels';
 const EVENT_UPDATING_NEEDLE = 'updatingNeedle';
 const EVENT_UPDATED_NEEDLE = 'updatedNeedle';
 
 const EVENTS = [
   EVENT_UPDATING_BACKGROUND_ARC, EVENT_UPDATED_BACKGROUND_ARC,
-  EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS,
   EVENT_UPDATING_NEEDLE, EVENT_UPDATED_NEEDLE,
 ];
 
@@ -35,13 +33,17 @@ const GAUGE_CHART_DEFAULTS = {
   needlePath: needleRoundedEnd(),
 
   innerRadius: (w, h) => radiusContrain(w, h) * 0.9,
-  labelRadius: (w, h) => radiusContrain(w, h) * 0.8,
+  labelPlacement: polarLabelInner,
 
   segmentsProp: 'segments',
   itemValueProp: 'interval',
   startValueProp: 'start',
+  startLabelProp: 'startLabel',
   needleValueProp: 'value',
-  segmentLabelProp: 'label',
+  labelProp: 'label',
+  labelAngle: (d) => d.endAngle,
+  suppressLabels: false,
+  includeLabels: function() { return !this.tryInvoke(this.opts.suppressLabels); },
 };
 
 export class GaugeChart extends ArcChart {
@@ -88,8 +90,17 @@ export class GaugeChart extends ArcChart {
 
     const segmentsProp = this.tryInvoke(this.opts.segmentsProp);
     const startProp = this.tryInvoke(this.opts.startValueProp);
+    const startLabelProp = this.tryInvoke(this.opts.startLabelProp);
     const itemValueProp = this.tryInvoke(this.opts.itemValueProp);
     const needleValueProp = this.tryInvoke(this.opts.needleValueProp);
+
+    // Insert starting label item
+    if (startLabelProp) {
+      data[segmentsProp].unshift({
+        interval: 0,
+        label: data[startLabelProp],
+      });
+    }
 
     super._data(data[segmentsProp]);
     const intervalSum = this.displayData.reduce((acc, d) => acc + Math.abs(d[itemValueProp]), 0);
@@ -148,30 +159,6 @@ export class GaugeChart extends ArcChart {
     this.emit(EVENT_UPDATED_BACKGROUND_ARC);
   }
 
-  _updateLabels() {
-    const labels = this.support.selectAll('.monte-gauge-label').data(this.pieDisplayData);
-    const labelRadius = this.tryInvoke(this.opts.labelRadius, this.width, this.height);
-
-    this.emit(EVENT_UPDATING_LABELS);
-
-    labels.enter().append('text')
-        .attr('class', 'monte-gauge-label')
-        .attr('text-anchor', 'middle')
-        .attr('dy', '0.35em')
-      .merge(labels)
-        .transition()
-        .call(this._transitionSetup('label', UPDATE))
-        .attr('transform', (d) =>
-          'translate(' + GaugeChart.getCoord(labelRadius, d.endAngle) +')')
-        .text((d) => d.data[this.opts.segmentLabelProp]);
-
-    labels.exit()
-      .transition(EXIT)
-      .remove();
-
-    this.emit(EVENT_UPDATED_LABELS);
-  }
-
   _updateNeedle() {
     const baseWidth = this.tryInvoke(this.opts.needleBase);
     const or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
@@ -186,7 +173,9 @@ export class GaugeChart extends ArcChart {
     needle.enter().append('path')
       .attr('class', 'monte-gauge-needle')
       .attr('d', path)
-      .style('transform', (d) => 'rotate(' + d + 'rad)');
+      .transition()
+        .call(this._transitionSetup('needle', ENTER))
+        .style('transform', (d) => 'rotate(' + d + 'rad)');
 
     needle.transition()
       .call(this._transitionSetup('needle', UPDATE))
@@ -199,6 +188,11 @@ export class GaugeChart extends ArcChart {
           return 'rotate(' + r + 'rad)';
         };
       });
+
+    needle.exit()
+      .transition()
+        .call(this._transitionSetup('needle', EXIT))
+        .remove();
 
     this.emit(EVENT_UPDATED_NEEDLE);
   }

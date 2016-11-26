@@ -1,10 +1,21 @@
 import { ENTER, EXIT, UPDATE } from '../../const/d3';
+import { polarLabelCentroid, polarLabelCssPrefix } from '../../util/polarLabels';
 import { PolarChart } from './PolarChart';
 import { TAU } from '../../const/math';
 import { arcSimpleTween } from '../../util/tween';
+import { classedPattern } from '../../util/css';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
 import { radiusContrain } from '../../util/dimension';
+
+const LABEL_CSS_PATTERN = new RegExp(`^${polarLabelCssPrefix}*`);
+
+const EVENT_UPDATING_LABELS = 'updatingLabels';
+const EVENT_UPDATED_LABELS = 'updatedLabels';
+
+const EVENTS = [
+  EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS,
+];
 
 const ARC_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart',
@@ -37,7 +48,17 @@ const ARC_CHART_DEFAULTS = {
   pieEndAngle: TAU,
   piePadAngle: 0.02,
 
-  // TODO: Add label support
+  includeLabels: false,
+  labelPlacement: polarLabelCentroid,
+  labelAngle: (d) => d.startAngle + (d.endAngle - d.startAngle) / 2,
+
+  labelProp: 'value',
+  labelFillScale: noop,
+  label: function(d) {
+    return this.getProp('label', d.data);
+  },
+  labelXAdjust: '',
+  labelYAdjust: '0.35em',
 };
 
 export class ArcChart extends PolarChart {
@@ -67,7 +88,8 @@ export class ArcChart extends PolarChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('wedge')   // Wedge events
+      ...commonEventNames('wedge'),   // Wedge events
+      ...EVENTS
     );
   }
 
@@ -84,9 +106,19 @@ export class ArcChart extends PolarChart {
     super._data(data);
   }
 
+  _render() {
+    if (!this.hasRendered) {
+      super._render();
+      this._updateBackground();
+    }
+  }
+
   _update() {
     this._updateArcs();
-    this._updateBackground();
+
+    if (this.opts.includeLabels) {
+      this._updateLabels();
+    }
   }
 
   _updateArcs() {
@@ -148,7 +180,7 @@ export class ArcChart extends PolarChart {
       endAngle: this.opts.pieEndAngle,
       value: pieSum,
     });
-    const wedge = this.bg.selectAll('.monte-wedge-bg').data([bgArc]);
+    const wedge = this.bg.selectAll('.monte-arc-bg').data([bgArc]);
 
     wedge.enter()
         .append('path')
@@ -156,7 +188,46 @@ export class ArcChart extends PolarChart {
         .attr('d', (d) => d)
         .attr('fill', () => this.opts.arcBgWedgeFillScale())
         .attr('class', (d, i) => this._buildCss(
-          ['monte-wedge-bg',
+          ['monte-arc-bg',
             this.opts.arcBgWedgeCssScale], d, i));
   }
+
+  _updateLabels() {
+    const labels = this.draw.selectAll('.monte-arc-label').data(this.pieDisplayData);
+    const labelPlacement = this.tryInvoke(this.opts.labelPlacement);
+    const labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
+    const css = this.tryInvoke(labelPlacement.css);
+
+    // Clear old label CSS from chart and add new.
+    classedPattern(this.bound, LABEL_CSS_PATTERN, false);
+    this.classed(css, true);
+
+    this.emit(EVENT_UPDATING_LABELS);
+
+    labels.enter().append('text')
+        .attr('class', 'monte-arc-label')
+      .merge(labels)
+        .transition()
+        .call(this._transitionSetup('label', UPDATE))
+        .attr('dx', (d, i, nodes) => this.tryInvoke(this.opts.labelXAdjust, d, i, nodes))
+        .attr('dy', (d, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d, i, nodes))
+        .attr('transform', (d, i, nodes) => {
+          // TODO: Update to use `attrTween` and follow arc movement instead of direct translation.
+          //       Stop the label drift through the
+          const angle = this.tryInvoke(this.opts.labelAngle, d, i, nodes);
+          const coord = ArcChart.getCoord(labelRadius, angle);
+
+          return `translate(${coord})`;
+        })
+        .text((d) => this.getProp('label', d.data));
+
+    labels.exit()
+      .transition()
+      .call(this._transitionSetup('label', EXIT))
+      .remove();
+
+    this.emit(EVENT_UPDATED_LABELS);
+  }
 }
+
+ArcChart.EVENTS = EVENTS;

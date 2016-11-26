@@ -607,7 +607,7 @@ export class Chart {
       }
     });
 
-    return cssClasses.join(' ');
+    return cssClasses.join(' ').replace(/\s+/, ' ');
   }
 
   // Apply the transition settings (duration, delay, and ease). Attempt to match specfic settings
@@ -714,6 +714,7 @@ export class Chart {
    * `<chart>.data()`;
    */
   getRawData() {
+    // TODO: When assigning data make sure new data is a deep copy.
     if (this.rawData) {
       return this.rawData;
     }
