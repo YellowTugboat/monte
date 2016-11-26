@@ -38,8 +38,9 @@ export class PolarChart extends Chart {
   }
 
   static getCoord(radius, angle) {
-    // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment. We repeat that here for
-    // coordinate consistency.
+    // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment to account for the starting
+    // angle differences between SVG (top) vs traditional polar coordinates (right). The adjustment
+    // is repeated here for coordinate consistency.
     const a = angle - HALF_PI;
     return [Math.cos(a) * radius, Math.sin(a) * radius];
   }

@@ -1,6 +1,10 @@
 {
   "name": "monte",
-  "version": "0.0.0-alpha18",
+  "version": "0.0.0-alpha19",
+  "author": {
+    "name": "Yellow Tugboat",
+    "url": "http://www.yellowtugboat.com"
+  },
   "description": "A set of common charts based on D3 built for extension and modification.",
   "main": "build/monte.js",
   "jsnext:main": "index.js",
@@ -39,27 +43,27 @@
   },
   "homepage": "https://github.com/YellowTugboat/monte#readme",
   "devDependencies": {
-    "babel-cli": "^6.14.0",
-    "babel-plugin-lodash": "^3.2.9",
-    "babel-preset-es2015-rollup": "^1.2.0",
+    "babel-cli": "6",
+    "babel-plugin-lodash": "3.2.9",
+    "babel-preset-es2015-rollup": "1",
     "browser-run": "^3.2.0",
     "browserify": "^13.1.0",
-    "d3": "^4.2",
-    "eslint": "^3.8.0",
-    "eslint-config-yellow-tugboat": "^0.2.1",
+    "d3": "4",
+    "eslint": "3",
+    "eslint-config-yellow-tugboat": "0",
     "http-server": "^0.9.0",
     "json2module": "0.0.3",
-    "lodash": "^4.16.1",
-    "lodash-es": "^4.16.1",
-    "nodemon": "^1.9.2",
+    "lodash": "4",
+    "lodash-es": "4",
+    "nodemon": "^1.9",
     "rollup": "^0.36",
-    "rollup-plugin-babel": "^2",
-    "rollup-plugin-node-resolve": "^2.0.0",
-    "rollup-plugin-uglify": "^1.0.1",
+    "rollup-plugin-babel": "2",
+    "rollup-plugin-node-resolve": "2",
+    "rollup-plugin-uglify": "1",
     "tape": "^4.6.0",
     "tape-run": "^2.1.4"
   },
   "peerDependencies": {
-    "d3": "^4.2"
+    "d3": "^4"
   }
 }

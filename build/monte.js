@@ -1,10 +1,11 @@
+// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha19 Copyright 2016 Yellow Tugboat
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha18";
+var version = "0.0.0-alpha19";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -179,7 +180,7 @@ var MOUSEOUT = 'mouseout';
 var SUPPRESSED_ERROR = 'suppressedError';
 var EXTENSION = 'extension';
 
-// Chart Lifecycle
+// Chart and Extension Lifecycle (extensions support a subset)
 var RENDERING = 'rendering';
 var RENDERED = 'rendered';
 var UPDATING = 'updating';
@@ -188,10 +189,13 @@ var UPDATING_BOUNDS = 'updatingBounds';
 var UPDATED_BOUNDS = 'updatedBounds';
 var CLEARING = 'clearing';
 var CLEARED = 'cleared';
-var CSS_DOMAINS_RESETING = 'cssDomainsReseting';
-var CSS_DOMAINS_RESET = 'cssDomainsReset';
 var DESTROYING = 'destroying';
 var DESTROYED = 'destroyed';
+
+var OPTION_CHANGING = 'optionChanging';
+var OPTION_CHANGED = 'optionChanged';
+var CSS_DOMAINS_RESETTING = 'cssDomainsResetting';
+var CSS_DOMAINS_RESET = 'cssDomainsReset';
 
 var INTERACTION_EVENTS = [CLICK, TOUCHSTART, TOUCHEND, MOUSEOVER, MOUSEOUT];
 
@@ -199,7 +203,9 @@ var INTERACTION_EVENTS = [CLICK, TOUCHSTART, TOUCHEND, MOUSEOVER, MOUSEOUT];
 var CHART_SUPPORT_EVENTS = [SUPPRESSED_ERROR, EXTENSION];
 
 // Lifecycle event pairs
-var CHART_LIFECYCLE_EVENTS = [RENDERING, RENDERED, UPDATING, UPDATED, UPDATING_BOUNDS, UPDATED_BOUNDS, CLEARING, CLEARED, CSS_DOMAINS_RESETING, CSS_DOMAINS_RESET, DESTROYING, DESTROYED];
+var CHART_LIFECYCLE_EVENTS = [RENDERING, RENDERED, UPDATING, UPDATED, UPDATING_BOUNDS, UPDATED_BOUNDS, CLEARING, CLEARED, CSS_DOMAINS_RESETTING, CSS_DOMAINS_RESET, OPTION_CHANGING, OPTION_CHANGED, DESTROYING, DESTROYED];
+
+var EXTENSION_LIFECYCLE_EVENTS = [UPDATING, UPDATED, CLEARING, CLEARED, OPTION_CHANGING, OPTION_CHANGED, DESTROYING, DESTROYED];
 
 var ACTION_ADD = 'add';
 var ACTION_REMOVE = 'remove';
@@ -208,23 +214,161 @@ var ACTION_CSS_TOUCH = 'touch';
 
 var INTERACTION_EVENT_CSS_MAP = (_INTERACTION_EVENT_CS = {}, defineProperty(_INTERACTION_EVENT_CS, MOUSEOVER, { action: ACTION_ADD, css: ACTION_CSS_OVER }), defineProperty(_INTERACTION_EVENT_CS, MOUSEOUT, { action: ACTION_REMOVE, css: ACTION_CSS_OVER }), defineProperty(_INTERACTION_EVENT_CS, TOUCHSTART, { action: ACTION_ADD, css: ACTION_CSS_TOUCH }), defineProperty(_INTERACTION_EVENT_CS, TOUCHEND, { action: ACTION_REMOVE, css: ACTION_CSS_TOUCH }), _INTERACTION_EVENT_CS);
 
+// In d3-axis, there are hard coded shifts of 0.5. This shift is used for grid alignment and other
+// axis alignments.
+var AXIS_SHIFT = 0.5;
+
+// In d3-transition the default transition time is 250ms.
+var TRANSITION_DURATION_MS = 250;
+var TRANSITION_DELAY_MS = 0;
+var TRANSITION_EASE = d3.easeCubic;
+
+var ENTER = 'enter';
+var UPDATE = 'update';
+var EXIT = 'exit';
+
+var UPDATE_PATTERN = { ENTER: ENTER, UPDATE: UPDATE, EXIT: EXIT };
+
+var d3$1 = Object.freeze({
+	AXIS_SHIFT: AXIS_SHIFT,
+	TRANSITION_DURATION_MS: TRANSITION_DURATION_MS,
+	TRANSITION_DELAY_MS: TRANSITION_DELAY_MS,
+	TRANSITION_EASE: TRANSITION_EASE,
+	ENTER: ENTER,
+	UPDATE: UPDATE,
+	EXIT: EXIT,
+	UPDATE_PATTERN: UPDATE_PATTERN
+});
+
 /**
- * Appends the elements of `values` to `array`.
+ * The base implementation of `_.slice` without an iteratee call guard.
  *
  * @private
- * @param {Array} array The array to modify.
- * @param {Array} values The values to append.
- * @returns {Array} Returns `array`.
+ * @param {Array} array The array to slice.
+ * @param {number} [start=0] The start position.
+ * @param {number} [end=array.length] The end position.
+ * @returns {Array} Returns the slice of `array`.
  */
-function arrayPush(array, values) {
+function baseSlice(array, start, end) {
   var index = -1,
-      length = values.length,
-      offset = array.length;
+      length = array.length;
 
-  while (++index < length) {
-    array[offset + index] = values[index];
+  if (start < 0) {
+    start = -start > length ? 0 : length + start;
   }
-  return array;
+  end = end > length ? length : end;
+  if (end < 0) {
+    end += length;
+  }
+  length = start > end ? 0 : end - start >>> 0;
+  start >>>= 0;
+
+  var result = Array(length);
+  while (++index < length) {
+    result[index] = array[index + start];
+  }
+  return result;
+}
+
+/**
+ * Casts `array` to a slice if it's needed.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {number} start The start position.
+ * @param {number} [end=array.length] The end position.
+ * @returns {Array} Returns the cast slice.
+ */
+function castSlice(array, start, end) {
+  var length = array.length;
+  end = end === undefined ? length : end;
+  return !start && end >= length ? array : baseSlice(array, start, end);
+}
+
+/** Used to compose unicode character classes. */
+var rsAstralRange = '\\ud800-\\udfff';
+var rsComboMarksRange = '\\u0300-\\u036f';
+var reComboHalfMarksRange = '\\ufe20-\\ufe2f';
+var rsComboSymbolsRange = '\\u20d0-\\u20ff';
+var rsComboRange = rsComboMarksRange + reComboHalfMarksRange + rsComboSymbolsRange;
+var rsVarRange = '\\ufe0e\\ufe0f';
+
+/** Used to compose unicode capture groups. */
+var rsZWJ = '\\u200d';
+
+/** Used to detect strings with [zero-width joiners or code points from the astral planes](http://eev.ee/blog/2015/09/12/dark-corners-of-unicode/). */
+var reHasUnicode = RegExp('[' + rsZWJ + rsAstralRange + rsComboRange + rsVarRange + ']');
+
+/**
+ * Checks if `string` contains Unicode symbols.
+ *
+ * @private
+ * @param {string} string The string to inspect.
+ * @returns {boolean} Returns `true` if a symbol is found, else `false`.
+ */
+function hasUnicode(string) {
+  return reHasUnicode.test(string);
+}
+
+/**
+ * Converts an ASCII `string` to an array.
+ *
+ * @private
+ * @param {string} string The string to convert.
+ * @returns {Array} Returns the converted array.
+ */
+function asciiToArray(string) {
+  return string.split('');
+}
+
+/** Used to compose unicode character classes. */
+var rsAstralRange$1 = '\\ud800-\\udfff';
+var rsComboMarksRange$1 = '\\u0300-\\u036f';
+var reComboHalfMarksRange$1 = '\\ufe20-\\ufe2f';
+var rsComboSymbolsRange$1 = '\\u20d0-\\u20ff';
+var rsComboRange$1 = rsComboMarksRange$1 + reComboHalfMarksRange$1 + rsComboSymbolsRange$1;
+var rsVarRange$1 = '\\ufe0e\\ufe0f';
+
+/** Used to compose unicode capture groups. */
+var rsAstral = '[' + rsAstralRange$1 + ']';
+var rsCombo = '[' + rsComboRange$1 + ']';
+var rsFitz = '\\ud83c[\\udffb-\\udfff]';
+var rsModifier = '(?:' + rsCombo + '|' + rsFitz + ')';
+var rsNonAstral = '[^' + rsAstralRange$1 + ']';
+var rsRegional = '(?:\\ud83c[\\udde6-\\uddff]){2}';
+var rsSurrPair = '[\\ud800-\\udbff][\\udc00-\\udfff]';
+var rsZWJ$1 = '\\u200d';
+
+/** Used to compose unicode regexes. */
+var reOptMod = rsModifier + '?';
+var rsOptVar = '[' + rsVarRange$1 + ']?';
+var rsOptJoin = '(?:' + rsZWJ$1 + '(?:' + [rsNonAstral, rsRegional, rsSurrPair].join('|') + ')' + rsOptVar + reOptMod + ')*';
+var rsSeq = rsOptVar + reOptMod + rsOptJoin;
+var rsSymbol = '(?:' + [rsNonAstral + rsCombo + '?', rsCombo, rsRegional, rsSurrPair, rsAstral].join('|') + ')';
+
+/** Used to match [string symbols](https://mathiasbynens.be/notes/javascript-unicode). */
+var reUnicode = RegExp(rsFitz + '(?=' + rsFitz + ')|' + rsSymbol + rsSeq, 'g');
+
+/**
+ * Converts a Unicode `string` to an array.
+ *
+ * @private
+ * @param {string} string The string to convert.
+ * @returns {Array} Returns the converted array.
+ */
+function unicodeToArray(string) {
+    return string.match(reUnicode) || [];
+}
+
+/**
+ * Converts `string` to an array.
+ *
+ * @private
+ * @param {string} string The string to convert.
+ * @returns {Array} Returns the converted array.
+ */
+function stringToArray(string) {
+  return hasUnicode(string) ? unicodeToArray(string) : asciiToArray(string);
 }
 
 /** Detect free variable `global` from Node.js. */
@@ -239,18 +383,63 @@ var root = freeGlobal || freeSelf || Function('return this')();
 /** Built-in value references. */
 var _Symbol = root.Symbol;
 
+/**
+ * A specialized version of `_.map` for arrays without support for iteratee
+ * shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the new mapped array.
+ */
+function arrayMap(array, iteratee) {
+  var index = -1,
+      length = array == null ? 0 : array.length,
+      result = Array(length);
+
+  while (++index < length) {
+    result[index] = iteratee(array[index], index, array);
+  }
+  return result;
+}
+
+/**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(document.body.children);
+ * // => false
+ *
+ * _.isArray('abc');
+ * // => false
+ *
+ * _.isArray(_.noop);
+ * // => false
+ */
+var isArray = Array.isArray;
+
 /** Used for built-in method references. */
-var objectProto$1 = Object.prototype;
+var objectProto = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$1 = objectProto$1.hasOwnProperty;
+var hasOwnProperty = objectProto.hasOwnProperty;
 
 /**
  * Used to resolve the
  * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
  * of values.
  */
-var nativeObjectToString = objectProto$1.toString;
+var nativeObjectToString = objectProto.toString;
 
 /** Built-in value references. */
 var symToStringTag$1 = _Symbol ? _Symbol.toStringTag : undefined;
@@ -263,7 +452,7 @@ var symToStringTag$1 = _Symbol ? _Symbol.toStringTag : undefined;
  * @returns {string} Returns the raw `toStringTag`.
  */
 function getRawTag(value) {
-  var isOwn = hasOwnProperty$1.call(value, symToStringTag$1),
+  var isOwn = hasOwnProperty.call(value, symToStringTag$1),
       tag = value[symToStringTag$1];
 
   try {
@@ -283,14 +472,14 @@ function getRawTag(value) {
 }
 
 /** Used for built-in method references. */
-var objectProto$2 = Object.prototype;
+var objectProto$1 = Object.prototype;
 
 /**
  * Used to resolve the
  * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
  * of values.
  */
-var nativeObjectToString$1 = objectProto$2.toString;
+var nativeObjectToString$1 = objectProto$1.toString;
 
 /**
  * Converts `value` to a string using `Object.prototype.toString`.
@@ -354,440 +543,450 @@ function isObjectLike(value) {
 }
 
 /** `Object#toString` result references. */
-var argsTag = '[object Arguments]';
+var symbolTag = '[object Symbol]';
 
 /**
- * The base implementation of `_.isArguments`.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an `arguments` object,
- */
-function baseIsArguments(value) {
-  return isObjectLike(value) && baseGetTag(value) == argsTag;
-}
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/** Built-in value references. */
-var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-
-/**
- * Checks if `value` is likely an `arguments` object.
+ * Checks if `value` is classified as a `Symbol` primitive or object.
  *
  * @static
  * @memberOf _
- * @since 0.1.0
+ * @since 4.0.0
  * @category Lang
  * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an `arguments` object,
- *  else `false`.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
  * @example
  *
- * _.isArguments(function() { return arguments; }());
+ * _.isSymbol(Symbol.iterator);
  * // => true
  *
- * _.isArguments([1, 2, 3]);
+ * _.isSymbol('abc');
  * // => false
  */
-var isArguments = baseIsArguments(function () {
-  return arguments;
-}()) ? baseIsArguments : function (value) {
-  return isObjectLike(value) && hasOwnProperty.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
-};
-
-/**
- * Checks if `value` is classified as an `Array` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an array, else `false`.
- * @example
- *
- * _.isArray([1, 2, 3]);
- * // => true
- *
- * _.isArray(document.body.children);
- * // => false
- *
- * _.isArray('abc');
- * // => false
- *
- * _.isArray(_.noop);
- * // => false
- */
-var isArray = Array.isArray;
-
-/** Built-in value references. */
-var spreadableSymbol = _Symbol ? _Symbol.isConcatSpreadable : undefined;
-
-/**
- * Checks if `value` is a flattenable `arguments` object or array.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is flattenable, else `false`.
- */
-function isFlattenable(value) {
-  return isArray(value) || isArguments(value) || !!(spreadableSymbol && value && value[spreadableSymbol]);
-}
-
-/**
- * The base implementation of `_.flatten` with support for restricting flattening.
- *
- * @private
- * @param {Array} array The array to flatten.
- * @param {number} depth The maximum recursion depth.
- * @param {boolean} [predicate=isFlattenable] The function invoked per iteration.
- * @param {boolean} [isStrict] Restrict to values that pass `predicate` checks.
- * @param {Array} [result=[]] The initial result value.
- * @returns {Array} Returns the new flattened array.
- */
-function baseFlatten(array, depth, predicate, isStrict, result) {
-  var index = -1,
-      length = array.length;
-
-  predicate || (predicate = isFlattenable);
-  result || (result = []);
-
-  while (++index < length) {
-    var value = array[index];
-    if (depth > 0 && predicate(value)) {
-      if (depth > 1) {
-        // Recursively flatten arrays (susceptible to call stack limits).
-        baseFlatten(value, depth - 1, predicate, isStrict, result);
-      } else {
-        arrayPush(result, value);
-      }
-    } else if (!isStrict) {
-      result[result.length] = value;
-    }
-  }
-  return result;
+function isSymbol(value) {
+  return (typeof value === 'undefined' ? 'undefined' : _typeof(value)) == 'symbol' || isObjectLike(value) && baseGetTag(value) == symbolTag;
 }
 
 /** Used as references for various `Number` constants. */
 var INFINITY = 1 / 0;
 
+/** Used to convert symbols to primitives and strings. */
+var symbolProto = _Symbol ? _Symbol.prototype : undefined;
+var symbolToString = symbolProto ? symbolProto.toString : undefined;
+
 /**
- * Recursively flattens `array`.
+ * The base implementation of `_.toString` which doesn't convert nullish
+ * values to empty strings.
+ *
+ * @private
+ * @param {*} value The value to process.
+ * @returns {string} Returns the string.
+ */
+function baseToString(value) {
+  // Exit early for strings to avoid a performance hit in some environments.
+  if (typeof value == 'string') {
+    return value;
+  }
+  if (isArray(value)) {
+    // Recursively convert values (susceptible to call stack limits).
+    return arrayMap(value, baseToString) + '';
+  }
+  if (isSymbol(value)) {
+    return symbolToString ? symbolToString.call(value) : '';
+  }
+  var result = value + '';
+  return result == '0' && 1 / value == -INFINITY ? '-0' : result;
+}
+
+/**
+ * Converts `value` to a string. An empty string is returned for `null`
+ * and `undefined` values. The sign of `-0` is preserved.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ * @example
+ *
+ * _.toString(null);
+ * // => ''
+ *
+ * _.toString(-0);
+ * // => '-0'
+ *
+ * _.toString([1, 2, 3]);
+ * // => '1,2,3'
+ */
+function toString$1(value) {
+  return value == null ? '' : baseToString(value);
+}
+
+/**
+ * Creates a function like `_.lowerFirst`.
+ *
+ * @private
+ * @param {string} methodName The name of the `String` case method to use.
+ * @returns {Function} Returns the new case function.
+ */
+function createCaseFirst(methodName) {
+  return function (string) {
+    string = toString$1(string);
+
+    var strSymbols = hasUnicode(string) ? stringToArray(string) : undefined;
+
+    var chr = strSymbols ? strSymbols[0] : string.charAt(0);
+
+    var trailing = strSymbols ? castSlice(strSymbols, 1).join('') : string.slice(1);
+
+    return chr[methodName]() + trailing;
+  };
+}
+
+/**
+ * Converts the first character of `string` to upper case.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category String
+ * @param {string} [string=''] The string to convert.
+ * @returns {string} Returns the converted string.
+ * @example
+ *
+ * _.upperFirst('fred');
+ * // => 'Fred'
+ *
+ * _.upperFirst('FRED');
+ * // => 'FRED'
+ */
+var upperFirst$1 = createCaseFirst('toUpperCase');
+
+/**
+ * A specialized version of `_.reduce` for arrays without support for
+ * iteratee shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @param {*} [accumulator] The initial value.
+ * @param {boolean} [initAccum] Specify using the first element of `array` as
+ *  the initial value.
+ * @returns {*} Returns the accumulated value.
+ */
+function arrayReduce(array, iteratee, accumulator, initAccum) {
+  var index = -1,
+      length = array == null ? 0 : array.length;
+
+  if (initAccum && length) {
+    accumulator = array[++index];
+  }
+  while (++index < length) {
+    accumulator = iteratee(accumulator, array[index], index, array);
+  }
+  return accumulator;
+}
+
+/**
+ * The base implementation of `_.propertyOf` without support for deep paths.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Function} Returns the new accessor function.
+ */
+function basePropertyOf(object) {
+  return function (key) {
+    return object == null ? undefined : object[key];
+  };
+}
+
+/** Used to map Latin Unicode letters to basic Latin letters. */
+var deburredLetters = {
+  // Latin-1 Supplement block.
+  '\xc0': 'A', '\xc1': 'A', '\xc2': 'A', '\xc3': 'A', '\xc4': 'A', '\xc5': 'A',
+  '\xe0': 'a', '\xe1': 'a', '\xe2': 'a', '\xe3': 'a', '\xe4': 'a', '\xe5': 'a',
+  '\xc7': 'C', '\xe7': 'c',
+  '\xd0': 'D', '\xf0': 'd',
+  '\xc8': 'E', '\xc9': 'E', '\xca': 'E', '\xcb': 'E',
+  '\xe8': 'e', '\xe9': 'e', '\xea': 'e', '\xeb': 'e',
+  '\xcc': 'I', '\xcd': 'I', '\xce': 'I', '\xcf': 'I',
+  '\xec': 'i', '\xed': 'i', '\xee': 'i', '\xef': 'i',
+  '\xd1': 'N', '\xf1': 'n',
+  '\xd2': 'O', '\xd3': 'O', '\xd4': 'O', '\xd5': 'O', '\xd6': 'O', '\xd8': 'O',
+  '\xf2': 'o', '\xf3': 'o', '\xf4': 'o', '\xf5': 'o', '\xf6': 'o', '\xf8': 'o',
+  '\xd9': 'U', '\xda': 'U', '\xdb': 'U', '\xdc': 'U',
+  '\xf9': 'u', '\xfa': 'u', '\xfb': 'u', '\xfc': 'u',
+  '\xdd': 'Y', '\xfd': 'y', '\xff': 'y',
+  '\xc6': 'Ae', '\xe6': 'ae',
+  '\xde': 'Th', '\xfe': 'th',
+  '\xdf': 'ss',
+  // Latin Extended-A block.
+  'Ā': 'A', 'Ă': 'A', 'Ą': 'A',
+  'ā': 'a', 'ă': 'a', 'ą': 'a',
+  'Ć': 'C', 'Ĉ': 'C', 'Ċ': 'C', 'Č': 'C',
+  'ć': 'c', 'ĉ': 'c', 'ċ': 'c', 'č': 'c',
+  'Ď': 'D', 'Đ': 'D', 'ď': 'd', 'đ': 'd',
+  'Ē': 'E', 'Ĕ': 'E', 'Ė': 'E', 'Ę': 'E', 'Ě': 'E',
+  'ē': 'e', 'ĕ': 'e', 'ė': 'e', 'ę': 'e', 'ě': 'e',
+  'Ĝ': 'G', 'Ğ': 'G', 'Ġ': 'G', 'Ģ': 'G',
+  'ĝ': 'g', 'ğ': 'g', 'ġ': 'g', 'ģ': 'g',
+  'Ĥ': 'H', 'Ħ': 'H', 'ĥ': 'h', 'ħ': 'h',
+  'Ĩ': 'I', 'Ī': 'I', 'Ĭ': 'I', 'Į': 'I', 'İ': 'I',
+  'ĩ': 'i', 'ī': 'i', 'ĭ': 'i', 'į': 'i', 'ı': 'i',
+  'Ĵ': 'J', 'ĵ': 'j',
+  'Ķ': 'K', 'ķ': 'k', 'ĸ': 'k',
+  'Ĺ': 'L', 'Ļ': 'L', 'Ľ': 'L', 'Ŀ': 'L', 'Ł': 'L',
+  'ĺ': 'l', 'ļ': 'l', 'ľ': 'l', 'ŀ': 'l', 'ł': 'l',
+  'Ń': 'N', 'Ņ': 'N', 'Ň': 'N', 'Ŋ': 'N',
+  'ń': 'n', 'ņ': 'n', 'ň': 'n', 'ŋ': 'n',
+  'Ō': 'O', 'Ŏ': 'O', 'Ő': 'O',
+  'ō': 'o', 'ŏ': 'o', 'ő': 'o',
+  'Ŕ': 'R', 'Ŗ': 'R', 'Ř': 'R',
+  'ŕ': 'r', 'ŗ': 'r', 'ř': 'r',
+  'Ś': 'S', 'Ŝ': 'S', 'Ş': 'S', 'Š': 'S',
+  'ś': 's', 'ŝ': 's', 'ş': 's', 'š': 's',
+  'Ţ': 'T', 'Ť': 'T', 'Ŧ': 'T',
+  'ţ': 't', 'ť': 't', 'ŧ': 't',
+  'Ũ': 'U', 'Ū': 'U', 'Ŭ': 'U', 'Ů': 'U', 'Ű': 'U', 'Ų': 'U',
+  'ũ': 'u', 'ū': 'u', 'ŭ': 'u', 'ů': 'u', 'ű': 'u', 'ų': 'u',
+  'Ŵ': 'W', 'ŵ': 'w',
+  'Ŷ': 'Y', 'ŷ': 'y', 'Ÿ': 'Y',
+  'Ź': 'Z', 'Ż': 'Z', 'Ž': 'Z',
+  'ź': 'z', 'ż': 'z', 'ž': 'z',
+  'Ĳ': 'IJ', 'ĳ': 'ij',
+  'Œ': 'Oe', 'œ': 'oe',
+  'ŉ': "'n", 'ſ': 's'
+};
+
+/**
+ * Used by `_.deburr` to convert Latin-1 Supplement and Latin Extended-A
+ * letters to basic Latin letters.
+ *
+ * @private
+ * @param {string} letter The matched letter to deburr.
+ * @returns {string} Returns the deburred letter.
+ */
+var deburrLetter = basePropertyOf(deburredLetters);
+
+/** Used to match Latin Unicode letters (excluding mathematical operators). */
+var reLatin = /[\xc0-\xd6\xd8-\xf6\xf8-\xff\u0100-\u017f]/g;
+
+/** Used to compose unicode character classes. */
+var rsComboMarksRange$2 = '\\u0300-\\u036f';
+var reComboHalfMarksRange$2 = '\\ufe20-\\ufe2f';
+var rsComboSymbolsRange$2 = '\\u20d0-\\u20ff';
+var rsComboRange$2 = rsComboMarksRange$2 + reComboHalfMarksRange$2 + rsComboSymbolsRange$2;
+
+/** Used to compose unicode capture groups. */
+var rsCombo$1 = '[' + rsComboRange$2 + ']';
+
+/**
+ * Used to match [combining diacritical marks](https://en.wikipedia.org/wiki/Combining_Diacritical_Marks) and
+ * [combining diacritical marks for symbols](https://en.wikipedia.org/wiki/Combining_Diacritical_Marks_for_Symbols).
+ */
+var reComboMark = RegExp(rsCombo$1, 'g');
+
+/**
+ * Deburrs `string` by converting
+ * [Latin-1 Supplement](https://en.wikipedia.org/wiki/Latin-1_Supplement_(Unicode_block)#Character_table)
+ * and [Latin Extended-A](https://en.wikipedia.org/wiki/Latin_Extended-A)
+ * letters to basic Latin letters and removing
+ * [combining diacritical marks](https://en.wikipedia.org/wiki/Combining_Diacritical_Marks).
  *
  * @static
  * @memberOf _
  * @since 3.0.0
- * @category Array
- * @param {Array} array The array to flatten.
- * @returns {Array} Returns the new flattened array.
+ * @category String
+ * @param {string} [string=''] The string to deburr.
+ * @returns {string} Returns the deburred string.
  * @example
  *
- * _.flattenDeep([1, [2, [3, [4]], 5]]);
- * // => [1, 2, 3, 4, 5]
+ * _.deburr('déjà vu');
+ * // => 'deja vu'
  */
-function flattenDeep$1(array) {
-  var length = array == null ? 0 : array.length;
-  return length ? baseFlatten(array, INFINITY) : [];
+function deburr(string) {
+  string = toString$1(string);
+  return string && string.replace(reLatin, deburrLetter).replace(reComboMark, '');
+}
+
+/** Used to match words composed of alphanumeric characters. */
+var reAsciiWord = /[^\x00-\x2f\x3a-\x40\x5b-\x60\x7b-\x7f]+/g;
+
+/**
+ * Splits an ASCII `string` into an array of its words.
+ *
+ * @private
+ * @param {string} The string to inspect.
+ * @returns {Array} Returns the words of `string`.
+ */
+function asciiWords(string) {
+  return string.match(reAsciiWord) || [];
+}
+
+/** Used to detect strings that need a more robust regexp to match words. */
+var reHasUnicodeWord = /[a-z][A-Z]|[A-Z]{2,}[a-z]|[0-9][a-zA-Z]|[a-zA-Z][0-9]|[^a-zA-Z0-9 ]/;
+
+/**
+ * Checks if `string` contains a word composed of Unicode symbols.
+ *
+ * @private
+ * @param {string} string The string to inspect.
+ * @returns {boolean} Returns `true` if a word is found, else `false`.
+ */
+function hasUnicodeWord(string) {
+  return reHasUnicodeWord.test(string);
+}
+
+/** Used to compose unicode character classes. */
+var rsAstralRange$2 = '\\ud800-\\udfff';
+var rsComboMarksRange$3 = '\\u0300-\\u036f';
+var reComboHalfMarksRange$3 = '\\ufe20-\\ufe2f';
+var rsComboSymbolsRange$3 = '\\u20d0-\\u20ff';
+var rsComboRange$3 = rsComboMarksRange$3 + reComboHalfMarksRange$3 + rsComboSymbolsRange$3;
+var rsDingbatRange = '\\u2700-\\u27bf';
+var rsLowerRange = 'a-z\\xdf-\\xf6\\xf8-\\xff';
+var rsMathOpRange = '\\xac\\xb1\\xd7\\xf7';
+var rsNonCharRange = '\\x00-\\x2f\\x3a-\\x40\\x5b-\\x60\\x7b-\\xbf';
+var rsPunctuationRange = '\\u2000-\\u206f';
+var rsSpaceRange = ' \\t\\x0b\\f\\xa0\\ufeff\\n\\r\\u2028\\u2029\\u1680\\u180e\\u2000\\u2001\\u2002\\u2003\\u2004\\u2005\\u2006\\u2007\\u2008\\u2009\\u200a\\u202f\\u205f\\u3000';
+var rsUpperRange = 'A-Z\\xc0-\\xd6\\xd8-\\xde';
+var rsVarRange$2 = '\\ufe0e\\ufe0f';
+var rsBreakRange = rsMathOpRange + rsNonCharRange + rsPunctuationRange + rsSpaceRange;
+
+/** Used to compose unicode capture groups. */
+var rsApos$1 = '[\'’]';
+var rsBreak = '[' + rsBreakRange + ']';
+var rsCombo$2 = '[' + rsComboRange$3 + ']';
+var rsDigits = '\\d+';
+var rsDingbat = '[' + rsDingbatRange + ']';
+var rsLower = '[' + rsLowerRange + ']';
+var rsMisc = '[^' + rsAstralRange$2 + rsBreakRange + rsDigits + rsDingbatRange + rsLowerRange + rsUpperRange + ']';
+var rsFitz$1 = '\\ud83c[\\udffb-\\udfff]';
+var rsModifier$1 = '(?:' + rsCombo$2 + '|' + rsFitz$1 + ')';
+var rsNonAstral$1 = '[^' + rsAstralRange$2 + ']';
+var rsRegional$1 = '(?:\\ud83c[\\udde6-\\uddff]){2}';
+var rsSurrPair$1 = '[\\ud800-\\udbff][\\udc00-\\udfff]';
+var rsUpper = '[' + rsUpperRange + ']';
+var rsZWJ$2 = '\\u200d';
+
+/** Used to compose unicode regexes. */
+var rsMiscLower = '(?:' + rsLower + '|' + rsMisc + ')';
+var rsMiscUpper = '(?:' + rsUpper + '|' + rsMisc + ')';
+var rsOptContrLower = '(?:' + rsApos$1 + '(?:d|ll|m|re|s|t|ve))?';
+var rsOptContrUpper = '(?:' + rsApos$1 + '(?:D|LL|M|RE|S|T|VE))?';
+var reOptMod$1 = rsModifier$1 + '?';
+var rsOptVar$1 = '[' + rsVarRange$2 + ']?';
+var rsOptJoin$1 = '(?:' + rsZWJ$2 + '(?:' + [rsNonAstral$1, rsRegional$1, rsSurrPair$1].join('|') + ')' + rsOptVar$1 + reOptMod$1 + ')*';
+var rsOrdLower = '\\d*(?:(?:1st|2nd|3rd|(?![123])\\dth)\\b)';
+var rsOrdUpper = '\\d*(?:(?:1ST|2ND|3RD|(?![123])\\dTH)\\b)';
+var rsSeq$1 = rsOptVar$1 + reOptMod$1 + rsOptJoin$1;
+var rsEmoji = '(?:' + [rsDingbat, rsRegional$1, rsSurrPair$1].join('|') + ')' + rsSeq$1;
+
+/** Used to match complex or compound words. */
+var reUnicodeWord = RegExp([rsUpper + '?' + rsLower + '+' + rsOptContrLower + '(?=' + [rsBreak, rsUpper, '$'].join('|') + ')', rsMiscUpper + '+' + rsOptContrUpper + '(?=' + [rsBreak, rsUpper + rsMiscLower, '$'].join('|') + ')', rsUpper + '?' + rsMiscLower + '+' + rsOptContrLower, rsUpper + '+' + rsOptContrUpper, rsOrdUpper, rsOrdLower, rsDigits, rsEmoji].join('|'), 'g');
+
+/**
+ * Splits a Unicode `string` into an array of its words.
+ *
+ * @private
+ * @param {string} The string to inspect.
+ * @returns {Array} Returns the words of `string`.
+ */
+function unicodeWords(string) {
+    return string.match(reUnicodeWord) || [];
 }
 
 /**
- * Checks if `value` is the
- * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
- * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ * Splits `string` into an array of its words.
  *
  * @static
  * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @since 3.0.0
+ * @category String
+ * @param {string} [string=''] The string to inspect.
+ * @param {RegExp|string} [pattern] The pattern to match words.
+ * @param- {Object} [guard] Enables use as an iteratee for methods like `_.map`.
+ * @returns {Array} Returns the words of `string`.
  * @example
  *
- * _.isObject({});
- * // => true
+ * _.words('fred, barney, & pebbles');
+ * // => ['fred', 'barney', 'pebbles']
  *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(_.noop);
- * // => true
- *
- * _.isObject(null);
- * // => false
+ * _.words('fred, barney, & pebbles', /[^, ]+/g);
+ * // => ['fred', 'barney', '&', 'pebbles']
  */
-function isObject(value) {
-  var type = typeof value === 'undefined' ? 'undefined' : _typeof(value);
-  return value != null && (type == 'object' || type == 'function');
+function words(string, pattern, guard) {
+  string = toString$1(string);
+  pattern = guard ? undefined : pattern;
+
+  if (pattern === undefined) {
+    return hasUnicodeWord(string) ? unicodeWords(string) : asciiWords(string);
+  }
+  return string.match(pattern) || [];
 }
 
-/** `Object#toString` result references. */
-var asyncTag = '[object AsyncFunction]';
-var funcTag = '[object Function]';
-var genTag = '[object GeneratorFunction]';
-var proxyTag = '[object Proxy]';
+/** Used to compose unicode capture groups. */
+var rsApos = '[\'’]';
+
+/** Used to match apostrophes. */
+var reApos = RegExp(rsApos, 'g');
 
 /**
- * Checks if `value` is classified as a `Function` object.
+ * Creates a function like `_.camelCase`.
+ *
+ * @private
+ * @param {Function} callback The function to combine each word.
+ * @returns {Function} Returns the new compounder function.
+ */
+function createCompounder(callback) {
+  return function (string) {
+    return arrayReduce(words(deburr(string).replace(reApos, '')), callback, '');
+  };
+}
+
+/**
+ * Converts the first character of `string` to upper case and the remaining
+ * to lower case.
  *
  * @static
  * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+ * @since 3.0.0
+ * @category String
+ * @param {string} [string=''] The string to capitalize.
+ * @returns {string} Returns the capitalized string.
  * @example
  *
- * _.isFunction(_);
- * // => true
- *
- * _.isFunction(/abc/);
- * // => false
+ * _.capitalize('FRED');
+ * // => 'Fred'
  */
-function isFunction(value) {
-  if (!isObject(value)) {
-    return false;
-  }
-  // The use of `Object#toString` avoids issues with the `typeof` operator
-  // in Safari 9 which returns 'object' for typed arrays and other constructors.
-  var tag = baseGetTag(value);
-  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
-}
-
-/** Used to detect overreaching core-js shims. */
-var coreJsData = root['__core-js_shared__'];
-
-/** Used to detect methods masquerading as native. */
-var maskSrcKey = function () {
-  var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
-  return uid ? 'Symbol(src)_1.' + uid : '';
-}();
-
-/**
- * Checks if `func` has its source masked.
- *
- * @private
- * @param {Function} func The function to check.
- * @returns {boolean} Returns `true` if `func` is masked, else `false`.
- */
-function isMasked(func) {
-  return !!maskSrcKey && maskSrcKey in func;
-}
-
-/** Used for built-in method references. */
-var funcProto$1 = Function.prototype;
-
-/** Used to resolve the decompiled source of functions. */
-var funcToString$1 = funcProto$1.toString;
-
-/**
- * Converts `func` to its source code.
- *
- * @private
- * @param {Function} func The function to convert.
- * @returns {string} Returns the source code.
- */
-function toSource(func) {
-  if (func != null) {
-    try {
-      return funcToString$1.call(func);
-    } catch (e) {}
-    try {
-      return func + '';
-    } catch (e) {}
-  }
-  return '';
+function capitalize(string) {
+  return upperFirst$1(toString$1(string).toLowerCase());
 }
 
 /**
- * Used to match `RegExp`
- * [syntax characters](http://ecma-international.org/ecma-262/7.0/#sec-patterns).
- */
-var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
-
-/** Used to detect host constructors (Safari). */
-var reIsHostCtor = /^\[object .+?Constructor\]$/;
-
-/** Used for built-in method references. */
-var funcProto = Function.prototype;
-var objectProto$3 = Object.prototype;
-
-/** Used to resolve the decompiled source of functions. */
-var funcToString = funcProto.toString;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty$2 = objectProto$3.hasOwnProperty;
-
-/** Used to detect if a method is native. */
-var reIsNative = RegExp('^' + funcToString.call(hasOwnProperty$2).replace(reRegExpChar, '\\$&').replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$');
-
-/**
- * The base implementation of `_.isNative` without bad shim checks.
+ * Converts `string` to [camel case](https://en.wikipedia.org/wiki/CamelCase).
  *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a native function,
- *  else `false`.
- */
-function baseIsNative(value) {
-  if (!isObject(value) || isMasked(value)) {
-    return false;
-  }
-  var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
-  return pattern.test(toSource(value));
-}
-
-/**
- * Gets the value at `key` of `object`.
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category String
+ * @param {string} [string=''] The string to convert.
+ * @returns {string} Returns the camel cased string.
+ * @example
  *
- * @private
- * @param {Object} [object] The object to query.
- * @param {string} key The key of the property to get.
- * @returns {*} Returns the property value.
- */
-function getValue(object, key) {
-  return object == null ? undefined : object[key];
-}
-
-/**
- * Gets the native function at `key` of `object`.
+ * _.camelCase('Foo Bar');
+ * // => 'fooBar'
  *
- * @private
- * @param {Object} object The object to query.
- * @param {string} key The key of the method to get.
- * @returns {*} Returns the function if it's native, else `undefined`.
- */
-function getNative(object, key) {
-  var value = getValue(object, key);
-  return baseIsNative(value) ? value : undefined;
-}
-
-/* Built-in method references that are verified to be native. */
-var nativeCreate = getNative(Object, 'create');
-
-/**
- * Removes all key-value entries from the hash.
+ * _.camelCase('--foo-bar--');
+ * // => 'fooBar'
  *
- * @private
- * @name clear
- * @memberOf Hash
+ * _.camelCase('__FOO_BAR__');
+ * // => 'fooBar'
  */
-function hashClear() {
-  this.__data__ = nativeCreate ? nativeCreate(null) : {};
-  this.size = 0;
-}
-
-/**
- * Removes `key` and its value from the hash.
- *
- * @private
- * @name delete
- * @memberOf Hash
- * @param {Object} hash The hash to modify.
- * @param {string} key The key of the value to remove.
- * @returns {boolean} Returns `true` if the entry was removed, else `false`.
- */
-function hashDelete(key) {
-  var result = this.has(key) && delete this.__data__[key];
-  this.size -= result ? 1 : 0;
-  return result;
-}
-
-/** Used to stand-in for `undefined` hash values. */
-var HASH_UNDEFINED = '__lodash_hash_undefined__';
-
-/** Used for built-in method references. */
-var objectProto$4 = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty$3 = objectProto$4.hasOwnProperty;
-
-/**
- * Gets the hash value for `key`.
- *
- * @private
- * @name get
- * @memberOf Hash
- * @param {string} key The key of the value to get.
- * @returns {*} Returns the entry value.
- */
-function hashGet(key) {
-  var data = this.__data__;
-  if (nativeCreate) {
-    var result = data[key];
-    return result === HASH_UNDEFINED ? undefined : result;
-  }
-  return hasOwnProperty$3.call(data, key) ? data[key] : undefined;
-}
-
-/** Used for built-in method references. */
-var objectProto$5 = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty$4 = objectProto$5.hasOwnProperty;
-
-/**
- * Checks if a hash value for `key` exists.
- *
- * @private
- * @name has
- * @memberOf Hash
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function hashHas(key) {
-  var data = this.__data__;
-  return nativeCreate ? data[key] !== undefined : hasOwnProperty$4.call(data, key);
-}
-
-/** Used to stand-in for `undefined` hash values. */
-var HASH_UNDEFINED$1 = '__lodash_hash_undefined__';
-
-/**
- * Sets the hash `key` to `value`.
- *
- * @private
- * @name set
- * @memberOf Hash
- * @param {string} key The key of the value to set.
- * @param {*} value The value to set.
- * @returns {Object} Returns the hash instance.
- */
-function hashSet(key, value) {
-  var data = this.__data__;
-  this.size += this.has(key) ? 0 : 1;
-  data[key] = nativeCreate && value === undefined ? HASH_UNDEFINED$1 : value;
-  return this;
-}
-
-/**
- * Creates a hash object.
- *
- * @private
- * @constructor
- * @param {Array} [entries] The key-value pairs to cache.
- */
-function Hash(entries) {
-  var index = -1,
-      length = entries == null ? 0 : entries.length;
-
-  this.clear();
-  while (++index < length) {
-    var entry = entries[index];
-    this.set(entry[0], entry[1]);
-  }
-}
-
-// Add methods to `Hash`.
-Hash.prototype.clear = hashClear;
-Hash.prototype['delete'] = hashDelete;
-Hash.prototype.get = hashGet;
-Hash.prototype.has = hashHas;
-Hash.prototype.set = hashSet;
+var camelCase$1 = createCompounder(function (result, word, index) {
+  word = word.toLowerCase();
+  return result + (index ? capitalize(word) : word);
+});
 
 /**
  * Removes all key-value entries from the list cache.
@@ -964,8 +1163,357 @@ ListCache.prototype.get = listCacheGet;
 ListCache.prototype.has = listCacheHas;
 ListCache.prototype.set = listCacheSet;
 
+/**
+ * Removes all key-value entries from the stack.
+ *
+ * @private
+ * @name clear
+ * @memberOf Stack
+ */
+function stackClear() {
+  this.__data__ = new ListCache();
+  this.size = 0;
+}
+
+/**
+ * Removes `key` and its value from the stack.
+ *
+ * @private
+ * @name delete
+ * @memberOf Stack
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function stackDelete(key) {
+  var data = this.__data__,
+      result = data['delete'](key);
+
+  this.size = data.size;
+  return result;
+}
+
+/**
+ * Gets the stack value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf Stack
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function stackGet(key) {
+  return this.__data__.get(key);
+}
+
+/**
+ * Checks if a stack value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf Stack
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function stackHas(key) {
+  return this.__data__.has(key);
+}
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value === 'undefined' ? 'undefined' : _typeof(value);
+  return value != null && (type == 'object' || type == 'function');
+}
+
+/** `Object#toString` result references. */
+var asyncTag = '[object AsyncFunction]';
+var funcTag = '[object Function]';
+var genTag = '[object GeneratorFunction]';
+var proxyTag = '[object Proxy]';
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  if (!isObject(value)) {
+    return false;
+  }
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in Safari 9 which returns 'object' for typed arrays and other constructors.
+  var tag = baseGetTag(value);
+  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
+}
+
+/** Used to detect overreaching core-js shims. */
+var coreJsData = root['__core-js_shared__'];
+
+/** Used to detect methods masquerading as native. */
+var maskSrcKey = function () {
+  var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
+  return uid ? 'Symbol(src)_1.' + uid : '';
+}();
+
+/**
+ * Checks if `func` has its source masked.
+ *
+ * @private
+ * @param {Function} func The function to check.
+ * @returns {boolean} Returns `true` if `func` is masked, else `false`.
+ */
+function isMasked(func) {
+  return !!maskSrcKey && maskSrcKey in func;
+}
+
+/** Used for built-in method references. */
+var funcProto$1 = Function.prototype;
+
+/** Used to resolve the decompiled source of functions. */
+var funcToString$1 = funcProto$1.toString;
+
+/**
+ * Converts `func` to its source code.
+ *
+ * @private
+ * @param {Function} func The function to convert.
+ * @returns {string} Returns the source code.
+ */
+function toSource(func) {
+  if (func != null) {
+    try {
+      return funcToString$1.call(func);
+    } catch (e) {}
+    try {
+      return func + '';
+    } catch (e) {}
+  }
+  return '';
+}
+
+/**
+ * Used to match `RegExp`
+ * [syntax characters](http://ecma-international.org/ecma-262/7.0/#sec-patterns).
+ */
+var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
+
+/** Used to detect host constructors (Safari). */
+var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+/** Used for built-in method references. */
+var funcProto = Function.prototype;
+var objectProto$3 = Object.prototype;
+
+/** Used to resolve the decompiled source of functions. */
+var funcToString = funcProto.toString;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$2 = objectProto$3.hasOwnProperty;
+
+/** Used to detect if a method is native. */
+var reIsNative = RegExp('^' + funcToString.call(hasOwnProperty$2).replace(reRegExpChar, '\\$&').replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$');
+
+/**
+ * The base implementation of `_.isNative` without bad shim checks.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a native function,
+ *  else `false`.
+ */
+function baseIsNative(value) {
+  if (!isObject(value) || isMasked(value)) {
+    return false;
+  }
+  var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
+  return pattern.test(toSource(value));
+}
+
+/**
+ * Gets the value at `key` of `object`.
+ *
+ * @private
+ * @param {Object} [object] The object to query.
+ * @param {string} key The key of the property to get.
+ * @returns {*} Returns the property value.
+ */
+function getValue(object, key) {
+  return object == null ? undefined : object[key];
+}
+
+/**
+ * Gets the native function at `key` of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {string} key The key of the method to get.
+ * @returns {*} Returns the function if it's native, else `undefined`.
+ */
+function getNative(object, key) {
+  var value = getValue(object, key);
+  return baseIsNative(value) ? value : undefined;
+}
+
 /* Built-in method references that are verified to be native. */
 var Map = getNative(root, 'Map');
+
+/* Built-in method references that are verified to be native. */
+var nativeCreate = getNative(Object, 'create');
+
+/**
+ * Removes all key-value entries from the hash.
+ *
+ * @private
+ * @name clear
+ * @memberOf Hash
+ */
+function hashClear() {
+  this.__data__ = nativeCreate ? nativeCreate(null) : {};
+  this.size = 0;
+}
+
+/**
+ * Removes `key` and its value from the hash.
+ *
+ * @private
+ * @name delete
+ * @memberOf Hash
+ * @param {Object} hash The hash to modify.
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function hashDelete(key) {
+  var result = this.has(key) && delete this.__data__[key];
+  this.size -= result ? 1 : 0;
+  return result;
+}
+
+/** Used to stand-in for `undefined` hash values. */
+var HASH_UNDEFINED = '__lodash_hash_undefined__';
+
+/** Used for built-in method references. */
+var objectProto$4 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$3 = objectProto$4.hasOwnProperty;
+
+/**
+ * Gets the hash value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf Hash
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function hashGet(key) {
+  var data = this.__data__;
+  if (nativeCreate) {
+    var result = data[key];
+    return result === HASH_UNDEFINED ? undefined : result;
+  }
+  return hasOwnProperty$3.call(data, key) ? data[key] : undefined;
+}
+
+/** Used for built-in method references. */
+var objectProto$5 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$4 = objectProto$5.hasOwnProperty;
+
+/**
+ * Checks if a hash value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf Hash
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function hashHas(key) {
+  var data = this.__data__;
+  return nativeCreate ? data[key] !== undefined : hasOwnProperty$4.call(data, key);
+}
+
+/** Used to stand-in for `undefined` hash values. */
+var HASH_UNDEFINED$1 = '__lodash_hash_undefined__';
+
+/**
+ * Sets the hash `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf Hash
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the hash instance.
+ */
+function hashSet(key, value) {
+  var data = this.__data__;
+  this.size += this.has(key) ? 0 : 1;
+  data[key] = nativeCreate && value === undefined ? HASH_UNDEFINED$1 : value;
+  return this;
+}
+
+/**
+ * Creates a hash object.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function Hash(entries) {
+  var index = -1,
+      length = entries == null ? 0 : entries.length;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+// Add methods to `Hash`.
+Hash.prototype.clear = hashClear;
+Hash.prototype['delete'] = hashDelete;
+Hash.prototype.get = hashGet;
+Hash.prototype.has = hashHas;
+Hash.prototype.set = hashSet;
 
 /**
  * Removes all key-value entries from the map.
@@ -1093,6 +1641,1182 @@ MapCache.prototype.get = mapCacheGet;
 MapCache.prototype.has = mapCacheHas;
 MapCache.prototype.set = mapCacheSet;
 
+/** Used as the size to enable large array optimizations. */
+var LARGE_ARRAY_SIZE = 200;
+
+/**
+ * Sets the stack `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf Stack
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the stack cache instance.
+ */
+function stackSet(key, value) {
+  var data = this.__data__;
+  if (data instanceof ListCache) {
+    var pairs = data.__data__;
+    if (!Map || pairs.length < LARGE_ARRAY_SIZE - 1) {
+      pairs.push([key, value]);
+      this.size = ++data.size;
+      return this;
+    }
+    data = this.__data__ = new MapCache(pairs);
+  }
+  data.set(key, value);
+  this.size = data.size;
+  return this;
+}
+
+/**
+ * Creates a stack cache object to store key-value pairs.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function Stack(entries) {
+  var data = this.__data__ = new ListCache(entries);
+  this.size = data.size;
+}
+
+// Add methods to `Stack`.
+Stack.prototype.clear = stackClear;
+Stack.prototype['delete'] = stackDelete;
+Stack.prototype.get = stackGet;
+Stack.prototype.has = stackHas;
+Stack.prototype.set = stackSet;
+
+/** Used to stand-in for `undefined` hash values. */
+var HASH_UNDEFINED$2 = '__lodash_hash_undefined__';
+
+/**
+ * Adds `value` to the array cache.
+ *
+ * @private
+ * @name add
+ * @memberOf SetCache
+ * @alias push
+ * @param {*} value The value to cache.
+ * @returns {Object} Returns the cache instance.
+ */
+function setCacheAdd(value) {
+  this.__data__.set(value, HASH_UNDEFINED$2);
+  return this;
+}
+
+/**
+ * Checks if `value` is in the array cache.
+ *
+ * @private
+ * @name has
+ * @memberOf SetCache
+ * @param {*} value The value to search for.
+ * @returns {number} Returns `true` if `value` is found, else `false`.
+ */
+function setCacheHas(value) {
+  return this.__data__.has(value);
+}
+
+/**
+ *
+ * Creates an array cache object to store unique values.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [values] The values to cache.
+ */
+function SetCache(values) {
+  var index = -1,
+      length = values == null ? 0 : values.length;
+
+  this.__data__ = new MapCache();
+  while (++index < length) {
+    this.add(values[index]);
+  }
+}
+
+// Add methods to `SetCache`.
+SetCache.prototype.add = SetCache.prototype.push = setCacheAdd;
+SetCache.prototype.has = setCacheHas;
+
+/**
+ * A specialized version of `_.some` for arrays without support for iteratee
+ * shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} predicate The function invoked per iteration.
+ * @returns {boolean} Returns `true` if any element passes the predicate check,
+ *  else `false`.
+ */
+function arraySome(array, predicate) {
+  var index = -1,
+      length = array == null ? 0 : array.length;
+
+  while (++index < length) {
+    if (predicate(array[index], index, array)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Checks if a `cache` value for `key` exists.
+ *
+ * @private
+ * @param {Object} cache The cache to query.
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function cacheHas(cache, key) {
+  return cache.has(key);
+}
+
+/** Used to compose bitmasks for value comparisons. */
+var COMPARE_PARTIAL_FLAG$1 = 1;
+var COMPARE_UNORDERED_FLAG = 2;
+
+/**
+ * A specialized version of `baseIsEqualDeep` for arrays with support for
+ * partial deep comparisons.
+ *
+ * @private
+ * @param {Array} array The array to compare.
+ * @param {Array} other The other array to compare.
+ * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
+ * @param {Function} customizer The function to customize comparisons.
+ * @param {Function} equalFunc The function to determine equivalents of values.
+ * @param {Object} stack Tracks traversed `array` and `other` objects.
+ * @returns {boolean} Returns `true` if the arrays are equivalent, else `false`.
+ */
+function equalArrays(array, other, bitmask, customizer, equalFunc, stack) {
+  var isPartial = bitmask & COMPARE_PARTIAL_FLAG$1,
+      arrLength = array.length,
+      othLength = other.length;
+
+  if (arrLength != othLength && !(isPartial && othLength > arrLength)) {
+    return false;
+  }
+  // Assume cyclic values are equal.
+  var stacked = stack.get(array);
+  if (stacked && stack.get(other)) {
+    return stacked == other;
+  }
+  var index = -1,
+      result = true,
+      seen = bitmask & COMPARE_UNORDERED_FLAG ? new SetCache() : undefined;
+
+  stack.set(array, other);
+  stack.set(other, array);
+
+  // Ignore non-index properties.
+  while (++index < arrLength) {
+    var arrValue = array[index],
+        othValue = other[index];
+
+    if (customizer) {
+      var compared = isPartial ? customizer(othValue, arrValue, index, other, array, stack) : customizer(arrValue, othValue, index, array, other, stack);
+    }
+    if (compared !== undefined) {
+      if (compared) {
+        continue;
+      }
+      result = false;
+      break;
+    }
+    // Recursively compare arrays (susceptible to call stack limits).
+    if (seen) {
+      if (!arraySome(other, function (othValue, othIndex) {
+        if (!cacheHas(seen, othIndex) && (arrValue === othValue || equalFunc(arrValue, othValue, bitmask, customizer, stack))) {
+          return seen.push(othIndex);
+        }
+      })) {
+        result = false;
+        break;
+      }
+    } else if (!(arrValue === othValue || equalFunc(arrValue, othValue, bitmask, customizer, stack))) {
+      result = false;
+      break;
+    }
+  }
+  stack['delete'](array);
+  stack['delete'](other);
+  return result;
+}
+
+/** Built-in value references. */
+var Uint8Array = root.Uint8Array;
+
+/**
+ * Converts `map` to its key-value pairs.
+ *
+ * @private
+ * @param {Object} map The map to convert.
+ * @returns {Array} Returns the key-value pairs.
+ */
+function mapToArray(map) {
+  var index = -1,
+      result = Array(map.size);
+
+  map.forEach(function (value, key) {
+    result[++index] = [key, value];
+  });
+  return result;
+}
+
+/**
+ * Converts `set` to an array of its values.
+ *
+ * @private
+ * @param {Object} set The set to convert.
+ * @returns {Array} Returns the values.
+ */
+function setToArray(set) {
+  var index = -1,
+      result = Array(set.size);
+
+  set.forEach(function (value) {
+    result[++index] = value;
+  });
+  return result;
+}
+
+/** Used to compose bitmasks for value comparisons. */
+var COMPARE_PARTIAL_FLAG$2 = 1;
+var COMPARE_UNORDERED_FLAG$1 = 2;
+
+/** `Object#toString` result references. */
+var boolTag = '[object Boolean]';
+var dateTag = '[object Date]';
+var errorTag = '[object Error]';
+var mapTag = '[object Map]';
+var numberTag = '[object Number]';
+var regexpTag = '[object RegExp]';
+var setTag = '[object Set]';
+var stringTag = '[object String]';
+var symbolTag$1 = '[object Symbol]';
+
+var arrayBufferTag = '[object ArrayBuffer]';
+var dataViewTag = '[object DataView]';
+
+/** Used to convert symbols to primitives and strings. */
+var symbolProto$1 = _Symbol ? _Symbol.prototype : undefined;
+var symbolValueOf = symbolProto$1 ? symbolProto$1.valueOf : undefined;
+
+/**
+ * A specialized version of `baseIsEqualDeep` for comparing objects of
+ * the same `toStringTag`.
+ *
+ * **Note:** This function only supports comparing values with tags of
+ * `Boolean`, `Date`, `Error`, `Number`, `RegExp`, or `String`.
+ *
+ * @private
+ * @param {Object} object The object to compare.
+ * @param {Object} other The other object to compare.
+ * @param {string} tag The `toStringTag` of the objects to compare.
+ * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
+ * @param {Function} customizer The function to customize comparisons.
+ * @param {Function} equalFunc The function to determine equivalents of values.
+ * @param {Object} stack Tracks traversed `object` and `other` objects.
+ * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+ */
+function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
+  switch (tag) {
+    case dataViewTag:
+      if (object.byteLength != other.byteLength || object.byteOffset != other.byteOffset) {
+        return false;
+      }
+      object = object.buffer;
+      other = other.buffer;
+
+    case arrayBufferTag:
+      if (object.byteLength != other.byteLength || !equalFunc(new Uint8Array(object), new Uint8Array(other))) {
+        return false;
+      }
+      return true;
+
+    case boolTag:
+    case dateTag:
+    case numberTag:
+      // Coerce booleans to `1` or `0` and dates to milliseconds.
+      // Invalid dates are coerced to `NaN`.
+      return eq(+object, +other);
+
+    case errorTag:
+      return object.name == other.name && object.message == other.message;
+
+    case regexpTag:
+    case stringTag:
+      // Coerce regexes to strings and treat strings, primitives and objects,
+      // as equal. See http://www.ecma-international.org/ecma-262/7.0/#sec-regexp.prototype.tostring
+      // for more details.
+      return object == other + '';
+
+    case mapTag:
+      var convert = mapToArray;
+
+    case setTag:
+      var isPartial = bitmask & COMPARE_PARTIAL_FLAG$2;
+      convert || (convert = setToArray);
+
+      if (object.size != other.size && !isPartial) {
+        return false;
+      }
+      // Assume cyclic values are equal.
+      var stacked = stack.get(object);
+      if (stacked) {
+        return stacked == other;
+      }
+      bitmask |= COMPARE_UNORDERED_FLAG$1;
+
+      // Recursively compare objects (susceptible to call stack limits).
+      stack.set(object, other);
+      var result = equalArrays(convert(object), convert(other), bitmask, customizer, equalFunc, stack);
+      stack['delete'](object);
+      return result;
+
+    case symbolTag$1:
+      if (symbolValueOf) {
+        return symbolValueOf.call(object) == symbolValueOf.call(other);
+      }
+  }
+  return false;
+}
+
+/**
+ * The base implementation of `_.times` without support for iteratee shorthands
+ * or max array length checks.
+ *
+ * @private
+ * @param {number} n The number of times to invoke `iteratee`.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the array of results.
+ */
+function baseTimes(n, iteratee) {
+  var index = -1,
+      result = Array(n);
+
+  while (++index < n) {
+    result[index] = iteratee(index);
+  }
+  return result;
+}
+
+/** `Object#toString` result references. */
+var argsTag$1 = '[object Arguments]';
+
+/**
+ * The base implementation of `_.isArguments`.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ */
+function baseIsArguments(value) {
+  return isObjectLike(value) && baseGetTag(value) == argsTag$1;
+}
+
+/** Used for built-in method references. */
+var objectProto$8 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$7 = objectProto$8.hasOwnProperty;
+
+/** Built-in value references. */
+var propertyIsEnumerable = objectProto$8.propertyIsEnumerable;
+
+/**
+ * Checks if `value` is likely an `arguments` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArguments(function() { return arguments; }());
+ * // => true
+ *
+ * _.isArguments([1, 2, 3]);
+ * // => false
+ */
+var isArguments = baseIsArguments(function () {
+  return arguments;
+}()) ? baseIsArguments : function (value) {
+  return isObjectLike(value) && hasOwnProperty$7.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
+};
+
+/**
+ * This method returns `false`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.13.0
+ * @category Util
+ * @returns {boolean} Returns `false`.
+ * @example
+ *
+ * _.times(2, _.stubFalse);
+ * // => [false, false]
+ */
+function stubFalse() {
+  return false;
+}
+
+/** Detect free variable `exports`. */
+var freeExports = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
+
+/** Detect free variable `module`. */
+var freeModule = freeExports && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports = freeModule && freeModule.exports === freeExports;
+
+/** Built-in value references. */
+var Buffer = moduleExports ? root.Buffer : undefined;
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeIsBuffer = Buffer ? Buffer.isBuffer : undefined;
+
+/**
+ * Checks if `value` is a buffer.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.3.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a buffer, else `false`.
+ * @example
+ *
+ * _.isBuffer(new Buffer(2));
+ * // => true
+ *
+ * _.isBuffer(new Uint8Array(2));
+ * // => false
+ */
+var isBuffer = nativeIsBuffer || stubFalse;
+
+/** Used as references for various `Number` constants. */
+var MAX_SAFE_INTEGER = 9007199254740991;
+
+/** Used to detect unsigned integer values. */
+var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+/**
+ * Checks if `value` is a valid array-like index.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+ * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+ */
+function isIndex(value, length) {
+  length = length == null ? MAX_SAFE_INTEGER : length;
+  return !!length && (typeof value == 'number' || reIsUint.test(value)) && value > -1 && value % 1 == 0 && value < length;
+}
+
+/** Used as references for various `Number` constants. */
+var MAX_SAFE_INTEGER$1 = 9007199254740991;
+
+/**
+ * Checks if `value` is a valid array-like length.
+ *
+ * **Note:** This method is loosely based on
+ * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+ * @example
+ *
+ * _.isLength(3);
+ * // => true
+ *
+ * _.isLength(Number.MIN_VALUE);
+ * // => false
+ *
+ * _.isLength(Infinity);
+ * // => false
+ *
+ * _.isLength('3');
+ * // => false
+ */
+function isLength(value) {
+  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER$1;
+}
+
+/** `Object#toString` result references. */
+var argsTag$2 = '[object Arguments]';
+var arrayTag$1 = '[object Array]';
+var boolTag$1 = '[object Boolean]';
+var dateTag$1 = '[object Date]';
+var errorTag$1 = '[object Error]';
+var funcTag$1 = '[object Function]';
+var mapTag$1 = '[object Map]';
+var numberTag$1 = '[object Number]';
+var objectTag$1 = '[object Object]';
+var regexpTag$1 = '[object RegExp]';
+var setTag$1 = '[object Set]';
+var stringTag$1 = '[object String]';
+var weakMapTag = '[object WeakMap]';
+
+var arrayBufferTag$1 = '[object ArrayBuffer]';
+var dataViewTag$1 = '[object DataView]';
+var float32Tag = '[object Float32Array]';
+var float64Tag = '[object Float64Array]';
+var int8Tag = '[object Int8Array]';
+var int16Tag = '[object Int16Array]';
+var int32Tag = '[object Int32Array]';
+var uint8Tag = '[object Uint8Array]';
+var uint8ClampedTag = '[object Uint8ClampedArray]';
+var uint16Tag = '[object Uint16Array]';
+var uint32Tag = '[object Uint32Array]';
+
+/** Used to identify `toStringTag` values of typed arrays. */
+var typedArrayTags = {};
+typedArrayTags[float32Tag] = typedArrayTags[float64Tag] = typedArrayTags[int8Tag] = typedArrayTags[int16Tag] = typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] = typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] = typedArrayTags[uint32Tag] = true;
+typedArrayTags[argsTag$2] = typedArrayTags[arrayTag$1] = typedArrayTags[arrayBufferTag$1] = typedArrayTags[boolTag$1] = typedArrayTags[dataViewTag$1] = typedArrayTags[dateTag$1] = typedArrayTags[errorTag$1] = typedArrayTags[funcTag$1] = typedArrayTags[mapTag$1] = typedArrayTags[numberTag$1] = typedArrayTags[objectTag$1] = typedArrayTags[regexpTag$1] = typedArrayTags[setTag$1] = typedArrayTags[stringTag$1] = typedArrayTags[weakMapTag] = false;
+
+/**
+ * The base implementation of `_.isTypedArray` without Node.js optimizations.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+ */
+function baseIsTypedArray(value) {
+    return isObjectLike(value) && isLength(value.length) && !!typedArrayTags[baseGetTag(value)];
+}
+
+/**
+ * The base implementation of `_.unary` without support for storing metadata.
+ *
+ * @private
+ * @param {Function} func The function to cap arguments for.
+ * @returns {Function} Returns the new capped function.
+ */
+function baseUnary(func) {
+  return function (value) {
+    return func(value);
+  };
+}
+
+/** Detect free variable `exports`. */
+var freeExports$1 = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
+
+/** Detect free variable `module`. */
+var freeModule$1 = freeExports$1 && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports$1 = freeModule$1 && freeModule$1.exports === freeExports$1;
+
+/** Detect free variable `process` from Node.js. */
+var freeProcess = moduleExports$1 && freeGlobal.process;
+
+/** Used to access faster Node.js helpers. */
+var nodeUtil = function () {
+  try {
+    return freeProcess && freeProcess.binding && freeProcess.binding('util');
+  } catch (e) {}
+}();
+
+/* Node.js helper references. */
+var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
+
+/**
+ * Checks if `value` is classified as a typed array.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+ * @example
+ *
+ * _.isTypedArray(new Uint8Array);
+ * // => true
+ *
+ * _.isTypedArray([]);
+ * // => false
+ */
+var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedArray;
+
+/** Used for built-in method references. */
+var objectProto$7 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$6 = objectProto$7.hasOwnProperty;
+
+/**
+ * Creates an array of the enumerable property names of the array-like `value`.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @param {boolean} inherited Specify returning inherited property names.
+ * @returns {Array} Returns the array of property names.
+ */
+function arrayLikeKeys(value, inherited) {
+  var isArr = isArray(value),
+      isArg = !isArr && isArguments(value),
+      isBuff = !isArr && !isArg && isBuffer(value),
+      isType = !isArr && !isArg && !isBuff && isTypedArray(value),
+      skipIndexes = isArr || isArg || isBuff || isType,
+      result = skipIndexes ? baseTimes(value.length, String) : [],
+      length = result.length;
+
+  for (var key in value) {
+    if ((inherited || hasOwnProperty$6.call(value, key)) && !(skipIndexes && (
+    // Safari 9 has enumerable `arguments.length` in strict mode.
+    key == 'length' ||
+    // Node.js 0.10 has enumerable non-index properties on buffers.
+    isBuff && (key == 'offset' || key == 'parent') ||
+    // PhantomJS 2 has enumerable non-index properties on typed arrays.
+    isType && (key == 'buffer' || key == 'byteLength' || key == 'byteOffset') ||
+    // Skip index properties.
+    isIndex(key, length)))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/** Used for built-in method references. */
+var objectProto$10 = Object.prototype;
+
+/**
+ * Checks if `value` is likely a prototype object.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
+ */
+function isPrototype(value) {
+  var Ctor = value && value.constructor,
+      proto = typeof Ctor == 'function' && Ctor.prototype || objectProto$10;
+
+  return value === proto;
+}
+
+/**
+ * Creates a unary function that invokes `func` with its argument transformed.
+ *
+ * @private
+ * @param {Function} func The function to wrap.
+ * @param {Function} transform The argument transform.
+ * @returns {Function} Returns the new function.
+ */
+function overArg(func, transform) {
+  return function (arg) {
+    return func(transform(arg));
+  };
+}
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeKeys = overArg(Object.keys, Object);
+
+/** Used for built-in method references. */
+var objectProto$9 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$8 = objectProto$9.hasOwnProperty;
+
+/**
+ * The base implementation of `_.keys` which doesn't treat sparse arrays as dense.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function baseKeys(object) {
+  if (!isPrototype(object)) {
+    return nativeKeys(object);
+  }
+  var result = [];
+  for (var key in Object(object)) {
+    if (hasOwnProperty$8.call(object, key) && key != 'constructor') {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Checks if `value` is array-like. A value is considered array-like if it's
+ * not a function and has a `value.length` that's an integer greater than or
+ * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+ * @example
+ *
+ * _.isArrayLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLike(document.body.children);
+ * // => true
+ *
+ * _.isArrayLike('abc');
+ * // => true
+ *
+ * _.isArrayLike(_.noop);
+ * // => false
+ */
+function isArrayLike(value) {
+  return value != null && isLength(value.length) && !isFunction(value);
+}
+
+/**
+ * Creates an array of the own enumerable property names of `object`.
+ *
+ * **Note:** Non-object values are coerced to objects. See the
+ * [ES spec](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
+ * for more details.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ *   this.b = 2;
+ * }
+ *
+ * Foo.prototype.c = 3;
+ *
+ * _.keys(new Foo);
+ * // => ['a', 'b'] (iteration order is not guaranteed)
+ *
+ * _.keys('hi');
+ * // => ['0', '1']
+ */
+function keys(object) {
+  return isArrayLike(object) ? arrayLikeKeys(object) : baseKeys(object);
+}
+
+/** Used to compose bitmasks for value comparisons. */
+var COMPARE_PARTIAL_FLAG$3 = 1;
+
+/** Used for built-in method references. */
+var objectProto$6 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$5 = objectProto$6.hasOwnProperty;
+
+/**
+ * A specialized version of `baseIsEqualDeep` for objects with support for
+ * partial deep comparisons.
+ *
+ * @private
+ * @param {Object} object The object to compare.
+ * @param {Object} other The other object to compare.
+ * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
+ * @param {Function} customizer The function to customize comparisons.
+ * @param {Function} equalFunc The function to determine equivalents of values.
+ * @param {Object} stack Tracks traversed `object` and `other` objects.
+ * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+ */
+function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
+  var isPartial = bitmask & COMPARE_PARTIAL_FLAG$3,
+      objProps = keys(object),
+      objLength = objProps.length,
+      othProps = keys(other),
+      othLength = othProps.length;
+
+  if (objLength != othLength && !isPartial) {
+    return false;
+  }
+  var index = objLength;
+  while (index--) {
+    var key = objProps[index];
+    if (!(isPartial ? key in other : hasOwnProperty$5.call(other, key))) {
+      return false;
+    }
+  }
+  // Assume cyclic values are equal.
+  var stacked = stack.get(object);
+  if (stacked && stack.get(other)) {
+    return stacked == other;
+  }
+  var result = true;
+  stack.set(object, other);
+  stack.set(other, object);
+
+  var skipCtor = isPartial;
+  while (++index < objLength) {
+    key = objProps[index];
+    var objValue = object[key],
+        othValue = other[key];
+
+    if (customizer) {
+      var compared = isPartial ? customizer(othValue, objValue, key, other, object, stack) : customizer(objValue, othValue, key, object, other, stack);
+    }
+    // Recursively compare objects (susceptible to call stack limits).
+    if (!(compared === undefined ? objValue === othValue || equalFunc(objValue, othValue, bitmask, customizer, stack) : compared)) {
+      result = false;
+      break;
+    }
+    skipCtor || (skipCtor = key == 'constructor');
+  }
+  if (result && !skipCtor) {
+    var objCtor = object.constructor,
+        othCtor = other.constructor;
+
+    // Non `Object` object instances with different constructors are not equal.
+    if (objCtor != othCtor && 'constructor' in object && 'constructor' in other && !(typeof objCtor == 'function' && objCtor instanceof objCtor && typeof othCtor == 'function' && othCtor instanceof othCtor)) {
+      result = false;
+    }
+  }
+  stack['delete'](object);
+  stack['delete'](other);
+  return result;
+}
+
+/* Built-in method references that are verified to be native. */
+var DataView = getNative(root, 'DataView');
+
+/* Built-in method references that are verified to be native. */
+var Promise$1 = getNative(root, 'Promise');
+
+/* Built-in method references that are verified to be native. */
+var Set = getNative(root, 'Set');
+
+/* Built-in method references that are verified to be native. */
+var WeakMap = getNative(root, 'WeakMap');
+
+/** `Object#toString` result references. */
+var mapTag$2 = '[object Map]';
+var objectTag$2 = '[object Object]';
+var promiseTag = '[object Promise]';
+var setTag$2 = '[object Set]';
+var weakMapTag$1 = '[object WeakMap]';
+
+var dataViewTag$2 = '[object DataView]';
+
+/** Used to detect maps, sets, and weakmaps. */
+var dataViewCtorString = toSource(DataView);
+var mapCtorString = toSource(Map);
+var promiseCtorString = toSource(Promise$1);
+var setCtorString = toSource(Set);
+var weakMapCtorString = toSource(WeakMap);
+
+/**
+ * Gets the `toStringTag` of `value`.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+var getTag = baseGetTag;
+
+// Fallback for data views, maps, sets, and weak maps in IE 11 and promises in Node.js < 6.
+if (DataView && getTag(new DataView(new ArrayBuffer(1))) != dataViewTag$2 || Map && getTag(new Map()) != mapTag$2 || Promise$1 && getTag(Promise$1.resolve()) != promiseTag || Set && getTag(new Set()) != setTag$2 || WeakMap && getTag(new WeakMap()) != weakMapTag$1) {
+    getTag = function getTag(value) {
+        var result = baseGetTag(value),
+            Ctor = result == objectTag$2 ? value.constructor : undefined,
+            ctorString = Ctor ? toSource(Ctor) : '';
+
+        if (ctorString) {
+            switch (ctorString) {
+                case dataViewCtorString:
+                    return dataViewTag$2;
+                case mapCtorString:
+                    return mapTag$2;
+                case promiseCtorString:
+                    return promiseTag;
+                case setCtorString:
+                    return setTag$2;
+                case weakMapCtorString:
+                    return weakMapTag$1;
+            }
+        }
+        return result;
+    };
+}
+
+var getTag$1 = getTag;
+
+/** Used to compose bitmasks for value comparisons. */
+var COMPARE_PARTIAL_FLAG = 1;
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]';
+var arrayTag = '[object Array]';
+var objectTag = '[object Object]';
+
+/** Used for built-in method references. */
+var objectProto$2 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$1 = objectProto$2.hasOwnProperty;
+
+/**
+ * A specialized version of `baseIsEqual` for arrays and objects which performs
+ * deep comparisons and tracks traversed objects enabling objects with circular
+ * references to be compared.
+ *
+ * @private
+ * @param {Object} object The object to compare.
+ * @param {Object} other The other object to compare.
+ * @param {number} bitmask The bitmask flags. See `baseIsEqual` for more details.
+ * @param {Function} customizer The function to customize comparisons.
+ * @param {Function} equalFunc The function to determine equivalents of values.
+ * @param {Object} [stack] Tracks traversed `object` and `other` objects.
+ * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
+ */
+function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
+  var objIsArr = isArray(object),
+      othIsArr = isArray(other),
+      objTag = arrayTag,
+      othTag = arrayTag;
+
+  if (!objIsArr) {
+    objTag = getTag$1(object);
+    objTag = objTag == argsTag ? objectTag : objTag;
+  }
+  if (!othIsArr) {
+    othTag = getTag$1(other);
+    othTag = othTag == argsTag ? objectTag : othTag;
+  }
+  var objIsObj = objTag == objectTag,
+      othIsObj = othTag == objectTag,
+      isSameTag = objTag == othTag;
+
+  if (isSameTag && isBuffer(object)) {
+    if (!isBuffer(other)) {
+      return false;
+    }
+    objIsArr = true;
+    objIsObj = false;
+  }
+  if (isSameTag && !objIsObj) {
+    stack || (stack = new Stack());
+    return objIsArr || isTypedArray(object) ? equalArrays(object, other, bitmask, customizer, equalFunc, stack) : equalByTag(object, other, objTag, bitmask, customizer, equalFunc, stack);
+  }
+  if (!(bitmask & COMPARE_PARTIAL_FLAG)) {
+    var objIsWrapped = objIsObj && hasOwnProperty$1.call(object, '__wrapped__'),
+        othIsWrapped = othIsObj && hasOwnProperty$1.call(other, '__wrapped__');
+
+    if (objIsWrapped || othIsWrapped) {
+      var objUnwrapped = objIsWrapped ? object.value() : object,
+          othUnwrapped = othIsWrapped ? other.value() : other;
+
+      stack || (stack = new Stack());
+      return equalFunc(objUnwrapped, othUnwrapped, bitmask, customizer, stack);
+    }
+  }
+  if (!isSameTag) {
+    return false;
+  }
+  stack || (stack = new Stack());
+  return equalObjects(object, other, bitmask, customizer, equalFunc, stack);
+}
+
+/**
+ * The base implementation of `_.isEqual` which supports partial comparisons
+ * and tracks traversed objects.
+ *
+ * @private
+ * @param {*} value The value to compare.
+ * @param {*} other The other value to compare.
+ * @param {boolean} bitmask The bitmask flags.
+ *  1 - Unordered comparison
+ *  2 - Partial comparison
+ * @param {Function} [customizer] The function to customize comparisons.
+ * @param {Object} [stack] Tracks traversed `value` and `other` objects.
+ * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+ */
+function baseIsEqual(value, other, bitmask, customizer, stack) {
+  if (value === other) {
+    return true;
+  }
+  if (value == null || other == null || !isObject(value) && !isObjectLike(other)) {
+    return value !== value && other !== other;
+  }
+  return baseIsEqualDeep(value, other, bitmask, customizer, baseIsEqual, stack);
+}
+
+/**
+ * Performs a deep comparison between two values to determine if they are
+ * equivalent.
+ *
+ * **Note:** This method supports comparing arrays, array buffers, booleans,
+ * date objects, error objects, maps, numbers, `Object` objects, regexes,
+ * sets, strings, symbols, and typed arrays. `Object` objects are compared
+ * by their own, not inherited, enumerable properties. Functions and DOM
+ * nodes are **not** supported.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to compare.
+ * @param {*} other The other value to compare.
+ * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ * var other = { 'a': 1 };
+ *
+ * _.isEqual(object, other);
+ * // => true
+ *
+ * object === other;
+ * // => false
+ */
+function isEqual$1(value, other) {
+  return baseIsEqual(value, other);
+}
+
+/**
+ * Appends the elements of `values` to `array`.
+ *
+ * @private
+ * @param {Array} array The array to modify.
+ * @param {Array} values The values to append.
+ * @returns {Array} Returns `array`.
+ */
+function arrayPush(array, values) {
+  var index = -1,
+      length = values.length,
+      offset = array.length;
+
+  while (++index < length) {
+    array[offset + index] = values[index];
+  }
+  return array;
+}
+
+/** Built-in value references. */
+var spreadableSymbol = _Symbol ? _Symbol.isConcatSpreadable : undefined;
+
+/**
+ * Checks if `value` is a flattenable `arguments` object or array.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is flattenable, else `false`.
+ */
+function isFlattenable(value) {
+  return isArray(value) || isArguments(value) || !!(spreadableSymbol && value && value[spreadableSymbol]);
+}
+
+/**
+ * The base implementation of `_.flatten` with support for restricting flattening.
+ *
+ * @private
+ * @param {Array} array The array to flatten.
+ * @param {number} depth The maximum recursion depth.
+ * @param {boolean} [predicate=isFlattenable] The function invoked per iteration.
+ * @param {boolean} [isStrict] Restrict to values that pass `predicate` checks.
+ * @param {Array} [result=[]] The initial result value.
+ * @returns {Array} Returns the new flattened array.
+ */
+function baseFlatten(array, depth, predicate, isStrict, result) {
+  var index = -1,
+      length = array.length;
+
+  predicate || (predicate = isFlattenable);
+  result || (result = []);
+
+  while (++index < length) {
+    var value = array[index];
+    if (depth > 0 && predicate(value)) {
+      if (depth > 1) {
+        // Recursively flatten arrays (susceptible to call stack limits).
+        baseFlatten(value, depth - 1, predicate, isStrict, result);
+      } else {
+        arrayPush(result, value);
+      }
+    } else if (!isStrict) {
+      result[result.length] = value;
+    }
+  }
+  return result;
+}
+
+/** Used as references for various `Number` constants. */
+var INFINITY$1 = 1 / 0;
+
+/**
+ * Recursively flattens `array`.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category Array
+ * @param {Array} array The array to flatten.
+ * @returns {Array} Returns the new flattened array.
+ * @example
+ *
+ * _.flattenDeep([1, [2, [3, [4]], 5]]);
+ * // => [1, 2, 3, 4, 5]
+ */
+function flattenDeep$1(array) {
+  var length = array == null ? 0 : array.length;
+  return length ? baseFlatten(array, INFINITY$1) : [];
+}
+
+/** Used for built-in method references. */
+var objectProto$11 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$9 = objectProto$11.hasOwnProperty;
+
+/**
+ * The base implementation of `_.has` without support for deep paths.
+ *
+ * @private
+ * @param {Object} [object] The object to query.
+ * @param {Array|string} key The key to check.
+ * @returns {boolean} Returns `true` if `key` exists, else `false`.
+ */
+function baseHas(object, key) {
+  return object != null && hasOwnProperty$9.call(object, key);
+}
+
+/** Used to match property names within property paths. */
+var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/;
+var reIsPlainProp = /^\w*$/;
+
+/**
+ * Checks if `value` is a property name and not a property path.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {Object} [object] The object to query keys on.
+ * @returns {boolean} Returns `true` if `value` is a property name, else `false`.
+ */
+function isKey(value, object) {
+  if (isArray(value)) {
+    return false;
+  }
+  var type = typeof value === 'undefined' ? 'undefined' : _typeof(value);
+  if (type == 'number' || type == 'symbol' || type == 'boolean' || value == null || isSymbol(value)) {
+    return true;
+  }
+  return reIsPlainProp.test(value) || !reIsDeepProp.test(value) || object != null && value in Object(object);
+}
+
 /** Error message constants. */
 var FUNC_ERROR_TEXT = 'Expected a function';
 
@@ -1186,106 +2910,6 @@ function memoizeCapped(func) {
   return result;
 }
 
-/**
- * A specialized version of `_.map` for arrays without support for iteratee
- * shorthands.
- *
- * @private
- * @param {Array} [array] The array to iterate over.
- * @param {Function} iteratee The function invoked per iteration.
- * @returns {Array} Returns the new mapped array.
- */
-function arrayMap(array, iteratee) {
-  var index = -1,
-      length = array == null ? 0 : array.length,
-      result = Array(length);
-
-  while (++index < length) {
-    result[index] = iteratee(array[index], index, array);
-  }
-  return result;
-}
-
-/** `Object#toString` result references. */
-var symbolTag = '[object Symbol]';
-
-/**
- * Checks if `value` is classified as a `Symbol` primitive or object.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
- * @example
- *
- * _.isSymbol(Symbol.iterator);
- * // => true
- *
- * _.isSymbol('abc');
- * // => false
- */
-function isSymbol(value) {
-  return (typeof value === 'undefined' ? 'undefined' : _typeof(value)) == 'symbol' || isObjectLike(value) && baseGetTag(value) == symbolTag;
-}
-
-/** Used as references for various `Number` constants. */
-var INFINITY$1 = 1 / 0;
-
-/** Used to convert symbols to primitives and strings. */
-var symbolProto = _Symbol ? _Symbol.prototype : undefined;
-var symbolToString = symbolProto ? symbolProto.toString : undefined;
-
-/**
- * The base implementation of `_.toString` which doesn't convert nullish
- * values to empty strings.
- *
- * @private
- * @param {*} value The value to process.
- * @returns {string} Returns the string.
- */
-function baseToString(value) {
-  // Exit early for strings to avoid a performance hit in some environments.
-  if (typeof value == 'string') {
-    return value;
-  }
-  if (isArray(value)) {
-    // Recursively convert values (susceptible to call stack limits).
-    return arrayMap(value, baseToString) + '';
-  }
-  if (isSymbol(value)) {
-    return symbolToString ? symbolToString.call(value) : '';
-  }
-  var result = value + '';
-  return result == '0' && 1 / value == -INFINITY$1 ? '-0' : result;
-}
-
-/**
- * Converts `value` to a string. An empty string is returned for `null`
- * and `undefined` values. The sign of `-0` is preserved.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to convert.
- * @returns {string} Returns the converted string.
- * @example
- *
- * _.toString(null);
- * // => ''
- *
- * _.toString(-0);
- * // => '-0'
- *
- * _.toString([1, 2, 3]);
- * // => '1,2,3'
- */
-function toString$1(value) {
-  return value == null ? '' : baseToString(value);
-}
-
 /** Used to match property names within property paths. */
 var reLeadingDot = /^\./;
 var rePropName = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g;
@@ -1301,8 +2925,6 @@ var reEscapeChar = /\\(\\)?/g;
  * @returns {Array} Returns the property path array.
  */
 var stringToPath = memoizeCapped(function (string) {
-  string = toString$1(string);
-
   var result = [];
   if (reLeadingDot.test(string)) {
     result.push('');
@@ -1318,33 +2940,14 @@ var stringToPath = memoizeCapped(function (string) {
  *
  * @private
  * @param {*} value The value to inspect.
+ * @param {Object} [object] The object to query keys on.
  * @returns {Array} Returns the cast property path array.
  */
-function castPath(value) {
-  return isArray(value) ? value : stringToPath(value);
-}
-
-/** Used to match property names within property paths. */
-var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/;
-var reIsPlainProp = /^\w*$/;
-
-/**
- * Checks if `value` is a property name and not a property path.
- *
- * @private
- * @param {*} value The value to check.
- * @param {Object} [object] The object to query keys on.
- * @returns {boolean} Returns `true` if `value` is a property name, else `false`.
- */
-function isKey(value, object) {
+function castPath(value, object) {
   if (isArray(value)) {
-    return false;
+    return value;
   }
-  var type = typeof value === 'undefined' ? 'undefined' : _typeof(value);
-  if (type == 'number' || type == 'symbol' || type == 'boolean' || value == null || isSymbol(value)) {
-    return true;
-  }
-  return reIsPlainProp.test(value) || !reIsDeepProp.test(value) || object != null && value in Object(object);
+  return isKey(value, object) ? [value] : stringToPath(toString$1(value));
 }
 
 /** Used as references for various `Number` constants. */
@@ -1366,6 +2969,67 @@ function toKey(value) {
 }
 
 /**
+ * Checks if `path` exists on `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path to check.
+ * @param {Function} hasFunc The function to check properties.
+ * @returns {boolean} Returns `true` if `path` exists, else `false`.
+ */
+function hasPath(object, path, hasFunc) {
+  path = castPath(path, object);
+
+  var index = -1,
+      length = path.length,
+      result = false;
+
+  while (++index < length) {
+    var key = toKey(path[index]);
+    if (!(result = object != null && hasFunc(object, key))) {
+      break;
+    }
+    object = object[key];
+  }
+  if (result || ++index != length) {
+    return result;
+  }
+  length = object == null ? 0 : object.length;
+  return !!length && isLength(length) && isIndex(key, length) && (isArray(object) || isArguments(object));
+}
+
+/**
+ * Checks if `path` is a direct property of `object`.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path to check.
+ * @returns {boolean} Returns `true` if `path` exists, else `false`.
+ * @example
+ *
+ * var object = { 'a': { 'b': 2 } };
+ * var other = _.create({ 'a': _.create({ 'b': 2 }) });
+ *
+ * _.has(object, 'a');
+ * // => true
+ *
+ * _.has(object, 'a.b');
+ * // => true
+ *
+ * _.has(object, ['a', 'b']);
+ * // => true
+ *
+ * _.has(other, 'a');
+ * // => false
+ */
+function has$1(object, path) {
+  return object != null && hasPath(object, path, baseHas);
+}
+
+/**
  * The base implementation of `_.get` without support for default values.
  *
  * @private
@@ -1374,7 +3038,7 @@ function toKey(value) {
  * @returns {*} Returns the resolved value.
  */
 function baseGet(object, path) {
-  path = isKey(path, object) ? [path] : castPath(path);
+  path = castPath(path, object);
 
   var index = 0,
       length = path.length;
@@ -1446,10 +3110,10 @@ function baseAssignValue(object, key, value) {
 }
 
 /** Used for built-in method references. */
-var objectProto$6 = Object.prototype;
+var objectProto$12 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$5 = objectProto$6.hasOwnProperty;
+var hasOwnProperty$10 = objectProto$12.hasOwnProperty;
 
 /**
  * Assigns `value` to `key` of `object` if the existing value is not equivalent
@@ -1463,28 +3127,9 @@ var hasOwnProperty$5 = objectProto$6.hasOwnProperty;
  */
 function assignValue(object, key, value) {
   var objValue = object[key];
-  if (!(hasOwnProperty$5.call(object, key) && eq(objValue, value)) || value === undefined && !(key in object)) {
+  if (!(hasOwnProperty$10.call(object, key) && eq(objValue, value)) || value === undefined && !(key in object)) {
     baseAssignValue(object, key, value);
   }
-}
-
-/** Used as references for various `Number` constants. */
-var MAX_SAFE_INTEGER = 9007199254740991;
-
-/** Used to detect unsigned integer values. */
-var reIsUint = /^(?:0|[1-9]\d*)$/;
-
-/**
- * Checks if `value` is a valid array-like index.
- *
- * @private
- * @param {*} value The value to check.
- * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
- * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
- */
-function isIndex(value, length) {
-  length = length == null ? MAX_SAFE_INTEGER : length;
-  return !!length && (typeof value == 'number' || reIsUint.test(value)) && value > -1 && value % 1 == 0 && value < length;
 }
 
 /**
@@ -1501,7 +3146,7 @@ function baseSet(object, path, value, customizer) {
   if (!isObject(object)) {
     return object;
   }
-  path = isKey(path, object) ? [path] : castPath(path);
+  path = castPath(path, object);
 
   var index = -1,
       length = path.length,
@@ -1735,109 +3380,6 @@ function baseRest(func, start) {
 }
 
 /**
- * Removes all key-value entries from the stack.
- *
- * @private
- * @name clear
- * @memberOf Stack
- */
-function stackClear() {
-  this.__data__ = new ListCache();
-  this.size = 0;
-}
-
-/**
- * Removes `key` and its value from the stack.
- *
- * @private
- * @name delete
- * @memberOf Stack
- * @param {string} key The key of the value to remove.
- * @returns {boolean} Returns `true` if the entry was removed, else `false`.
- */
-function stackDelete(key) {
-  var data = this.__data__,
-      result = data['delete'](key);
-
-  this.size = data.size;
-  return result;
-}
-
-/**
- * Gets the stack value for `key`.
- *
- * @private
- * @name get
- * @memberOf Stack
- * @param {string} key The key of the value to get.
- * @returns {*} Returns the entry value.
- */
-function stackGet(key) {
-  return this.__data__.get(key);
-}
-
-/**
- * Checks if a stack value for `key` exists.
- *
- * @private
- * @name has
- * @memberOf Stack
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function stackHas(key) {
-  return this.__data__.has(key);
-}
-
-/** Used as the size to enable large array optimizations. */
-var LARGE_ARRAY_SIZE = 200;
-
-/**
- * Sets the stack `key` to `value`.
- *
- * @private
- * @name set
- * @memberOf Stack
- * @param {string} key The key of the value to set.
- * @param {*} value The value to set.
- * @returns {Object} Returns the stack cache instance.
- */
-function stackSet(key, value) {
-  var data = this.__data__;
-  if (data instanceof ListCache) {
-    var pairs = data.__data__;
-    if (!Map || pairs.length < LARGE_ARRAY_SIZE - 1) {
-      pairs.push([key, value]);
-      this.size = ++data.size;
-      return this;
-    }
-    data = this.__data__ = new MapCache(pairs);
-  }
-  data.set(key, value);
-  this.size = data.size;
-  return this;
-}
-
-/**
- * Creates a stack cache object to store key-value pairs.
- *
- * @private
- * @constructor
- * @param {Array} [entries] The key-value pairs to cache.
- */
-function Stack(entries) {
-  var data = this.__data__ = new ListCache(entries);
-  this.size = data.size;
-}
-
-// Add methods to `Stack`.
-Stack.prototype.clear = stackClear;
-Stack.prototype['delete'] = stackDelete;
-Stack.prototype.get = stackGet;
-Stack.prototype.has = stackHas;
-Stack.prototype.set = stackSet;
-
-/**
  * This function is like `assignValue` except that it doesn't assign
  * `undefined` values.
  *
@@ -1890,17 +3432,17 @@ function createBaseFor(fromRight) {
 var baseFor = createBaseFor();
 
 /** Detect free variable `exports`. */
-var freeExports = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
+var freeExports$2 = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
 
 /** Detect free variable `module`. */
-var freeModule = freeExports && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
+var freeModule$2 = freeExports$2 && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
 
 /** Detect the popular CommonJS extension `module.exports`. */
-var moduleExports = freeModule && freeModule.exports === freeExports;
+var moduleExports$2 = freeModule$2 && freeModule$2.exports === freeExports$2;
 
 /** Built-in value references. */
-var Buffer = moduleExports ? root.Buffer : undefined;
-var allocUnsafe = Buffer ? Buffer.allocUnsafe : undefined;
+var Buffer$1 = moduleExports$2 ? root.Buffer : undefined;
+var allocUnsafe = Buffer$1 ? Buffer$1.allocUnsafe : undefined;
 
 /**
  * Creates a clone of  `buffer`.
@@ -1920,9 +3462,6 @@ function cloneBuffer(buffer, isDeep) {
   buffer.copy(result);
   return result;
 }
-
-/** Built-in value references. */
-var Uint8Array = root.Uint8Array;
 
 /**
  * Creates a clone of `arrayBuffer`.
@@ -1996,39 +3535,8 @@ var baseCreate = function () {
   };
 }();
 
-/**
- * Creates a unary function that invokes `func` with its argument transformed.
- *
- * @private
- * @param {Function} func The function to wrap.
- * @param {Function} transform The argument transform.
- * @returns {Function} Returns the new function.
- */
-function overArg(func, transform) {
-  return function (arg) {
-    return func(transform(arg));
-  };
-}
-
 /** Built-in value references. */
 var getPrototype = overArg(Object.getPrototypeOf, Object);
-
-/** Used for built-in method references. */
-var objectProto$7 = Object.prototype;
-
-/**
- * Checks if `value` is likely a prototype object.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
- */
-function isPrototype(value) {
-  var Ctor = value && value.constructor,
-      proto = typeof Ctor == 'function' && Ctor.prototype || objectProto$7;
-
-  return value === proto;
-}
 
 /**
  * Initializes an object clone.
@@ -2039,68 +3547,6 @@ function isPrototype(value) {
  */
 function initCloneObject(object) {
   return typeof object.constructor == 'function' && !isPrototype(object) ? baseCreate(getPrototype(object)) : {};
-}
-
-/** Used as references for various `Number` constants. */
-var MAX_SAFE_INTEGER$1 = 9007199254740991;
-
-/**
- * Checks if `value` is a valid array-like length.
- *
- * **Note:** This method is loosely based on
- * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
- * @example
- *
- * _.isLength(3);
- * // => true
- *
- * _.isLength(Number.MIN_VALUE);
- * // => false
- *
- * _.isLength(Infinity);
- * // => false
- *
- * _.isLength('3');
- * // => false
- */
-function isLength(value) {
-  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER$1;
-}
-
-/**
- * Checks if `value` is array-like. A value is considered array-like if it's
- * not a function and has a `value.length` that's an integer greater than or
- * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
- * @example
- *
- * _.isArrayLike([1, 2, 3]);
- * // => true
- *
- * _.isArrayLike(document.body.children);
- * // => true
- *
- * _.isArrayLike('abc');
- * // => true
- *
- * _.isArrayLike(_.noop);
- * // => false
- */
-function isArrayLike(value) {
-  return value != null && isLength(value.length) && !isFunction(value);
 }
 
 /**
@@ -2132,69 +3578,18 @@ function isArrayLikeObject(value) {
   return isObjectLike(value) && isArrayLike(value);
 }
 
-/**
- * This method returns `false`.
- *
- * @static
- * @memberOf _
- * @since 4.13.0
- * @category Util
- * @returns {boolean} Returns `false`.
- * @example
- *
- * _.times(2, _.stubFalse);
- * // => [false, false]
- */
-function stubFalse() {
-  return false;
-}
-
-/** Detect free variable `exports`. */
-var freeExports$1 = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
-
-/** Detect free variable `module`. */
-var freeModule$1 = freeExports$1 && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
-
-/** Detect the popular CommonJS extension `module.exports`. */
-var moduleExports$1 = freeModule$1 && freeModule$1.exports === freeExports$1;
-
-/** Built-in value references. */
-var Buffer$1 = moduleExports$1 ? root.Buffer : undefined;
-
-/* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeIsBuffer = Buffer$1 ? Buffer$1.isBuffer : undefined;
-
-/**
- * Checks if `value` is a buffer.
- *
- * @static
- * @memberOf _
- * @since 4.3.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a buffer, else `false`.
- * @example
- *
- * _.isBuffer(new Buffer(2));
- * // => true
- *
- * _.isBuffer(new Uint8Array(2));
- * // => false
- */
-var isBuffer = nativeIsBuffer || stubFalse;
-
 /** `Object#toString` result references. */
-var objectTag = '[object Object]';
+var objectTag$3 = '[object Object]';
 
 /** Used for built-in method references. */
 var funcProto$2 = Function.prototype;
-var objectProto$8 = Object.prototype;
+var objectProto$13 = Object.prototype;
 
 /** Used to resolve the decompiled source of functions. */
 var funcToString$2 = funcProto$2.toString;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$6 = objectProto$8.hasOwnProperty;
+var hasOwnProperty$11 = objectProto$13.hasOwnProperty;
 
 /** Used to infer the `Object` constructor. */
 var objectCtorString = funcToString$2.call(Object);
@@ -2228,113 +3623,16 @@ var objectCtorString = funcToString$2.call(Object);
  * // => true
  */
 function isPlainObject(value) {
-  if (!isObjectLike(value) || baseGetTag(value) != objectTag) {
+  if (!isObjectLike(value) || baseGetTag(value) != objectTag$3) {
     return false;
   }
   var proto = getPrototype(value);
   if (proto === null) {
     return true;
   }
-  var Ctor = hasOwnProperty$6.call(proto, 'constructor') && proto.constructor;
+  var Ctor = hasOwnProperty$11.call(proto, 'constructor') && proto.constructor;
   return typeof Ctor == 'function' && Ctor instanceof Ctor && funcToString$2.call(Ctor) == objectCtorString;
 }
-
-/** `Object#toString` result references. */
-var argsTag$1 = '[object Arguments]';
-var arrayTag = '[object Array]';
-var boolTag = '[object Boolean]';
-var dateTag = '[object Date]';
-var errorTag = '[object Error]';
-var funcTag$1 = '[object Function]';
-var mapTag = '[object Map]';
-var numberTag = '[object Number]';
-var objectTag$1 = '[object Object]';
-var regexpTag = '[object RegExp]';
-var setTag = '[object Set]';
-var stringTag = '[object String]';
-var weakMapTag = '[object WeakMap]';
-
-var arrayBufferTag = '[object ArrayBuffer]';
-var dataViewTag = '[object DataView]';
-var float32Tag = '[object Float32Array]';
-var float64Tag = '[object Float64Array]';
-var int8Tag = '[object Int8Array]';
-var int16Tag = '[object Int16Array]';
-var int32Tag = '[object Int32Array]';
-var uint8Tag = '[object Uint8Array]';
-var uint8ClampedTag = '[object Uint8ClampedArray]';
-var uint16Tag = '[object Uint16Array]';
-var uint32Tag = '[object Uint32Array]';
-
-/** Used to identify `toStringTag` values of typed arrays. */
-var typedArrayTags = {};
-typedArrayTags[float32Tag] = typedArrayTags[float64Tag] = typedArrayTags[int8Tag] = typedArrayTags[int16Tag] = typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] = typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] = typedArrayTags[uint32Tag] = true;
-typedArrayTags[argsTag$1] = typedArrayTags[arrayTag] = typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] = typedArrayTags[dataViewTag] = typedArrayTags[dateTag] = typedArrayTags[errorTag] = typedArrayTags[funcTag$1] = typedArrayTags[mapTag] = typedArrayTags[numberTag] = typedArrayTags[objectTag$1] = typedArrayTags[regexpTag] = typedArrayTags[setTag] = typedArrayTags[stringTag] = typedArrayTags[weakMapTag] = false;
-
-/**
- * The base implementation of `_.isTypedArray` without Node.js optimizations.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
- */
-function baseIsTypedArray(value) {
-    return isObjectLike(value) && isLength(value.length) && !!typedArrayTags[baseGetTag(value)];
-}
-
-/**
- * The base implementation of `_.unary` without support for storing metadata.
- *
- * @private
- * @param {Function} func The function to cap arguments for.
- * @returns {Function} Returns the new capped function.
- */
-function baseUnary(func) {
-  return function (value) {
-    return func(value);
-  };
-}
-
-/** Detect free variable `exports`. */
-var freeExports$2 = (typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) == 'object' && exports && !exports.nodeType && exports;
-
-/** Detect free variable `module`. */
-var freeModule$2 = freeExports$2 && (typeof module === 'undefined' ? 'undefined' : _typeof(module)) == 'object' && module && !module.nodeType && module;
-
-/** Detect the popular CommonJS extension `module.exports`. */
-var moduleExports$2 = freeModule$2 && freeModule$2.exports === freeExports$2;
-
-/** Detect free variable `process` from Node.js. */
-var freeProcess = moduleExports$2 && freeGlobal.process;
-
-/** Used to access faster Node.js helpers. */
-var nodeUtil = function () {
-  try {
-    return freeProcess && freeProcess.binding('util');
-  } catch (e) {}
-}();
-
-/* Node.js helper references. */
-var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
-
-/**
- * Checks if `value` is classified as a typed array.
- *
- * @static
- * @memberOf _
- * @since 3.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
- * @example
- *
- * _.isTypedArray(new Uint8Array);
- * // => true
- *
- * _.isTypedArray([]);
- * // => false
- */
-var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedArray;
 
 /**
  * Copies properties of `source` to `object`.
@@ -2371,64 +3669,6 @@ function copyObject(source, props, object, customizer) {
 }
 
 /**
- * The base implementation of `_.times` without support for iteratee shorthands
- * or max array length checks.
- *
- * @private
- * @param {number} n The number of times to invoke `iteratee`.
- * @param {Function} iteratee The function invoked per iteration.
- * @returns {Array} Returns the array of results.
- */
-function baseTimes(n, iteratee) {
-  var index = -1,
-      result = Array(n);
-
-  while (++index < n) {
-    result[index] = iteratee(index);
-  }
-  return result;
-}
-
-/** Used for built-in method references. */
-var objectProto$9 = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty$7 = objectProto$9.hasOwnProperty;
-
-/**
- * Creates an array of the enumerable property names of the array-like `value`.
- *
- * @private
- * @param {*} value The value to query.
- * @param {boolean} inherited Specify returning inherited property names.
- * @returns {Array} Returns the array of property names.
- */
-function arrayLikeKeys(value, inherited) {
-  var isArr = isArray(value),
-      isArg = !isArr && isArguments(value),
-      isBuff = !isArr && !isArg && isBuffer(value),
-      isType = !isArr && !isArg && !isBuff && isTypedArray(value),
-      skipIndexes = isArr || isArg || isBuff || isType,
-      result = skipIndexes ? baseTimes(value.length, String) : [],
-      length = result.length;
-
-  for (var key in value) {
-    if ((inherited || hasOwnProperty$7.call(value, key)) && !(skipIndexes && (
-    // Safari 9 has enumerable `arguments.length` in strict mode.
-    key == 'length' ||
-    // Node.js 0.10 has enumerable non-index properties on buffers.
-    isBuff && (key == 'offset' || key == 'parent') ||
-    // PhantomJS 2 has enumerable non-index properties on typed arrays.
-    isType && (key == 'buffer' || key == 'byteLength' || key == 'byteOffset') ||
-    // Skip index properties.
-    isIndex(key, length)))) {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-/**
  * This function is like
  * [`Object.keys`](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
  * except that it includes inherited enumerable properties.
@@ -2448,10 +3688,10 @@ function nativeKeysIn(object) {
 }
 
 /** Used for built-in method references. */
-var objectProto$10 = Object.prototype;
+var objectProto$14 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$8 = objectProto$10.hasOwnProperty;
+var hasOwnProperty$12 = objectProto$14.hasOwnProperty;
 
 /**
  * The base implementation of `_.keysIn` which doesn't treat sparse arrays as dense.
@@ -2468,7 +3708,7 @@ function baseKeysIn(object) {
       result = [];
 
   for (var key in object) {
-    if (!(key == 'constructor' && (isProto || !hasOwnProperty$8.call(object, key)))) {
+    if (!(key == 'constructor' && (isProto || !hasOwnProperty$12.call(object, key)))) {
       result.push(key);
     }
   }
@@ -2770,8 +4010,18 @@ var defaultsDeep = defaultsDeep$1;
 // Used for deep setting/getting of values in nested objects
 var set$1 = set$2;
 var get$1 = get$2;
+var has = has$1;
 
 var flattenDeep = flattenDeep$1;
+
+var isEqual = isEqual$1;
+
+// String manipulation
+// Used for CSS and class method names
+var camelCase = camelCase$1;
+
+
+var upperFirst = upperFirst$1;
 
 var undef = void 0;
 
@@ -2929,6 +4179,10 @@ var EventWatcher = function () {
         _this.documentReady = false;
         document.addEventListener('DOMContentLoaded', ready);
         window.addEventListener('load', ready);
+
+        if (document.readyState === 'complete') {
+          ready();
+        }
       })();
     }
   }
@@ -3065,6 +4319,11 @@ var MonteError = function (_Error) {
     value: function UnimplementedMethod(method, methodName) {
       return new MonteError(method + ' (`' + methodName + '`) needs to be defined in order for the chart to be useful.');
     }
+  }, {
+    key: 'InvalidArgumentType',
+    value: function InvalidArgumentType(methodName, argumentName, expectedType, received) {
+      return new MonteError('Method (' + methodName + ') argument "' + argumentName + '" of unexpected type. Expected ' + expectedType + ', but was given ' + received + '.');
+    }
   }]);
   return MonteError;
 }(Error);
@@ -3108,7 +4367,9 @@ var InstanceGroup = function () {
   }, {
     key: 'addInstance',
     value: function addInstance(instance) {
-      this._instances.push(instance);
+      if (instance) {
+        this._instances.push(instance);
+      }
     }
   }, {
     key: 'removeChart',
@@ -3182,29 +4443,45 @@ var MonteOptionError = function (_MonteError) {
   return MonteOptionError;
 }(MonteError);
 
-// In d3-axis, there are hard coded shifts of 0.5. This shift is used for grid alignment and other
-// axis alignments.
-var AXIS_SHIFT = 0.5;
-
-// In d3-transition the default transition time is 250ms.
-var TRANSITION_DURATION_MS = 250;
-
-var ENTER = 'enter';
-var UPDATE = 'update';
-var EXIT = 'exit';
-
-var UPDATE_PATTERN = { ENTER: ENTER, UPDATE: UPDATE, EXIT: EXIT };
-
-var d3$1 = Object.freeze({
-	AXIS_SHIFT: AXIS_SHIFT,
-	TRANSITION_DURATION_MS: TRANSITION_DURATION_MS,
-	ENTER: ENTER,
-	UPDATE: UPDATE,
-	EXIT: EXIT,
-	UPDATE_PATTERN: UPDATE_PATTERN
-});
-
+// Use a true undefined in case the `undefined` is overridden for some reason.
 var UNDEF = void 0;
+
+// A deep-first object property getter that falls back to parent levels if the expected property
+// is not present.
+//
+// For example on a generic 3-level object, attempts to access:
+//   obj.levels[0].levels[1].levels[2].prop, then
+//   obj.levels[1].levels[2].prop, then
+//   obj.levels[2].prop, then
+//   obj.prop, then falls back to the
+//   defaultValue.
+//
+// More concretely if the object is transition settings, `level`s are 'line' and 'update', the
+// `property` is 'duration', and the `defaultValue` is 250 the attempts are:
+//   transitionSettings.line.update.duration,then
+//   transitionSettings.update.duration, then
+//   transitionSettings.duration, then
+//   defaultValue.
+function getDepthFirst(obj, levels, property, defaultValue) {
+  var value = defaultValue;
+
+  if (obj) {
+    for (var i = -1; i < levels.length; i++) {
+      var propPath = levels.slice(i + 1).join('.');
+      if (propPath) {
+        propPath += '.';
+      }
+      propPath += property;
+
+      if (has(obj, propPath)) {
+        value = get$1(obj, propPath);
+        break;
+      }
+    }
+  }
+
+  return value;
+}
 
 function noop() {}
 
@@ -3233,6 +4510,12 @@ var DEFAULTS = {
   transitionDuration: TRANSITION_DURATION_MS,
   ease: d3.easeCubic,
   delay: 0,
+
+  transition: {
+    duration: TRANSITION_DURATION_MS,
+    ease: d3.easeCubic,
+    delay: 0
+  },
 
   resize: null,
 
@@ -3359,7 +4642,7 @@ var Chart = function () {
       // Drawing area path clipping
       this.clip = this.defs.append('clipPath').attr('id', CLIP_PATH_ID);
 
-      this.clipRect = this.clip.append('rect');
+      this.clipRect = this.clip.append('rect').attr('x', 0).attr('y', 0);
 
       // Create a background area.
       this.addLayer('bg');
@@ -3432,8 +4715,13 @@ var Chart = function () {
         console.log('[' + _this2 + '] "' + eventName + '": ' + a); // eslint-disable-line no-console
       };
 
-      this._events.forEach(function (eventName) {
-        return _this2.on(eventName, echo.bind(_this2, eventName));
+      // Determine events to watch in developer mode. If `developerMode` is an array use the provided
+      // events; otherwise use all registered events.
+      var events = isArray$2(this.opts.developerMode || global$1.developerMode) ? this.opts.developerMode || global$1.developerMode : this._events;
+
+      events.forEach(function (eventName) {
+        console.log('[' + _this2 + '] Adding listener for "' + eventName + '"'); // eslint-disable-line no-console
+        _this2.on(eventName + '.developerMode', echo.bind(_this2, eventName));
       });
     }
   }, {
@@ -3450,7 +4738,7 @@ var Chart = function () {
       var suppressNotify = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
       var suppressUpdate = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 
-      this.__notify('updatingBounds');
+      this.__notify(UPDATING_BOUNDS);
 
       // Margin Convention and calculate drawing area size
       this.margin = this.opts.margin;
@@ -3474,7 +4762,7 @@ var Chart = function () {
 
       var notify = function notify() {
         if (_this3._constructed) {
-          _this3.__notify('updatedBounds');
+          _this3.__notify(UPDATED_BOUNDS);
         }
       };
       var update = function update() {
@@ -3510,7 +4798,7 @@ var Chart = function () {
   }, {
     key: 'destroy',
     value: function destroy() {
-      this.__notify('destroying');
+      this.__notify(DESTROYING);
 
       if (this._resizeHandler) {
         global$1.resizeWatch.remove(this._resizeHandler);
@@ -3525,7 +4813,7 @@ var Chart = function () {
         this.bound.remove();
       }
 
-      this.__notify('destroyed');
+      this.__notify(DESTROYED);
     }
   }, {
     key: '_destroy',
@@ -3660,32 +4948,63 @@ var Chart = function () {
   }, {
     key: 'option',
     value: function option(key, value) {
-      var updateBounds = false;
+      var current = get$1(this.opts, key);
 
       if (value === UNDEF) {
-        return get$1(this.opts, key);
+        return current;
+      }
+
+      if (this._optsSet) {
+        this.__notify(OPTION_CHANGING, key);
       }
 
       set$1(this.opts, key, value);
 
-      // Margins cause changes to the internal sizes.
-      if (key === 'margin') {
-        if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) !== 'object') {
-          this.opts.margin = { top: value, left: value, right: value, bottom: value };
+      var updateBounds = this.__handleMarginOptions(key, value, current);
+      if (this._optsSet) {
+        // Margins affect the drawing area size so various updates are required.
+        if (updateBounds) {
+          this._updateBounds();
         }
 
-        updateBounds = true;
-      } else if (/^margin\./.test(key)) {
-        // Check if key is a 'deep' margin value (ex. 'margin.left')
-        updateBounds = true;
-      }
-
-      // Margins affect the drawing area size so various updates are required.
-      if (this._optsSet && updateBounds) {
-        this._updateBounds();
+        this.__notify(OPTION_CHANGED, key);
       }
 
       return this;
+    }
+
+    /**
+     * Provides extra checks for margin related options and checks if they should modify the bounds
+     * calculations of the chart.
+     */
+
+  }, {
+    key: '__handleMarginOptions',
+    value: function __handleMarginOptions(key, value, current) {
+      var updateBounds = false;
+
+      // Margins cause changes to the internal sizes.
+      // If the new margin values match the old margin values do not update bounds. This will help
+      // prevent an infinite loop if the margin is adjusted in the update cycle.
+      if (key === 'margin') {
+        if (!isObject$2(value)) {
+          var newVal = { top: value, left: value, right: value, bottom: value };
+
+          if (!isEqual(current, newVal)) {
+            this.opts.margin = newVal;
+            updateBounds = true;
+          }
+        } else if (!isEqual(current, value)) {
+          updateBounds = true;
+        }
+      }
+
+      // Check if key is a 'deep' margin value (ex. 'margin.left')
+      else if (/^margin\./.test(key) && current !== value) {
+          updateBounds = true;
+        }
+
+      return updateBounds;
     }
 
     /**
@@ -3698,7 +5017,7 @@ var Chart = function () {
      *
      * For example:
      *  `.attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.fillScale, d, i, nodes))`
-     * is equvilient to
+     * is equivalent to
      *  `.attr('fill', this.optionReaderFunc('fillScale')')`
      */
 
@@ -3741,7 +5060,7 @@ var Chart = function () {
 
         return isFunc(value) ? value.call.apply(value, [this].concat(args)) : value;
       } catch (e) {
-        this.__notify('suppressedError', e);
+        this.__notify(SUPPRESSED_ERROR, e);
         return null;
       }
     }
@@ -3819,7 +5138,7 @@ var Chart = function () {
   }, {
     key: 'clear',
     value: function clear() {
-      this.__notify('clearing');
+      this.__notify(CLEARING);
 
       this.displayData = null;
       this._clearDataElements();
@@ -3828,7 +5147,7 @@ var Chart = function () {
         this.resetCssDomains();
       }
 
-      this.__notify('cleared');
+      this.__notify(CLEARED);
       return this;
     }
 
@@ -3849,11 +5168,10 @@ var Chart = function () {
   }, {
     key: 'resetCssDomains',
     value: function resetCssDomains() {
-      this.__notify('cssDomainsReseting');
-
+      this.__notify(CSS_DOMAINS_RESETTING);
       this._resetCssDomains();
+      this.__notify(CSS_DOMAINS_RESET);
 
-      this.__notify('cssDomainsReset');
       return this;
     }
 
@@ -3890,11 +5208,64 @@ var Chart = function () {
         }
       });
 
-      return cssClasses.join(' ');
+      return cssClasses.join(' ').replace(/\s+/, ' ');
+    }
+
+    // Apply the transition settings (duration, delay, and ease). Attempt to match specfic settings
+    // based on the provided levels.
+    //
+    // For example given the levels `['line', 'update']` the transition settings will first be read:
+    // * `transitionSettings.line.update.<property>` then
+    // * `transitionSettings.update.<property>` then
+    // * `transitionSettings.<property>` then
+    // * `<propertDefaultValue>`
+
+  }, {
+    key: '_transitionSetup',
+    value: function _transitionSetup() {
+      var _this6 = this;
+
+      for (var _len8 = arguments.length, levels = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
+        levels[_key8] = arguments[_key8];
+      }
+
+      return function (transition) {
+        var transitionSettings = _this6.tryInvoke(_this6.opts.transition);
+        var duration = getDepthFirst(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
+        var delay = getDepthFirst(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
+        var ease = getDepthFirst(transitionSettings, levels, 'ease', TRANSITION_EASE);
+
+        transition.duration(duration).delay(delay).ease(ease);
+      };
+    }
+
+    /**
+     * Get / set the attribute of the bounding element.
+     *
+     * A convenience method that is roughly equivalent to `<chart>.bound.attr(<name>, <value>)`,
+     * but returns the chart instead of the `<chart>.bound` selection.
+     *
+     * @Chainable
+     */
+
+  }, {
+    key: 'attr',
+    value: function attr(name, value) {
+      if (value === UNDEF) {
+        // return this attib
+        return this.bound.attr(name);
+      }
+
+      this.bound.attr(name, value);
+
+      return this;
     }
 
     /**
      * Set the CSS classes on the SVG element.
+     *
+     * A convenience method that is roughly equivalent to `<chart>.bound.classed(<names>, <value>)`,
+     * but returns the chart instead of the `<chart>.bound` selection.
      *
      * @Chainable
      */
@@ -3918,8 +5289,8 @@ var Chart = function () {
   }, {
     key: 'call',
     value: function call(f) {
-      for (var _len8 = arguments.length, args = Array(_len8 > 1 ? _len8 - 1 : 0), _key8 = 1; _key8 < _len8; _key8++) {
-        args[_key8 - 1] = arguments[_key8];
+      for (var _len9 = arguments.length, args = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
+        args[_key9 - 1] = arguments[_key9];
       }
 
       f.call.apply(f, [this].concat(args));
@@ -3968,10 +5339,31 @@ var Chart = function () {
 
       return this;
     }
+
+    /**
+     * Internal method to manage assignment of data.
+     */
+
   }, {
     key: '_data',
     value: function _data(data) {
       this.displayData = data;
+    }
+
+    /**
+     * Gets the original data if the chart modified the structure; otherwise returns the same as
+     * `<chart>.data()`;
+     */
+
+  }, {
+    key: 'getRawData',
+    value: function getRawData() {
+      // TODO: When assigning data make sure new data is a deep copy.
+      if (this.rawData) {
+        return this.rawData;
+      }
+
+      return this.displayData;
     }
 
     /**
@@ -3983,8 +5375,8 @@ var Chart = function () {
   }, {
     key: 'addExt',
     value: function addExt() {
-      for (var _len9 = arguments.length, exts = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
-        exts[_key9] = arguments[_key9];
+      for (var _len10 = arguments.length, exts = Array(_len10), _key10 = 0; _key10 < _len10; _key10++) {
+        exts[_key10] = arguments[_key10];
       }
 
       this._bindExt(exts);
@@ -3999,14 +5391,14 @@ var Chart = function () {
   }, {
     key: '_bindExt',
     value: function _bindExt(exts) {
-      var _this6 = this;
+      var _this7 = this;
 
       exts.forEach(function (ext) {
         if (ext.opts.binding) {
-          ext.setChart(_this6);
-          _this6.extensions.push(ext);
+          ext.setChart(_this7);
+          _this7.extensions.push(ext);
         } else {
-          _this6.__notify('suppressedError', 'Extensions must have the `binding` option specified.');
+          _this7.__notify(SUPPRESSED_ERROR, 'Extensions must have the `binding` option specified.');
         }
       });
     }
@@ -4018,13 +5410,13 @@ var Chart = function () {
   }, {
     key: '__updateExt',
     value: function __updateExt(bindingName) {
-      for (var _len10 = arguments.length, extArgs = Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
-        extArgs[_key10 - 1] = arguments[_key10];
+      for (var _len11 = arguments.length, extArgs = Array(_len11 > 1 ? _len11 - 1 : 0), _key11 = 1; _key11 < _len11; _key11++) {
+        extArgs[_key11 - 1] = arguments[_key11];
       }
 
       this.extensions.forEach(function (ext) {
         if (ext.opts.binding.indexOf(bindingName) > -1) {
-          ext.update.apply(ext, [bindingName].concat(extArgs));
+          ext.fire.apply(ext, [bindingName].concat(extArgs));
         }
       });
     }
@@ -4063,20 +5455,15 @@ var Chart = function () {
         return;
       } // Don't allow update if data has not been set.
       if (!this.hasRendered) {
-        this.__notify('rendering');
+        this.__notify(RENDERING);
         this._render();
-      }
-
-      this.__notify('updating');
-      this._update();
-
-      // Notify if first rendered
-      if (!this.hasRendered) {
         this.hasRendered = true;
-        this.__notify('rendered');
+        this.__notify(RENDERED);
       }
 
-      this.__notify('updated');
+      this.__notify(UPDATING);
+      this._update();
+      this.__notify(UPDATED);
 
       return this;
     }
@@ -4129,8 +5516,8 @@ var Chart = function () {
     value: function __notify(eventName) {
       var _dispatch;
 
-      for (var _len11 = arguments.length, args = Array(_len11 > 1 ? _len11 - 1 : 0), _key11 = 1; _key11 < _len11; _key11++) {
-        args[_key11 - 1] = arguments[_key11];
+      for (var _len12 = arguments.length, args = Array(_len12 > 1 ? _len12 - 1 : 0), _key12 = 1; _key12 < _len12; _key12++) {
+        args[_key12 - 1] = arguments[_key12];
       }
 
       this.__updateExt.apply(this, [eventName].concat(args));
@@ -4170,8 +5557,8 @@ var Chart = function () {
   }], [{
     key: 'createInstanceGroup',
     value: function createInstanceGroup(charts) {
-      for (var _len12 = arguments.length, additionalMethodsToProxy = Array(_len12 > 1 ? _len12 - 1 : 0), _key12 = 1; _key12 < _len12; _key12++) {
-        additionalMethodsToProxy[_key12 - 1] = arguments[_key12];
+      for (var _len13 = arguments.length, additionalMethodsToProxy = Array(_len13 > 1 ? _len13 - 1 : 0), _key13 = 1; _key13 < _len13; _key13++) {
+        additionalMethodsToProxy[_key13 - 1] = arguments[_key13];
       }
 
       return new InstanceGroup(charts, GROUP_PROXY_METHODS, additionalMethodsToProxy);
@@ -4181,6 +5568,10 @@ var Chart = function () {
 }();
 
 var GROUP_PROXY_METHODS = ['addExt', 'addLayer', 'boundingRect', 'call', 'checkSize', 'classed', 'clear', 'data', 'emit', 'layerUseClipPath', 'on', 'option', 'replaceScale', 'resetCssDomains', 'update', 'updateData'];
+
+var EVENT_AXIS_RENDERED = 'axisRendered';
+var EVENT_AXIS_RENDERING = 'axisRendering';
+var EVENTS = [EVENT_AXIS_RENDERED, EVENT_AXIS_RENDERING];
 
 var AXES_CHART_DEFAULTS = {
   // The axes X and Y are generally assumed. In some cases it may be desirable to add an additional
@@ -4292,8 +5683,7 @@ var AxesChart = function (_Chart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, ['axisRendered' // Axis events
-      ]));
+      (_babelHelpers$get2 = get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, EVENTS));
     }
   }, {
     key: '_initCore',
@@ -4425,6 +5815,8 @@ var AxesChart = function (_Chart) {
       }
 
       var isSuppressArray = isArray$2(suppressAxes);
+      var action = this.hasRendered ? UPDATE : ENTER;
+      var t = this.bound.transition().call(this._transitionSetup('axis', action));
 
       // (Re)render axes
       this.forEachAxisScale(function (scaleName) {
@@ -4432,8 +5824,10 @@ var AxesChart = function (_Chart) {
           return;
         }
 
-        _this8.support.select('.' + scaleName + '-axis').transition().duration(_this8.opts.transitionDuration).ease(_this8.opts.ease).call(_this8[scaleName + 'Axis']).call(_this8._setLabel.bind(_this8, scaleName)).call(function (t) {
-          return _this8.emit('axisRendered', t);
+        _this8.support.select('.' + scaleName + '-axis').transition(t).on('start', function () {
+          return _this8.emit(EVENT_AXIS_RENDERING);
+        }).call(_this8[scaleName + 'Axis']).call(_this8._setLabel.bind(_this8, scaleName)).call(function (t) {
+          return _this8.emit(EVENT_AXIS_RENDERED, t);
         });
       });
     }
@@ -4484,6 +5878,8 @@ var AxesChart = function (_Chart) {
   }]);
   return AxesChart;
 }(Chart);
+
+AxesChart.EVENTS = EVENTS;
 
 var GROUP_PROXY_METHODS$1 = ['forEachAxisScale', 'renderAxes', 'replaceScale', 'updateAxesDomains', 'updateAxesRanges', 'updateAxesTransforms'];
 
@@ -4545,8 +5941,9 @@ var PolarChart = function (_Chart) {
   }], [{
     key: 'getCoord',
     value: function getCoord(radius, angle) {
-      // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment. We repeat that here for
-      // coordinate consistency.
+      // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment to account for the starting
+      // angle differences between SVG (top) vs traditional polar coordinates (right). The adjustment
+      // is repeated here for coordinate consistency.
       var a = angle - HALF_PI;
       return [Math.cos(a) * radius, Math.sin(a) * radius];
     }
@@ -4778,12 +6175,12 @@ var LineChart = function (_AxesChart) {
       lineGrps.enter().append('g').attr('class', 'monte-line-grp').append('path').call(this.__bindCommonEvents('line')).merge(lineGrps.select('.monte-line')) // Update existing lines and set values on new lines.
       .attr('class', function (d, i) {
         return _this4._buildCss(['monte-line', _this4.opts.lineCss, _this4.opts.lineCssScale, d.css], d, i);
-      }).transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('d', function (d) {
+      }).transition().call(this._transitionSetup('line', UPDATE)).attr('d', function (d) {
         return _this4.line(d[_this4.opts.valuesProp]);
       }).attr('stroke', this.opts.lineStrokeScale);
 
       // Fade out removed lines.
-      lineGrps.exit().transition().duration(this.opts.transitionDuration).style('opacity', 0).remove();
+      lineGrps.exit().transition().call(this._transitionSetup('line', EXIT)).style('opacity', 0).remove();
 
       // Here the order is important. Merging the line groups when only an update occurs results in an
       // empty selection if the command was lineGrps.enter().selectAll('.grp-line').merge(lineGrps);
@@ -4813,15 +6210,15 @@ var LineChart = function (_AxesChart) {
       .attr('transform', function (d) {
         return 'translate(' + _this5.getScaledProp('x', d) + ', ' + _this5.getScaledProp('y', d) + ')';
       }).attr('class', function (d) {
-        return _this5._buildCss(['monte-point', lineDatum.css, _this5.opts.lineCssScale, _this5.opts.pointCss, _this5.opts.pointCssScale, d.css], lineDatum.id, lineIndex);
+        return _this5._buildCss(['monte-point', lineDatum.css, _this5.opts.lineCssScale, _this5.opts.pointCss, _this5.opts.pointCssScale, d.css], lineDatum, lineIndex);
       });
 
-      points.transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('fill', this.opts.pointFillScale).attr('stroke', this.opts.pointStrokeScale).attr('transform', function (d) {
+      points.transition().call(this._transitionSetup('point', UPDATE)).attr('fill', this.opts.pointFillScale).attr('stroke', this.opts.pointStrokeScale).attr('transform', function (d) {
         return 'translate(' + _this5.getScaledProp('x', d) + ', ' + _this5.getScaledProp('y', d) + ')';
       }).attr('d', genSym);
 
       // Fade out removed points.
-      points.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0).remove();
+      points.exit().transition().call(this._transitionSetup('point', EXIT)).style('opacity', 0).remove();
     }
   }]);
   return LineChart;
@@ -4999,12 +6396,12 @@ var AreaChart = function (_LineChart) {
         return _this4._buildCss(['monte-area', lineDatum.css, _this4.opts.lineCssScale, _this4.opts.areaCss, _this4.opts.areaCssScale, d.css], lineDatum, lineIndex);
       });
 
-      allAreas.transition().duration(this.tryInvoke(this.opts.transitionDuration, UPDATE)).ease(this.opts.ease).attr('d', function (d) {
+      allAreas.transition().call(this._transitionSetup(UPDATE)).attr('d', function (d) {
         return _this4.area(_this4.getProp('values', d));
       }).attr('fill', this.optionReaderFunc('areaFillScale'));
 
       // Fade out removed points.
-      area.exit().transition(this.tryInvoke(this.opts.transitionDuration, EXIT)).duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0).remove();
+      area.exit().transition().call(this._transitionSetup(EXIT)).style('opacity', 0).remove();
     }
   }]);
   return AreaChart;
@@ -5051,6 +6448,8 @@ var SparklineChart = function (_LineChart) {
     value: function _data(data) {
       var _babelHelpers$get2;
 
+      this.rawData = data;
+
       for (var _len2 = arguments.length, tail = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
         tail[_key2 - 1] = arguments[_key2];
       }
@@ -5080,6 +6479,18 @@ var BAR_CHART_DEFAULTS = {
 
   // Static CSS class(es) to apply to every line.
   barCss: 'bar',
+  barGrpCss: function barGrpCss(d) {
+    var value = this.getProp('x', d);
+    var css = 'monte-bar-zero';
+
+    if (value > 0) {
+      css = 'monte-bar-pos';
+    } else if (value < 0) {
+      css = 'monte-bar-neg';
+    }
+
+    return css;
+  },
 
   xProp: 'id',
   yProp: 'value',
@@ -5092,6 +6503,7 @@ var BAR_CHART_DEFAULTS = {
 
   includeLabels: false,
 
+  // TODO: Adopt label placement like arc charts?
   labelProp: 'value',
   labelFillScale: noop,
   label: function label(d) {
@@ -5101,9 +6513,15 @@ var BAR_CHART_DEFAULTS = {
   labelX: function labelX(d) {
     return this._barX(d) + this.x.bandwidth() / 2;
   },
-  labelYAdjust: '-0.05em',
+  labelYAdjust: function labelYAdjust(d) {
+    var value = this.getProp('y', d);
+
+    return value > 0 ? '-0.05em' : '1.05em';
+  },
   labelY: function labelY(d) {
-    return this._barY(d);
+    var value = this.getProp('y', d);
+
+    return value > 0 ? this._barY(d) : this._barY(d) + this._barHeight(d);
   }
 };
 
@@ -5196,10 +6614,12 @@ var BarChart = function (_AxesChart) {
       var barWidth = this._barWidth.bind(this);
       var barHeight = this._barHeight.bind(this);
 
-      barGrps.enter().append('g').attr('class', 'monte-bar-grp').append('rect').attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight).call(this.__bindCommonEvents('bar')).merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
+      barGrps.enter().append('g').attr('class', function (d, i) {
+        return _this4._buildCss(['monte-bar-grp', _this4.opts.barGrpCss], d, i);
+      }).append('rect').attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight).call(this.__bindCommonEvents('bar')).merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
       .attr('class', function (d, i) {
         return _this4._buildCss([_this4.opts.barCss, _this4.opts.barCssScale, d.css], d, i);
-      }).transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('fill', function (d, i, nodes) {
+      }).transition().call(this._transitionSetup(ENTER)).attr('fill', function (d, i, nodes) {
         return _this4.tryInvoke(_this4.opts.barFillScaleAccessor, d, i, nodes);
       });
       // .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScale, d, i, nodes));
@@ -5207,10 +6627,10 @@ var BarChart = function (_AxesChart) {
       // TODO: Begin adoption `optionReaderFunc`
       // i.e.: .attr('fill', this.optionReaderFunc('barFillScale'));
 
-      barGrps.select('rect').transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight);
+      barGrps.select('rect').transition().call(this._transitionSetup(UPDATE)).attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight);
 
       // Fade out removed lines.
-      barGrps.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0).remove();
+      barGrps.exit().transition().call(this._transitionSetup(EXIT)).style('opacity', 0).remove();
 
       // Here the order is important. Merging the line groups when only an update occurs results in an
       // empty selection if the command was lineGrps.enter().selectAll('.grp-line').merge(lineGrps);
@@ -5252,11 +6672,18 @@ var BarChart = function (_AxesChart) {
   }, {
     key: '_barY',
     value: function _barY(d) {
-      return this.getScaledProp('y', d);
+      var value = this.getProp('y', d);
+
+      return value < 0 ? this.y(0) : this.getScaledProp('y', d);
     }
   }, {
     key: '_barHeight',
     value: function _barHeight(d) {
+      if (this.y.domain()[0] < 0) {
+        // extent includes negative values
+        return Math.abs(this.height - this.getScaledProp('y', d) - this.y(0));
+      }
+
       return this.height - this.getScaledProp('y', d);
     }
   }]);
@@ -5285,7 +6712,9 @@ var HBAR_CHART_DEFAULTS = {
   yDomainCustomize: null,
 
   labelX: function labelX(d) {
-    return this._barWidth(d);
+    var value = this.getProp('x', d);
+
+    return value > 0 ? this._barWidth(d) + this._barX(d) : this._barX(d);
   },
   labelXAdjust: '',
   labelY: function labelY(d) {
@@ -5334,13 +6763,15 @@ var HorizontalBarChart = function (_BarChart) {
     }
   }, {
     key: '_barX',
-    value: function _barX() {
-      return 0;
+    value: function _barX(d) {
+      var value = this.getProp('x', d);
+
+      return value > 0 ? this.x(0) : this.x(0) - this._barWidth(d);
     }
   }, {
     key: '_barWidth',
     value: function _barWidth(d) {
-      return this.getScaledProp('x', d);
+      return Math.abs(this.getScaledProp('x', d) - this.x(0));
     }
   }, {
     key: '_barY',
@@ -5407,6 +6838,8 @@ var SimpleBarChart = function (_BarChart) {
         datum.css = 'monte-simple-bar-value';
       }
 
+      this.rawData = data;
+
       for (var _len2 = arguments.length, tail = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
         tail[_key2 - 1] = arguments[_key2];
       }
@@ -5468,6 +6901,8 @@ var HorizontalSimpleBarChart = function (_HorizontalBarChart) {
         datum.css = 'monte-simple-hort-bar-value';
       }
 
+      this.rawData = data;
+
       for (var _len2 = arguments.length, tail = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
         tail[_key2 - 1] = arguments[_key2];
       }
@@ -5478,10 +6913,18 @@ var HorizontalSimpleBarChart = function (_HorizontalBarChart) {
   return HorizontalSimpleBarChart;
 }(HorizontalBarChart);
 
+var _SEGMENT_BAR_MODE_CSS;
+
 var SEGMENT_BAR_MODE = {
   GROUPED: 'grouped',
   STACKED: 'stacked'
 };
+
+var SEGMENT_BAR_MODE_CSS_MAP = (_SEGMENT_BAR_MODE_CSS = {}, defineProperty(_SEGMENT_BAR_MODE_CSS, SEGMENT_BAR_MODE.GROUPED, 'monte-segment-mode-grouped'), defineProperty(_SEGMENT_BAR_MODE_CSS, SEGMENT_BAR_MODE.STACKED, 'monte-segment-mode-stacked'), _SEGMENT_BAR_MODE_CSS);
+
+var EVENT_MODE_CHANGING = 'modeChanging';
+var EVENT_MODE_CHANGED = 'modeChanged';
+var EVENTS$1 = [EVENT_MODE_CHANGING, EVENT_MODE_CHANGED];
 
 var SEGMENT_BAR_CHART_DEFAULTS = {
   chartCss: 'monte-segment-bar-chart',
@@ -5576,7 +7019,7 @@ var SegmentBarChart = function (_AxesChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('bargrp')), toConsumableArray(commonEventNames('barseg'))));
+      (_babelHelpers$get2 = get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('bargrp')), toConsumableArray(commonEventNames('barseg')), EVENTS$1));
     }
   }, {
     key: '_initCore',
@@ -5661,9 +7104,11 @@ var SegmentBarChart = function (_AxesChart) {
     key: 'setMode',
     value: function setMode(mode) {
       this.option('segmentBarMode', mode);
+      this.emit(EVENT_MODE_CHANGING);
       this.updateAxesDomains();
       this.renderAxes();
       this.update();
+      this.emit(EVENT_MODE_CHANGED);
     }
   }, {
     key: 'updateAxesRanges',
@@ -5704,6 +7149,14 @@ var SegmentBarChart = function (_AxesChart) {
       this._updateYInnerDomain();
       this._updateYInnerRange();
     }
+  }, {
+    key: '_render',
+    value: function _render() {
+      var mode = this.tryInvoke(this.opts.segmentBarMode);
+      var classToAdd = SEGMENT_BAR_MODE_CSS_MAP[mode];
+
+      this.classed(classToAdd, true);
+    }
 
     // Render the vis.
 
@@ -5713,8 +7166,12 @@ var SegmentBarChart = function (_AxesChart) {
       var _this5 = this;
 
       var mode = this.tryInvoke(this.opts.segmentBarMode);
+      var classesToRemove = nonMatchingMapValues(SEGMENT_BAR_MODE_CSS_MAP, mode);
+      var classToAdd = SEGMENT_BAR_MODE_CSS_MAP[mode];
       var barGrps = void 0,
           transition = void 0;
+
+      this.classed(classToAdd, true);
 
       if (mode === SEGMENT_BAR_MODE.STACKED) {
         var _updateStackedBars2 = this._updateStackedBars();
@@ -5734,10 +7191,18 @@ var SegmentBarChart = function (_AxesChart) {
         if (barGrps.size()) {
           this._updateLabels(barGrps, transition);
         } else {
-          transition.on('end', function () {
-            _this5._updateLabels(_this5.draw.selectAll('.monte-segment-bar-grp'), d3.transition());
+          transition.on('end.labels', function () {
+            _this5._updateLabels(_this5.draw.selectAll('.monte-segment-bar-grp'), transition);
           });
         }
+      }
+
+      if (transition) {
+        transition.on('end.classes', function () {
+          classesToRemove.forEach(function (classToRemove) {
+            return _this5.classed(classToRemove, false);
+          });
+        });
       }
     }
   }, {
@@ -5766,11 +7231,9 @@ var SegmentBarChart = function (_AxesChart) {
       var _this6 = this;
 
       var translate = this._barGroupTranslate.bind(this);
-      var barGrps = this.draw.selectAll('.monte-segment-bar-grp').data(this.displayData, function (d, i) {
-        return d.id || i;
-      });
+      var barGrps = this.draw.selectAll('.monte-segment-bar-grp').data(this.displayData);
 
-      var trans = d3.transition().duration(this.opts.transitionDuration).delay(this.opts.delay).ease(this.opts.ease);
+      var trans = this.draw.transition().call(this._transitionSetup('bars', UPDATE));
 
       barGrps.enter().append('g').attr('class', 'monte-segment-bar-grp').call(this.__bindCommonEvents('bargrp')).merge(barGrps).attr('transform', function (d) {
         return 'translate(' + translate(d) + ')';
@@ -5784,7 +7247,7 @@ var SegmentBarChart = function (_AxesChart) {
         }).transition(trans).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
       });
 
-      barGrps.exit().remove();
+      barGrps.exit().transition().call(this._transitionSetup(EXIT)).remove();
 
       return {
         barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp')),
@@ -5827,7 +7290,7 @@ var SegmentBarChart = function (_AxesChart) {
         return _this8.tryInvoke(_this8.opts.labelYAdjust, d1, i, nodes);
       });
 
-      lbl.exit().remove();
+      lbl.exit().transition().call(this._transitionSetup(EXIT)).remove();
     }
   }, {
     key: '_barProp',
@@ -5914,7 +7377,26 @@ var SegmentBarChart = function (_AxesChart) {
   return SegmentBarChart;
 }(AxesChart);
 
+SegmentBarChart.EVENTS = EVENTS$1;
+
 var GROUP_PROXY_METHODS$2 = ['setMode', 'updateAxesRanges'];
+
+/**
+ * Get the values of all the keys that don't match
+ */
+function nonMatchingMapValues(map, keyToExclude) {
+  var values = [];
+
+  for (var key in map) {
+    if (map.hasOwnProperty(key)) {
+      if (key !== keyToExclude) {
+        values.push(map[key]);
+      }
+    }
+  }
+
+  return values;
+}
 
 // import { commonEventNames } from '../../tools/commonEventNames';
 // import { resetScaleDomain } from '../../tools/resetScaleDomain';
@@ -6155,6 +7637,7 @@ var SCATTER_PLOT_DEFAULTS = {
     return symbol.type(d3.symbolCircle);
   },
 
+  // TODO: Transition to events
   pointEnterStart: noop,
   pointEnterEnd: noop,
   pointExitStart: noop,
@@ -6233,7 +7716,7 @@ var ScatterPlot = function (_AxesChart) {
       var _this2 = this;
 
       // Data join for the points
-      var points = this.draw.selectAll('.monte-point').data(this.displayData); // , (d, i) => d.id || i);
+      var points = this.draw.selectAll('.monte-point').data(this.displayData);
 
       // Create new points
       points.enter().append('path').call(this.__bindCommonEvents('point')).merge(points) // Update existing points and set values on new points.
@@ -6241,18 +7724,18 @@ var ScatterPlot = function (_AxesChart) {
         var symbase = d3.symbol().size(_this2.opts.pointSize);
         var symbol = _this2.opts.pointSymbol(symbase, d, i);
         return symbol(d, i);
-      }).attr('fill', function (d, i) {
+      }).attr('class', function (d, i) {
+        return _this2._buildCss(['monte-point', _this2.opts.pointCss, _this2.opts.pointCssScale, d.css], d, i);
+      }).transition().call(this._transitionSetup('point', UPDATE)).call(this.opts.pointEnterStart).attr('fill', function (d, i) {
         return _this2.opts.pointFillScale(d.id || i);
       }).attr('stroke', function (d, i) {
         return _this2.opts.pointStrokeScale(d.id || i);
-      }).attr('class', function (d, i) {
-        return _this2._buildCss(['monte-point', _this2.opts.pointCss, _this2.opts.pointCssScale, d.css], d, i);
-      }).transition().duration(this.opts.transitionDuration).ease(this.opts.ease).call(this.opts.pointEnterStart).attr('transform', function (d) {
+      }).attr('transform', function (d) {
         return 'translate(' + _this2.getScaledProp('x', d) + ', ' + _this2.getScaledProp('y', d) + ')';
       }).call(this.opts.pointEnterEnd);
 
       // Fade out removed points.
-      points.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).call(this.opts.pointExitStart).style('opacity', 0).call(this.opts.pointExitEnd).remove();
+      points.exit().transition().call(this._transitionSetup('point', EXIT)).call(this.opts.pointExitStart).style('opacity', 0).call(this.opts.pointExitEnd).remove();
 
       return points.merge(points.enter().selectAll('.point'));
     }
@@ -6425,7 +7908,7 @@ var IconArray = function (_AxesChart) {
       modeMap[this.opts.iconMode].call(this, icons, this.opts.iconMode);
 
       // Fade out removed icons.
-      icons.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0).remove();
+      icons.exit().transition().call(this._transitionSetup('icon', EXIT)).style('opacity', 0).remove();
     }
   }, {
     key: '_updateD3Symbol',
@@ -6472,7 +7955,7 @@ var IconArray = function (_AxesChart) {
         return transform.call(_this5, d, i, nodes);
       }).attr('class', function (d, i) {
         return _this5._buildCss(['monte-icon', _this5.opts.iconCss, _this5.opts.iconCssScale, d.css], d, i);
-      }).transition().duration(this.opts.transitionDuration).ease(this.opts.ease).attr('fill', this.opts.iconFillScale).attr('stroke', this.opts.iconStrokeScale);
+      }).transition().call(this._transitionSetup('icon', UPDATE)).attr('fill', this.opts.iconFillScale).attr('stroke', this.opts.iconStrokeScale);
 
       return t;
     }
@@ -6500,12 +7983,71 @@ function iconTransformShift(d, i, nodes) {
   return 'translate(' + (x - xShift) + ', ' + (y - yShift) + ')';
 }
 
+var polarLabelCssPrefix = 'monte-polar-label-';
+
+var LABEL_PLACEMENT = {
+  CENTROID: {
+    css: polarLabelCssPrefix + 'centroid',
+    radius: function radius(w, h) {
+      var innerRadius = this.tryInvoke(this.opts.innerRadius, w, h);
+      var outerRadius = this.tryInvoke(this.opts.outerRadius, w, h);
+      return innerRadius + (outerRadius - innerRadius) * 0.5;
+    }
+  },
+
+  INNER: {
+    css: polarLabelCssPrefix + 'inner',
+    radius: function radius(w, h) {
+      var innerRadius = this.tryInvoke(this.opts.innerRadius, w, h);
+      return innerRadius * 0.9;
+    }
+  },
+
+  OUTER: {
+    css: polarLabelCssPrefix + 'outer',
+    radius: function radius(w, h) {
+      var outerRadius = this.tryInvoke(this.opts.outerRadius, w, h);
+      return outerRadius * 1.1;
+    }
+  }
+};
+
+function polarLabelCentroid() {
+  return LABEL_PLACEMENT.CENTROID;
+}
+
+function polarLabelInner() {
+  return LABEL_PLACEMENT.INNER;
+}
+
 function arcSimpleTween(arc, from, to) {
   var i = d3.interpolate(from, to);
 
   return function (t) {
     return arc(i(t));
   };
+}
+
+function classedPattern(selection, pattern, value) {
+  var node = selection.node();
+  var classAttr = node.getAttribute('class');
+  var classList = classAttr.trim().split(/^|\s+/);
+
+  var re = void 0;
+
+  if (typeof pattern === 'string') {
+    re = new RegExp(pattern);
+  } else if (pattern instanceof RegExp) {
+    re = pattern;
+  } else {
+    throw MonteError.InvalidArgumentType('classedPattern', 'pattern', 'String or RegExp', pattern);
+  }
+
+  classList.forEach(function (c) {
+    if (re.test(c)) {
+      selection.classed(c, value);
+    }
+  });
 }
 
 // Constrain to smallest draw-area dimension
@@ -6515,6 +8057,13 @@ function radiusContrain(width, height) {
 
   return wr < hr ? wr : hr;
 }
+
+var LABEL_CSS_PATTERN = new RegExp('^' + polarLabelCssPrefix + '*');
+
+var EVENT_UPDATING_LABELS = 'updatingLabels';
+var EVENT_UPDATED_LABELS = 'updatedLabels';
+
+var EVENTS$2 = [EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS];
 
 var ARC_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart',
@@ -6547,7 +8096,21 @@ var ARC_CHART_DEFAULTS = {
   itemValueProp: 'value',
   pieStartAngle: 0,
   pieEndAngle: TAU,
-  piePadAngle: 0.02
+  piePadAngle: 0.02,
+
+  includeLabels: false,
+  labelPlacement: polarLabelCentroid,
+  labelAngle: function labelAngle(d) {
+    return d.startAngle + (d.endAngle - d.startAngle) / 2;
+  },
+
+  labelProp: 'value',
+  labelFillScale: noop,
+  label: function label(d) {
+    return this.getProp('label', d.data);
+  },
+  labelXAdjust: '',
+  labelYAdjust: '0.35em'
 };
 
 var ArcChart = function (_PolarChart) {
@@ -6603,7 +8166,7 @@ var ArcChart = function (_PolarChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('wedge'))));
+      (_babelHelpers$get2 = get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('wedge')), EVENTS$2));
     }
   }, {
     key: '_updateBounds',
@@ -6619,10 +8182,21 @@ var ArcChart = function (_PolarChart) {
       get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_data', this).call(this, data);
     }
   }, {
+    key: '_render',
+    value: function _render() {
+      if (!this.hasRendered) {
+        get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_render', this).call(this);
+        this._updateBackground();
+      }
+    }
+  }, {
     key: '_update',
     value: function _update() {
       this._updateArcs();
-      this._updateBackground();
+
+      if (this.opts.includeLabels) {
+        this._updateLabels();
+      }
     }
   }, {
     key: '_updateArcs',
@@ -6634,7 +8208,7 @@ var ArcChart = function (_PolarChart) {
 
       arcs.enter().append('g').attr('class', 'monte-arc ' + this.opts.arcCss).append('path').attr('class', function (d, i) {
         return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScale, d.data.css], d, i);
-      }).call(this.__bindCommonEvents('wedge')).transition().delay(this.opts.transitionDuration).duration(this.opts.transitionDuration).ease(this.opts.ease).attrTween('d', function (d) {
+      }).call(this.__bindCommonEvents('wedge')).transition().call(this._transitionSetup('arc', ENTER)).attrTween('d', function (d) {
         var start = _this3.tryInvoke(_this3.opts.arcWedgeEnter, d);
         return arcSimpleTween(arc, start, d);
       }).attr('fill', function (d, i) {
@@ -6652,13 +8226,13 @@ var ArcChart = function (_PolarChart) {
         delete nd.prev; // Remove old records to prevent building a history tree.
       }).attr('class', function (d, i) {
         return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScale, d.data.css], d, i);
-      }).transition().delay(this.opts.transitionDuration).duration(this.opts.transitionDuration).ease(this.opts.ease).attrTween('d', function (d) {
+      }).transition().call(this._transitionSetup('arc', UPDATE)).attrTween('d', function (d) {
         return arcSimpleTween(arc, d.prev, d);
       }).attr('fill', function (d, i) {
         return _this3.opts.arcWedgeFillScale(d.id || i);
       });
 
-      arcs.exit().transition().duration(this.opts.transitionDuration).ease(this.opts.ease).style('opacity', 0.01).remove();
+      arcs.exit().transition().call(this._transitionSetup('arc', EXIT)).style('opacity', 0.01).remove();
     }
   }, {
     key: '_updateBackground',
@@ -6674,19 +8248,56 @@ var ArcChart = function (_PolarChart) {
         endAngle: this.opts.pieEndAngle,
         value: pieSum
       });
-      var wedge = this.bg.selectAll('.monte-wedge-bg').data([bgArc]);
+      var wedge = this.bg.selectAll('.monte-arc-bg').data([bgArc]);
 
       wedge.enter().append('path').merge(wedge).attr('d', function (d) {
         return d;
       }).attr('fill', function () {
         return _this4.opts.arcBgWedgeFillScale();
-      }).attr('class', function () {
-        return ['monte-wedge-bg', _this4.opts.arcBgWedgeCssScale()].join(' ');
+      }).attr('class', function (d, i) {
+        return _this4._buildCss(['monte-arc-bg', _this4.opts.arcBgWedgeCssScale], d, i);
       });
+    }
+  }, {
+    key: '_updateLabels',
+    value: function _updateLabels() {
+      var _this5 = this;
+
+      var labels = this.draw.selectAll('.monte-arc-label').data(this.pieDisplayData);
+      var labelPlacement = this.tryInvoke(this.opts.labelPlacement);
+      var labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
+      var css = this.tryInvoke(labelPlacement.css);
+
+      // Clear old label CSS from chart and add new.
+      classedPattern(this.bound, LABEL_CSS_PATTERN, false);
+      this.classed(css, true);
+
+      this.emit(EVENT_UPDATING_LABELS);
+
+      labels.enter().append('text').attr('class', 'monte-arc-label').merge(labels).transition().call(this._transitionSetup('label', UPDATE)).attr('dx', function (d, i, nodes) {
+        return _this5.tryInvoke(_this5.opts.labelXAdjust, d, i, nodes);
+      }).attr('dy', function (d, i, nodes) {
+        return _this5.tryInvoke(_this5.opts.labelYAdjust, d, i, nodes);
+      }).attr('transform', function (d, i, nodes) {
+        // TODO: Update to use `attrTween` and follow arc movement instead of direct translation.
+        //       Stop the label drift through the
+        var angle = _this5.tryInvoke(_this5.opts.labelAngle, d, i, nodes);
+        var coord = ArcChart.getCoord(labelRadius, angle);
+
+        return 'translate(' + coord + ')';
+      }).text(function (d) {
+        return _this5.getProp('label', d.data);
+      });
+
+      labels.exit().transition().call(this._transitionSetup('label', EXIT)).remove();
+
+      this.emit(EVENT_UPDATED_LABELS);
     }
   }]);
   return ArcChart;
 }(PolarChart);
+
+ArcChart.EVENTS = EVENTS$2;
 
 function needleRoundedEnd() /* options */{
   return function needleRoundedEndDyn(needleHeight, needleBaseWidth) {
@@ -6770,6 +8381,13 @@ function needleRect(options) {
 //   }
 // }
 
+var EVENT_UPDATING_BACKGROUND_ARC = 'updatingBackgroundArc';
+var EVENT_UPDATED_BACKGROUND_ARC = 'updatedBackgroundArc';
+var EVENT_UPDATING_NEEDLE = 'updatingNeedle';
+var EVENT_UPDATED_NEEDLE = 'updatedNeedle';
+
+var EVENTS$3 = [EVENT_UPDATING_BACKGROUND_ARC, EVENT_UPDATED_BACKGROUND_ARC, EVENT_UPDATING_NEEDLE, EVENT_UPDATED_NEEDLE];
+
 var GAUGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-gauge-chart',
   piePadAngle: 0,
@@ -6788,15 +8406,21 @@ var GAUGE_CHART_DEFAULTS = {
   innerRadius: function innerRadius(w, h) {
     return radiusContrain(w, h) * 0.9;
   },
-  labelRadius: function labelRadius(w, h) {
-    return radiusContrain(w, h) * 0.8;
-  },
+  labelPlacement: polarLabelInner,
 
   segmentsProp: 'segments',
   itemValueProp: 'interval',
   startValueProp: 'start',
+  startLabelProp: 'startLabel',
   needleValueProp: 'value',
-  segmentLabelProp: 'label'
+  labelProp: 'label',
+  labelAngle: function labelAngle(d) {
+    return d.endAngle;
+  },
+  suppressLabels: false,
+  includeLabels: function includeLabels() {
+    return !this.tryInvoke(this.opts.suppressLabels);
+  }
 };
 
 var GaugeChart = function (_ArcChart) {
@@ -6845,8 +8469,7 @@ var GaugeChart = function (_ArcChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, ['updateNeedle', 'updateBackgroundArc', 'updateLabels' // Gauge events
-      ]));
+      (_babelHelpers$get2 = get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, EVENTS$3));
     }
   }, {
     key: '_getLayerTranslate',
@@ -6859,10 +8482,21 @@ var GaugeChart = function (_ArcChart) {
   }, {
     key: '_data',
     value: function _data(data) {
+      this.rawData = data;
+
       var segmentsProp = this.tryInvoke(this.opts.segmentsProp);
       var startProp = this.tryInvoke(this.opts.startValueProp);
+      var startLabelProp = this.tryInvoke(this.opts.startLabelProp);
       var itemValueProp = this.tryInvoke(this.opts.itemValueProp);
       var needleValueProp = this.tryInvoke(this.opts.needleValueProp);
+
+      // Insert starting label item
+      if (startLabelProp) {
+        data[segmentsProp].unshift({
+          interval: 0,
+          label: data[startLabelProp]
+        });
+      }
 
       get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_data', this).call(this, data[segmentsProp]);
       var intervalSum = this.displayData.reduce(function (acc, d) {
@@ -6878,7 +8512,7 @@ var GaugeChart = function (_ArcChart) {
     value: function needleValue(value) {
       var suppressUpdate = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 
-      if (value === undefined) {
+      if (value === UNDEF) {
         return this.needleValueData;
       }
 
@@ -6894,19 +8528,26 @@ var GaugeChart = function (_ArcChart) {
     }
   }, {
     key: 'needleValueAngle',
-    value: function needleValueAngle() {
-      // TODO: Add support for directly setting the angle? (Use scale's `invert()`?)
+    value: function needleValueAngle(angle) {
+      if (angle === UNDEF) {
+        return this.needleValueAngleData;
+      }
 
-      return this.needleValueAngleData;
+      this.needleValue(this.angleScale.invert(angle));
+      return this;
+    }
+  }, {
+    key: '_render',
+    value: function _render() {
+      if (!this.hasRendered) {
+        this._updateBackgroundArc();
+      }
     }
   }, {
     key: '_update',
     value: function _update() {
       get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_update', this).call(this);
 
-      if (!this.hasRendered) {
-        this._updateBackgroundArc();
-      }
       this._updateLabels();
       this._updateNeedle();
     }
@@ -6915,32 +8556,18 @@ var GaugeChart = function (_ArcChart) {
     value: function _updateBackgroundArc() {
       var _this2 = this;
 
+      this.emit(EVENT_UPDATING_BACKGROUND_ARC);
+
       this.bg.append('path').attr('fill', this.opts.arcBgFillScale).attr('class', function (d, i) {
         return _this2._buildCss(['monte-gauge-bg', _this2.opts.arcBgCssScale], d, i);
       }).attr('d', this.bgArc());
 
-      this.emit('updateBackgroundArc');
-    }
-  }, {
-    key: '_updateLabels',
-    value: function _updateLabels() {
-      var _this3 = this;
-
-      var labels = this.support.selectAll('.monte-gauge-label').data(this.pieDisplayData);
-      var labelRadius = this.tryInvoke(this.opts.labelRadius, this.width, this.height);
-
-      labels.enter().append('text').attr('class', 'monte-gauge-label').attr('text-anchor', 'middle').attr('dy', '0.35em').merge(labels).attr('transform', function (d) {
-        return 'translate(' + GaugeChart.getCoord(labelRadius, d.endAngle) + ')';
-      }).text(function (d) {
-        return d.data[_this3.opts.segmentLabelProp];
-      });
-
-      this.emit('updateLabels');
+      this.emit(EVENT_UPDATED_BACKGROUND_ARC);
     }
   }, {
     key: '_updateNeedle',
     value: function _updateNeedle() {
-      var _this4 = this;
+      var _this3 = this;
 
       var baseWidth = this.tryInvoke(this.opts.needleBase);
       var or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
@@ -6950,12 +8577,14 @@ var GaugeChart = function (_ArcChart) {
 
       var needle = this.overlay.selectAll('.monte-gauge-needle').data([this.needleValueAngleData || 0]);
 
-      needle.enter().append('path').attr('class', 'monte-gauge-needle').attr('d', path).style('transform', function (d) {
+      this.emit(EVENT_UPDATING_NEEDLE);
+
+      needle.enter().append('path').attr('class', 'monte-gauge-needle').attr('d', path).transition().call(this._transitionSetup('needle', ENTER)).style('transform', function (d) {
         return 'rotate(' + d + 'rad)';
       });
 
-      needle.transition().duration(this.opts.transitionDuration).ease(this.opts.ease).styleTween('transform', function (d) {
-        var a = _this4._prevNeedleAngleValueData;
+      needle.transition().call(this._transitionSetup('needle', UPDATE)).styleTween('transform', function (d) {
+        var a = _this3._prevNeedleAngleValueData;
         var b = d;
 
         return function (t) {
@@ -6964,7 +8593,9 @@ var GaugeChart = function (_ArcChart) {
         };
       });
 
-      this.emit('updateNeedle');
+      needle.exit().transition().call(this._transitionSetup('needle', EXIT)).remove();
+
+      this.emit(EVENT_UPDATED_NEEDLE);
     }
   }], [{
     key: 'createInstanceGroup',
@@ -6982,9 +8613,9 @@ var GaugeChart = function (_ArcChart) {
   return GaugeChart;
 }(ArcChart);
 
-var GROUP_PROXY_METHODS$3 = ['needleValue'];
+GaugeChart.EVENTS = EVENTS$3;
 
-// import { noop } from '../tools/noop';
+var GROUP_PROXY_METHODS$3 = ['needleValue'];
 
 var WEDGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-wedge-chart',
@@ -7036,6 +8667,7 @@ var WedgeChart = function (_ArcChart) {
       var _ref, _ref2, _babelHelpers$get2;
 
       this.wedgeValueData = data;
+      this.rawData = data;
       var itemValueProp = this.tryInvoke(this.opts.itemValueProp);
 
       // Data is expected to be a single value between 0 & 100.
@@ -7050,7 +8682,7 @@ var WedgeChart = function (_ArcChart) {
   }, {
     key: 'wedgeValue',
     value: function wedgeValue(value) {
-      if (value === undefined) {
+      if (value === UNDEF) {
         return this.wedgeValueData;
       }
 
@@ -7104,13 +8736,16 @@ var index = Object.freeze({
 	UPDATED_BOUNDS: UPDATED_BOUNDS,
 	CLEARING: CLEARING,
 	CLEARED: CLEARED,
-	CSS_DOMAINS_RESETING: CSS_DOMAINS_RESETING,
-	CSS_DOMAINS_RESET: CSS_DOMAINS_RESET,
 	DESTROYING: DESTROYING,
 	DESTROYED: DESTROYED,
+	OPTION_CHANGING: OPTION_CHANGING,
+	OPTION_CHANGED: OPTION_CHANGED,
+	CSS_DOMAINS_RESETTING: CSS_DOMAINS_RESETTING,
+	CSS_DOMAINS_RESET: CSS_DOMAINS_RESET,
 	INTERACTION_EVENTS: INTERACTION_EVENTS,
 	CHART_SUPPORT_EVENTS: CHART_SUPPORT_EVENTS,
 	CHART_LIFECYCLE_EVENTS: CHART_LIFECYCLE_EVENTS,
+	EXTENSION_LIFECYCLE_EVENTS: EXTENSION_LIFECYCLE_EVENTS,
 	ACTION_ADD: ACTION_ADD,
 	ACTION_REMOVE: ACTION_REMOVE,
 	ACTION_CSS_OVER: ACTION_CSS_OVER,
@@ -7119,18 +8754,25 @@ var index = Object.freeze({
 	UNDEF: UNDEF
 });
 
+function pascalCase(str) {
+  return upperFirst(camelCase(str));
+}
+
 var DEFAULTS$2 = {
   // The layer for drawing operations
   layer: 'bg',
 
   // The chart events to listen for.
-  binding: ['rendered', 'updatedBounds'],
+  binding: [DESTROYING, RENDERED, UPDATED_BOUNDS],
 
   // Flag for global updates for any option change.
   // Subclasses can override `_shouldOptionUpdate` for nuanced behavior.
   optionsTriggerUpdate: false,
 
-  eventPrefix: null
+  // Special prefix for all events originating *from* the extension.
+  eventPrefix: null,
+
+  customEvents: []
 };
 
 var Extension = function () {
@@ -7139,6 +8781,8 @@ var Extension = function () {
 
     // Configure the data options.
     this._initOptions(options);
+
+    this._initPublicEvents.apply(this, toConsumableArray(EXTENSION_LIFECYCLE_EVENTS).concat(toConsumableArray(this.opts.customEvents)));
   }
 
   createClass(Extension, [{
@@ -7153,23 +8797,47 @@ var Extension = function () {
       if (!this.opts.eventPrefix) {
         throw MonteOptionError.RequiredOption('eventPrefix');
       }
+
+      // Always require the "destroying" event to ensure extension clean up.
+      if (this.opts.binding.indexOf(DESTROYING) === -1) {
+        this.opts.binding.push(DESTROYING);
+      }
     }
+  }, {
+    key: '_initPublicEvents',
+    value: function _initPublicEvents() {
+      for (var _len2 = arguments.length, events = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        events[_key2] = arguments[_key2];
+      }
+
+      this._events = events;
+    }
+
+    /**
+     * Associate a chart instance with the extension. The chart instance will be acted upon by the
+     * extension instance.
+     *
+     * @Chainable
+     */
+
   }, {
     key: 'setChart',
     value: function setChart(chart) {
       this.chart = chart;
       this.layer = chart[this.opts.layer];
+
+      return this;
     }
   }, {
     key: 'option',
     value: function option(prop, value) {
-      if (value === undefined) {
+      if (value === UNDEF) {
         return this.opts[prop];
       }
 
       this.opts[prop] = value;
       if (this._shouldOptionUpdate(prop) && this.cachedChart) {
-        this.update('optionChanged', this.cachedChart);
+        this.fire(OPTION_CHANGED, prop);
       }
 
       return this;
@@ -7179,43 +8847,137 @@ var Extension = function () {
 
   }, {
     key: '_shouldOptionUpdate',
-    value: function _shouldOptionUpdate() {
+    value: function _shouldOptionUpdate(prop) {
+      // eslint-disable-line no-unused-vars
       return this.opts.optionsTriggerUpdate;
     }
+
+    /**
+     * Binds an event to a given `callback`. If no `callback` is provided it returns the callback.
+     *
+     * @Chainable <setter>
+     */
+
   }, {
-    key: 'emit',
-    value: function emit(eventName) {
+    key: 'on',
+    value: function on(typenames, callback) {
+      if (!this.dispatch) {
+        var _d;
+
+        // Lazy construct the dispatcher.
+        this.dispatch = (_d = d3).dispatch.apply(_d, toConsumableArray(this.events));
+      }
+
+      if (callback) {
+        this.dispatch.on(typenames, callback);
+        return this;
+      }
+
+      return this.dispatch.on(typenames);
+    }
+
+    /**
+     * Force the triggering of an event with the given arguments. The event is notified through the
+     * extension's dispatcher and the parent chart's dispatcher. The `on` callbacks are invoked in
+     * the context of the extension for the extension's dispatcher and in the context of the chart
+     * for the chart's dispatcher.
+     *
+     * Uses:
+     *  + Trigger event for listeners as needed such as force an extension to update.
+     *
+     * @Chainable
+     */
+
+  }, {
+    key: '__notify',
+    value: function __notify(eventName) {
       var _chart;
 
-      for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-        args[_key2 - 1] = arguments[_key2];
+      for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+        args[_key3 - 1] = arguments[_key3];
+      }
+
+      if (this.dispatch) {
+        var _dispatch;
+
+        (_dispatch = this.dispatch).call.apply(_dispatch, [eventName, this].concat(args));
       }
 
       (_chart = this.chart).emit.apply(_chart, ['extension', this.opts.eventPrefix + ':' + eventName, this].concat(args));
     }
+
+    /**
+     * Remove the data elements.
+     *
+     * @Chainable
+     */
+
+  }, {
+    key: 'clear',
+    value: function clear() {
+      this.__notify(CLEARING);
+      this._clearDataElements();
+      this.__notify(CLEARED);
+
+      return this;
+    }
+
+    /**
+     * Invokes a lifecycle event ('destroying', 'updatedBounds', 'rendered', 'optionChanged') with
+     * all other events resulting in an 'updated' event and invoking the update-cycle.
+     *
+     * The 'updatedBounds' and 'rendered' chart events result in update-cycle invocation if the
+     * extension does not override the event-bound methods (`_updateBounds`, `_render`).
+     *
+     * The 'optionChanged' extension event results in `_option<>`
+     */
+
+  }, {
+    key: 'fire',
+    value: function fire(event) {
+      try {
+        for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+          args[_key4 - 1] = arguments[_key4];
+        }
+
+        switch (event) {
+          case DESTROYING:
+            this.destroy();
+            break;
+
+          case UPDATED_BOUNDS:
+            this.updateBounds.apply(this, args);
+            break;
+
+          case RENDERED:
+            this.render.apply(this, args);
+            break;
+
+          case OPTION_CHANGED:
+            this._optionChanged.apply(this, args);
+            break;
+
+          default:
+            this.update.apply(this, args);
+        }
+      } catch (e) {
+        if (console && console.error) {
+          console.error(e);
+        } // eslint-disable-line no-console
+        this.chart.__notify(SUPPRESSED_ERROR, e, e.stack || 'No stack available.');
+      }
+    }
+
+    /**
+     * Invoke the extension update-cycle.
+     */
+
   }, {
     key: 'update',
     value: function update() {
-      // Cache chart for use on option update.
-      var event = arguments.length <= 0 ? undefined : arguments[0];
-
-      if (!this.layer) {
-        this.layer = this.chart[this.opts.layer];
-      }
-
-      try {
-        if (event === 'destroy') {
-          this._destroy();
-        } else {
-          this._update.apply(this, arguments);
-          this.emit('updated');
-        }
-      } catch (e) {
-        if (console && console.log) {
-          console.log(e);
-        } // eslint-disable-line no-console
-        this.chart.emit('suppressedError', e, e.stack || 'No stack available.');
-      }
+      this.__notify(UPDATING);
+      this._update.apply(this, arguments);
+      this.__notify(UPDATED);
     }
   }, {
     key: '_update',
@@ -7224,14 +8986,68 @@ var Extension = function () {
       throw MonteError.UnimplementedMethod('Update', '_update');
     }
 
+    /**
+     * Invoke `_render` if defined; otherwise invoke the extension update-cycle.
+     */
+
+  }, {
+    key: 'render',
+    value: function render() {
+      if (this._render) {
+        this.__notify(RENDERING);
+        this._render.apply(this, arguments);
+        this.__notify(RENDERED);
+      } else {
+        this.update.apply(this, arguments);
+      }
+    }
+
+    /**
+     * Invoke `_updateBounds` if defined; otherwise invoke the extension update-cycle.
+     */
+
+  }, {
+    key: 'updateBounds',
+    value: function updateBounds() {
+      if (this._updateBounds) {
+        this.__notify(UPDATING_BOUNDS);
+        this._updateBounds.apply(this, arguments);
+        this.__notify(UPDATED_BOUNDS);
+      } else {
+        this.update.apply(this, arguments);
+      }
+    }
+
+    /**
+     * Invoke the method related directly to the option (`_option<OptionName>`) if defined; otherwise
+     * invoke the extension update-cycle.
+     */
+
+  }, {
+    key: '_optionChanged',
+    value: function _optionChanged() {
+      var prop = arguments.length <= 0 ? undefined : arguments[0];
+      var optionMethodName = '_option' + pascalCase(prop);
+
+      this.__notify(OPTION_CHANGING, prop);
+
+      if (this[optionMethodName]) {
+        this[optionMethodName]();
+      } else {
+        this.update.apply(this, arguments);
+      }
+
+      this.__notify(OPTION_CHANGED, prop);
+    }
+
     // Access an option that may need to be invoked as a function or that may be a literal value.
 
   }, {
     key: 'tryInvoke',
     value: function tryInvoke(value) {
       try {
-        for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
-          args[_key3 - 1] = arguments[_key3];
+        for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+          args[_key5 - 1] = arguments[_key5];
         }
 
         return isFunc(value) ? value.call.apply(value, [this].concat(args)) : value;
@@ -7263,17 +9079,31 @@ var Extension = function () {
 
   }, {
     key: '_buildCss',
-    value: function _buildCss(cssSources, d, i) {
+    value: function _buildCss(cssSources, d, i, nodes) {
       var _this = this;
 
       var cssClasses = [];
       var sources = Array.isArray(cssSources) ? cssSources : [cssSources];
 
       sources.forEach(function (source) {
-        cssClasses.push(_this.tryInvoke(source, d.id || i));
+        if (isDefined(source)) {
+          cssClasses.push(_this.tryInvoke(source, d, i, nodes));
+        }
       });
 
       return cssClasses.join(' ');
+    }
+
+    /**
+     * Invoke `_destroy`.
+     */
+
+  }, {
+    key: 'destroy',
+    value: function destroy() {
+      this.__notify(DESTROYING);
+      this._destroy();
+      this.__notify(DESTROYED);
     }
 
     // Clean up if necessary.
@@ -7443,7 +9273,7 @@ var GRID_DEFAULTS = {
     'y': 'h-line'
   },
   lineCss: 'monte-ext-grid-line',
-  binding: ['axisRendered'],
+  binding: new ReplacePreceding(['axisRendered']),
   x1Adjust: 0,
   x2Adjust: 0,
   y1Adjust: 0,
@@ -7482,7 +9312,6 @@ var Grid = function (_Extension) {
         var css = _this2.getCss(scaleName);
         var scale = axesChart[scaleName];
         var axis = axesChart[scaleName + 'Axis'];
-        // const axisGrp = axesChart.support.select(`.${scaleName}-axis`);
         var orient = scaleName[0] === 'x' ? VERTICAL : HORIZONTAL; // Draw vertical lines for X, and horziontal for Y
 
         if (css && scale && axis) {
@@ -7508,25 +9337,23 @@ var Grid = function (_Extension) {
       var x2 = this.tryInvoke(this.opts.x2Adjust);
       var y1 = this.tryInvoke(this.opts.y1Adjust);
       var y2 = this.tryInvoke(this.opts.y2Adjust);
-      var duration = this.tryInvoke(this.chart.opts.transitionDuration);
-      var ease = this.chart.opts.ease;
 
       if (cfg.orient === HORIZONTAL) {
-        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition().duration(duration).ease(ease).attr('x1', 0 + x1).attr('y1', AXIS_SHIFT + y1).attr('x2', cfg.axesChart.width + x2).attr('y2', AXIS_SHIFT + y2).attr('transform', function (d) {
+        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition(axisTransition).attr('x1', 0 + x1).attr('y1', AXIS_SHIFT + y1).attr('x2', cfg.axesChart.width + x2).attr('y2', AXIS_SHIFT + y2).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
         });
 
-        ticks.transition(axisTransition).duration(duration).ease(ease).attr('x2', function () {
+        ticks.transition(axisTransition).attr('x2', function () {
           return cfg.axesChart.width + x2;
         }).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
         });
       } else if (cfg.orient === VERTICAL) {
-        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition().duration(duration).ease(ease).attr('x1', AXIS_SHIFT + x1).attr('y1', 0 + y1).attr('x2', AXIS_SHIFT + x2).attr('y2', cfg.axesChart.height + y2).attr('transform', function (d) {
+        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition(axisTransition).attr('x1', AXIS_SHIFT + x1).attr('y1', 0 + y1).attr('x2', AXIS_SHIFT + x2).attr('y2', cfg.axesChart.height + y2).attr('transform', function (d) {
           return 'translate(' + cfg.scale(d) + ', 0)';
         });
 
-        ticks.transition(axisTransition).duration(duration).ease(ease).attr('y2', function () {
+        ticks.transition(axisTransition).attr('y2', function () {
           return cfg.axesChart.height + y2;
         }).attr('transform', function (d) {
           return 'translate(' + cfg.scale(d) + ', 0)';
@@ -7543,7 +9370,7 @@ var Grid = function (_Extension) {
           var hasPrefix = scaleName.substr(0, prefix.length) === prefix;
 
           if (hasPrefix) {
-            return this.opts.prefixCssMap[prefix];
+            return this.tryInvoke(this.opts.prefixCssMap[prefix]);
           }
         }
       }
@@ -7655,14 +9482,20 @@ var POLAR_GRID_DEFAULTS = {
   eventPrefix: 'polargrid',
   startAngle: 0,
   endAngle: TAU,
-  ringRadii: [100],
-  ringCss: 'monte-ext-polar-ring',
-  ringSpecificCss: null,
-  ringSort: function ringSort(a, b) {
+  arcRadii: [100],
+  arcCss: 'monte-ext-polar-grid-arc',
+  arcSpecificCss: null,
+  arcSort: function arcSort(a, b) {
     return b - a;
-  }
+  },
+  arcDepth: 0,
+  cornerRadius: 0
 };
 
+/**
+ * Creates a set of concentric arcs with the given `arcRadii` that start and end at `startAngle` and
+ * `endAngle` respectively.
+ */
 var PolarGrid = function (_Extension) {
   inherits(PolarGrid, _Extension);
 
@@ -7681,16 +9514,35 @@ var PolarGrid = function (_Extension) {
       }
 
       (_babelHelpers$get = get(PolarGrid.prototype.__proto__ || Object.getPrototypeOf(PolarGrid.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_GRID_DEFAULTS]));
+
+      var arcDepth = this.tryInvoke(this.opts.arcDepth);
+      this.arc = d3.arc().innerRadius(function (d) {
+        return d.radius;
+      }).outerRadius(function (d) {
+        return d.radius + arcDepth;
+      }).cornerRadius(this.tryInvoke(this.opts.cornerRadius));
     }
   }, {
     key: '_update',
     value: function _update() {
-      var data = this.opts.ringRadii.sort(this.opts.ringSort);
-      var rings = this.layer.selectAll('.' + this.opts.ringCss).data(data);
+      var _this2 = this;
 
-      // TODO: Change from using SVG circles to using arcs.
-      rings.enter().append('circle').merge(rings).attr('class', this.opts.ringCss).attr('r', function (d) {
-        return d;
+      var radii = this.tryInvoke(this.opts.arcRadii);
+      var data = radii.sort(this.opts.arcSort);
+      var arcs = this.layer.selectAll('.' + this.opts.arcCss).data(data);
+      var startAngle = this.tryInvoke(this.opts.startAngle);
+      var endAngle = this.tryInvoke(this.opts.endAngle);
+      var arcAngles = isDefined(startAngle) && isDefined(endAngle) ? {
+        startAngle: startAngle,
+        endAngle: endAngle
+      } : {
+        startAngle: isDefined(startAngle) ? startAngle : endAngle,
+        endAngle: isDefined(startAngle) ? startAngle : endAngle
+      };
+
+      arcs.enter().append('path').merge(arcs).attr('class', this.tryInvoke(this.opts.arcCss)).attr('d', function (d) {
+        arcAngles.radius = d;
+        return _this2.arc(arcAngles);
       });
     }
   }]);
@@ -7706,6 +9558,10 @@ var POLAR_LINE_DEFAULTS = {
   outerRadius: 100
 };
 
+/**
+ * Draws a line oriented from the origin outward. The line begins at the `innerRadius` and ends at
+ * the `outerRadius`.
+ */
 var PolarLine = function (_Extension) {
   inherits(PolarLine, _Extension);
 
@@ -7787,6 +9643,7 @@ var PolarTicks$1 = function () {
 
     this.opts = mergeOptions.apply(undefined, options.concat([POLAR_TICKS_DEFAULTS$1]));
 
+    // TODO: Rework to use `getCoord` from `PolarChart`?
     this.innerArc = d3.arc().innerRadius(this.opts.innerRadius).outerRadius(this.opts.innerRadius);
     this.outerArc = d3.arc().innerRadius(this.opts.outerRadius).outerRadius(this.opts.outerRadius);
   }
@@ -8055,7 +9912,7 @@ var REF_LINE_DEFAULTS = {
 };
 
 // Strategies for placing labels.
-var LABEL_PLACEMENT = {
+var LABEL_PLACEMENT$1 = {
   'nw': function nw(text, c) {
     text.attr('dy', '-0.35em').attr('x', c.x1).attr('y', c.y1);
   },
@@ -8157,7 +10014,7 @@ var ReferenceLine = function (_Extension) {
     value: function _placeLabel(d, i, nodes) {
       var text = d3.select(nodes[i]);
       var labelPlacement = this.tryInvoke(this.opts.labelPlacement, d, i, nodes);
-      var placement = LABEL_PLACEMENT[labelPlacement];
+      var placement = LABEL_PLACEMENT$1[labelPlacement];
       var coords = {
         x1: this.getProp('x1', d),
         x2: this.getProp('x2', d),
@@ -8217,7 +10074,9 @@ var index$1 = Object.freeze({
 	isNumeric: isNumeric,
 	isObject: isObject$2,
 	compose: compose,
+	getDepthFirst: getDepthFirst,
 	mergeOptions: mergeOptions,
+	ReplacePreceding: ReplacePreceding,
 	noop: noop,
 	readTransforms: readTransforms,
 	resetScaleDomain: resetScaleDomain

@@ -11,7 +11,7 @@ const DEFAULTS = {
   layer: 'bg',
 
   // The chart events to listen for.
-  binding: [EV.RENDERED, EV.UPDATED_BOUNDS],
+  binding: [EV.DESTROYING, EV.RENDERED, EV.UPDATED_BOUNDS],
 
   // Flag for global updates for any option change.
   // Subclasses can override `_shouldOptionUpdate` for nuanced behavior.
@@ -41,12 +41,23 @@ export class Extension {
     if (!this.opts.eventPrefix) {
       throw MonteOptionError.RequiredOption('eventPrefix');
     }
+
+    // Always require the "destroying" event to ensure extension clean up.
+    if (this.opts.binding.indexOf(EV.DESTROYING) === -1) {
+      this.opts.binding.push(EV.DESTROYING);
+    }
   }
 
   _initPublicEvents(...events) {
     this._events = events;
   }
 
+  /**
+   * Associate a chart instance with the extension. The chart instance will be acted upon by the
+   * extension instance.
+   *
+   * @Chainable
+   */
   setChart(chart) {
     this.chart = chart;
     this.layer = chart[this.opts.layer];
@@ -122,12 +133,16 @@ export class Extension {
     return this;
   }
 
-  fire(...args) {
-    // Cache chart for use on option update.
-    const event = args[0];
-
-    if (!this.layer) { this.layer = this.chart[this.opts.layer]; }
-
+  /**
+   * Invokes a lifecycle event ('destroying', 'updatedBounds', 'rendered', 'optionChanged') with
+   * all other events resulting in an 'updated' event and invoking the update-cycle.
+   *
+   * The 'updatedBounds' and 'rendered' chart events result in update-cycle invocation if the
+   * extension does not override the event-bound methods (`_updateBounds`, `_render`).
+   *
+   * The 'optionChanged' extension event results in `_option<>`
+   */
+  fire(event, ...args) {
     try {
       switch (event) {
       case EV.DESTROYING:
@@ -143,7 +158,7 @@ export class Extension {
         break;
 
       case EV.OPTION_CHANGED:
-        this._optionChanged(...args.slice(1));
+        this._optionChanged(...args);
         break;
 
       default:
@@ -156,6 +171,9 @@ export class Extension {
     }
   }
 
+  /**
+   * Invoke the extension update-cycle.
+   */
   update(...args) {
     this.__notify(EV.UPDATING);
     this._update(...args);
@@ -166,6 +184,9 @@ export class Extension {
     throw MonteError.UnimplementedMethod('Update', '_update');
   }
 
+  /**
+   * Invoke `_render` if defined; otherwise invoke the extension update-cycle.
+   */
   render(...args) {
     if (this._render) {
       this.__notify(EV.RENDERING);
@@ -177,6 +198,9 @@ export class Extension {
     }
   }
 
+  /**
+   * Invoke `_updateBounds` if defined; otherwise invoke the extension update-cycle.
+   */
   updateBounds(...args) {
     if (this._updateBounds) {
       this.__notify(EV.UPDATING_BOUNDS);
@@ -188,6 +212,10 @@ export class Extension {
     }
   }
 
+  /**
+   * Invoke the method related directly to the option (`_option<OptionName>`) if defined; otherwise
+   * invoke the extension update-cycle.
+   */
   _optionChanged(...args) {
     const prop = args[0];
     const optionMethodName = `_option${pascalCase(prop)}`;
@@ -242,6 +270,9 @@ export class Extension {
     return cssClasses.join(' ');
   }
 
+  /**
+   * Invoke `_destroy`.
+   */
   destroy() {
     this.__notify(EV.DESTROYING);
     this._destroy();
