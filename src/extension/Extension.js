@@ -60,7 +60,9 @@ export class Extension {
    */
   setChart(chart) {
     this.chart = chart;
-    this.layer = chart[this.opts.layer];
+
+    const layerName = this.tryInvoke(this.opts.layer);
+    if (layerName) { this.layer = this.chart[layerName]; }
 
     return this;
   }
@@ -143,6 +145,10 @@ export class Extension {
    * The 'optionChanged' extension event results in `_option<>`
    */
   fire(event, ...args) {
+    if (!this.chart) {
+      throw new MonteError('A chart must be associated with the extension prior to use.');
+    }
+
     try {
       switch (event) {
       case EV.DESTROYING:

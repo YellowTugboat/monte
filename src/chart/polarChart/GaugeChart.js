@@ -135,6 +135,7 @@ export class GaugeChart extends ArcChart {
 
   _render() {
     if (!this.hasRendered) {
+      super._render();
       this._updateBackgroundArc();
     }
   }

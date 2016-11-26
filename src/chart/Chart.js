@@ -100,9 +100,6 @@ export class Chart {
     // Put chart in developer mode if opted into on a chart or global basis
     if (this.opts.developerMode || global.developerMode) { this._initDeveloperMode(); }
 
-    // Bind initial extensions to this chart instance.
-    this._bindExt(this.opts.extensions);
-
     // Setup the core infastructure.
     this._initCore();
 
@@ -111,6 +108,9 @@ export class Chart {
 
     // Update the bounding box and layout basics.
     this._updateBounds();
+
+    // Bind initial extensions to this chart instance.
+    this._bindExt(this.opts.extensions);
 
     // Do the various setup rendering (Axis, BG, etc...)
     this._initRender();

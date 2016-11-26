@@ -1,11 +1,11 @@
-// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha19 Copyright 2016 Yellow Tugboat
+// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha20 Copyright 2016 Yellow Tugboat
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha19";
+var version = "0.0.0-alpha20";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -4572,9 +4572,6 @@ var Chart = function () {
       this._initDeveloperMode();
     }
 
-    // Bind initial extensions to this chart instance.
-    this._bindExt(this.opts.extensions);
-
     // Setup the core infastructure.
     this._initCore();
 
@@ -4583,6 +4580,9 @@ var Chart = function () {
 
     // Update the bounding box and layout basics.
     this._updateBounds();
+
+    // Bind initial extensions to this chart instance.
+    this._bindExt(this.opts.extensions);
 
     // Do the various setup rendering (Axis, BG, etc...)
     this._initRender();
@@ -8540,6 +8540,7 @@ var GaugeChart = function (_ArcChart) {
     key: '_render',
     value: function _render() {
       if (!this.hasRendered) {
+        get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_render', this).call(this);
         this._updateBackgroundArc();
       }
     }
@@ -8824,7 +8825,11 @@ var Extension = function () {
     key: 'setChart',
     value: function setChart(chart) {
       this.chart = chart;
-      this.layer = chart[this.opts.layer];
+
+      var layerName = this.tryInvoke(this.opts.layer);
+      if (layerName) {
+        this.layer = this.chart[layerName];
+      }
 
       return this;
     }
@@ -8935,6 +8940,10 @@ var Extension = function () {
   }, {
     key: 'fire',
     value: function fire(event) {
+      if (!this.chart) {
+        throw new MonteError('A chart must be associated with the extension prior to use.');
+      }
+
       try {
         for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
           args[_key4 - 1] = arguments[_key4];
