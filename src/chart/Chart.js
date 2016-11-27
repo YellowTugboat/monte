@@ -2,16 +2,14 @@ import * as EV from '../const/events';
 import { TRANSITION_DELAY_MS, TRANSITION_DURATION_MS, TRANSITION_EASE } from '../const/d3';
 import { get as _get, set as _set, isEqual } from '../external/lodash';
 import { isArray, isDefined, isFunc, isObject } from '../tools/is';
-import { EventWatcher } from '../support/EventWatcher';
 import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
 import { UNDEF } from '../const/undef';
 import { getDepthFirst } from '../tools/getDepthFirst';
+import { global } from '../support/MonteGlobal';
 import { mergeOptions } from '../tools/mergeOptions';
 import { noop } from '../tools/noop';
-
-const global = window ? window.MonteGlobals = {} : {};
 
 // TODO: Begin adoption of generic scale accessors. Every scale should be accompained with a property
 //       `<scaleProperty>Accessor` that translates which value to pass to the scale.
@@ -98,7 +96,7 @@ export class Chart {
       ...this.opts.customEvents);
 
     // Put chart in developer mode if opted into on a chart or global basis
-    if (this.opts.developerMode || global.developerMode) { this._initDeveloperMode(); }
+    if (this.opts.developerMode || global.isDeveloperMode()) { this._initDeveloperMode(); }
 
     // Setup the core infastructure.
     this._initCore();
@@ -118,7 +116,7 @@ export class Chart {
     this._constructed = true;
 
     // Trigger a resize if everything is ready.
-    if (this._resizeHandler && global.resizeWatch.documentReady) { this._resizeHandler(); }
+    if (this._resizeHandler && global.getResizeWatcher().documentReady) { this._resizeHandler(); }
 
     // First full draw cycle
     if (data) { this.data(data); }
@@ -178,11 +176,9 @@ export class Chart {
 
     // Bind resize function if given.
     if (this.opts.resize) {
-      if (!global.resizeWatch) { global.resizeWatch = new EventWatcher(); }
-
       const resizer = this.opts.resize;
       this._resizeHandler = resizer.resize.bind(resizer, this);
-      global.resizeWatch.add(this._resizeHandler);
+      global.getResizeWatcher().add(this._resizeHandler);
     }
   }
 
@@ -206,8 +202,8 @@ export class Chart {
 
     // Determine events to watch in developer mode. If `developerMode` is an array use the provided
     // events; otherwise use all registered events.
-    const events = isArray(this.opts.developerMode || global.developerMode) ?
-      (this.opts.developerMode || global.developerMode) :
+    const events = (isArray(this.opts.developerMode) || global.getDeveloperModeEvents()) ?
+      (this.opts.developerMode || global.getDeveloperModeEvents()) :
       this._events;
 
     events.forEach((eventName) => {

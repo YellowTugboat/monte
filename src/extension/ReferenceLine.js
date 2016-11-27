@@ -73,10 +73,12 @@ export class ReferenceLine extends Extension {
       this.lineData = [];
     }
 
-    const lines = this.layer.selectAll(`.${this.opts.css}`).data(this.lineData);
+    const lines = this._extCreateSelection().data(this.lineData);
 
     // Enter
-    const enter = lines.enter().append('g').attr('class', this.opts.css);
+    const enter = lines.enter().append('g')
+      .call(this._setExtAttrs.bind(this))
+      .attr('class', this.opts.css);
     enter.append('text');
     enter.append('line');
 

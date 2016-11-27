@@ -25,9 +25,11 @@ export class PolarLine extends Extension {
   _update() {
     const css = this.tryInvoke(this.opts.lineCss);
     const angle = this.tryInvoke(this.opts.angle);
-    const line = this.layer.selectAll(`.${css}`).data([{ startAngle: angle, endAngle: angle}]);
-    const newLine = line.enter().append('line').attr('class', css);
     const duration = this.tryInvoke(this.chart.opts.transitionDuration);
+    const line = this._extCreateSelection().data([{ startAngle: angle, endAngle: angle}]);
+    const newLine = line.enter().append('line')
+      .call(this._setExtAttrs.bind(this))
+      .attr('class', css);
 
     if (isDefined(angle)) {
       newLine.merge(line)

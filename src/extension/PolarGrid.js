@@ -32,7 +32,7 @@ export class PolarGrid extends Extension {
   _update() {
     const radii = this.tryInvoke(this.opts.arcRadii);
     const data = radii.sort(this.opts.arcSort);
-    const arcs = this.layer.selectAll(`.${this.opts.arcCss}`).data(data);
+    const arcs = this._extCreateSelection().data(data);
     const startAngle = this.tryInvoke(this.opts.startAngle);
     const endAngle = this.tryInvoke(this.opts.endAngle);
     const arcAngles = (isDefined(startAngle) && isDefined(endAngle)) ? {
@@ -44,11 +44,14 @@ export class PolarGrid extends Extension {
     };
 
     arcs.enter().append('path')
+      .call(this._setExtAttrs.bind(this))
       .merge(arcs)
         .attr('class', this.tryInvoke(this.opts.arcCss))
         .attr('d', (d) => {
           arcAngles.radius = d;
           return this.arc(arcAngles);
         });
+
+    arcs.exit().remove();
   }
 }

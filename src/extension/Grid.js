@@ -62,6 +62,7 @@ export class Grid extends Extension {
 
     if (cfg.orient === HORIZONTAL) {
       ticks.enter().append('line')
+        .call(this._setExtAttrs.bind(this))
         .attr('class', fullCss)
         .attr('x1', 0)
         .attr('x2', 0)
@@ -75,11 +76,13 @@ export class Grid extends Extension {
           .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
 
       ticks.transition(axisTransition)
+        .attr('x1', () => 0 + x1)
         .attr('x2', () => cfg.axesChart.width + x2)
         .attr('transform', (d) => 'translate(0,' + cfg.scale(d) + ')');
     }
     else if (cfg.orient === VERTICAL) {
       ticks.enter().append('line')
+        .call(this._setExtAttrs.bind(this))
         .attr('class', fullCss)
         .attr('x1', 0)
         .attr('x2', 0)
@@ -93,6 +96,7 @@ export class Grid extends Extension {
           .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
 
       ticks.transition(axisTransition)
+        .attr('y1', () => 0 + y1)
         .attr('y2', () => cfg.axesChart.height + y2)
         .attr('transform', (d) => 'translate(' + cfg.scale(d) + ', 0)');
     }

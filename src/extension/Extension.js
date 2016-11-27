@@ -3,6 +3,7 @@ import { isDefined, isFunc } from '../tools/is';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
 import { UNDEF } from '../const/undef';
+import { global } from '../support/MonteGlobal';
 import { mergeOptions } from '../tools/mergeOptions';
 import { pascalCase } from '../tools/string';
 
@@ -59,10 +60,18 @@ export class Extension {
    * @Chainable
    */
   setChart(chart) {
+    // Prevent setting chart more than once.
+    if (this.chart && this.chart !== chart) {
+      throw new MonteError('An extension should only have the chart set once.');
+    }
+
     this.chart = chart;
 
     const layerName = this.tryInvoke(this.opts.layer);
     if (layerName) { this.layer = this.chart[layerName]; }
+
+    // Get and store extension ID from MonteGlobal
+    this.__extId = global.getNextExtensionId();
 
     return this;
   }
@@ -133,6 +142,11 @@ export class Extension {
     this.__notify(EV.CLEARED);
 
     return this;
+  }
+
+  _clearDataElements() {
+    // Clear elements based on extension ID.
+    this._extCreateSelection.remove();
   }
 
   /**
@@ -274,6 +288,30 @@ export class Extension {
     });
 
     return cssClasses.join(' ');
+  }
+
+  getExtId() {
+    return this.__extId;
+  }
+
+  _getExtAttr() {
+    return `monte-ext-${this.getExtId()}`; // ID is stored on the element as an attribute.
+  }
+
+  // Sets the extension ID selector ('the ID attribute') on the element.
+  _setExtAttrs(selection) {
+    selection.attr(this._getExtAttr(), '');
+  }
+
+  _extCreateSelection(cssClass) {
+    const extAttr = this._getExtAttr();
+    let selector = `[${extAttr}]`;
+
+    if (cssClass) {
+      selector += `.${cssClass}`;
+    }
+
+    return this.layer.selectAll(selector);
   }
 
   /**

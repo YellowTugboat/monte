@@ -35,10 +35,11 @@ export class Arc extends Extension {
       endAngle: isDefined(startAngle) ? startAngle : endAngle,
     };
 
-    const segment = this.layer.selectAll(`.${css}`).data([arcAngles]);
+    const segment = this._extCreateSelection().data([arcAngles]);
     const duration = this.tryInvoke(this.chart.opts.transitionDuration);
     const ease = this.chart.opts.ease;
     segment.enter().append('path')
+      .call(this._setExtAttrs.bind(this))
       .attr('class', css)
       .attr('d', (d) => this.arc(d));
 

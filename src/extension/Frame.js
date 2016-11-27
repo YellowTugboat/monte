@@ -18,7 +18,7 @@ export class Frame extends Extension {
     return prop === 'edges' || prop === 'alignmentShift';
   }
 
-  clear() {
+  _clearDataElements() {
     // Remove all elements
     const css = this.opts.frameLineCss;
     const edges = this.layer.selectAll(`.${css}`);
@@ -28,7 +28,7 @@ export class Frame extends Extension {
   _update() {
     const chart = this.chart;
     const css = this.opts.frameLineCss;
-    const edges = this.layer.selectAll(`.${css}`).data(this.opts.edges).order();
+    const edges = this._extCreateSelection().data(this.opts.edges).order();
     const shift = this.opts.alignmentShift;
     const coords = {
       top: [[0 + shift, 0 + shift], [chart.width + shift, 0 + shift]],
@@ -38,6 +38,7 @@ export class Frame extends Extension {
     };
 
     edges.enter().append('line')
+        .call(this._setExtAttrs.bind(this))
         .attr('class', css)
         .attr('x1', (d) => coords[d][0][0])
         .attr('y1', (d) => coords[d][0][1])

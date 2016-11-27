@@ -5,6 +5,7 @@ import { TAU } from '../../const/math';
 import { arcSimpleTween } from '../../util/tween';
 import { classedPattern } from '../../util/css';
 import { commonEventNames } from '../../tools/commonEventNames';
+import { getCoord } from '../../util/polar';
 import { noop } from '../../tools/noop';
 import { radiusContrain } from '../../util/dimension';
 
@@ -215,7 +216,7 @@ export class ArcChart extends PolarChart {
           // TODO: Update to use `attrTween` and follow arc movement instead of direct translation.
           //       Stop the label drift through the
           const angle = this.tryInvoke(this.opts.labelAngle, d, i, nodes);
-          const coord = ArcChart.getCoord(labelRadius, angle);
+          const coord = getCoord(labelRadius, angle);
 
           return `translate(${coord})`;
         })

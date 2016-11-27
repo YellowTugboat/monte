@@ -27,10 +27,11 @@ export class BarBg extends Extension {
       data = this._buildData(barChart, chartData);
     }
 
-    const bgs = this.layer.selectAll(`.${this.opts.barBgCss}`).data(data);
+    const bgs = this._extCreateSelection().data(data);
     const sizeAdjust = this._sizeAdjust(barChart);
 
     bgs.enter().append('rect')
+      .call(this._setExtAttrs.bind(this))
       .merge(bgs)
         .attr('class', this.opts.barBgCss)
         .attr('x', (...args) => barChart._barX.bind(barChart)(...args) + this._xShift(sizeAdjust))
