@@ -1,11 +1,11 @@
-// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha20 Copyright 2016 Yellow Tugboat
+// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha21 Copyright 2016 Yellow Tugboat
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha20";
+var version = "0.0.0-alpha21";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -4029,6 +4029,10 @@ function isNumeric(v) {
   return typeof v === 'number' && isFinite(v);
 }
 
+function isString(v) {
+  return typeof v === 'string';
+}
+
 function isFunc(v) {
   return typeof v === 'function';
 }
@@ -4043,6 +4047,197 @@ function isArray$2(v) {
 
 function isDefined(v) {
   return v !== null && v !== undef;
+}
+
+// Based on `ExtendableError` from
+// http://stackoverflow.com/questions/31089801/extending-error-in-javascript-with-es6-syntax
+
+var MonteError = function (_Error) {
+  inherits(MonteError, _Error);
+
+  function MonteError(message) {
+    classCallCheck(this, MonteError);
+
+    var _this = possibleConstructorReturn(this, (MonteError.__proto__ || Object.getPrototypeOf(MonteError)).call(this, message));
+
+    _this.name = _this.constructor.name;
+    _this.message = message;
+
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(_this, _this.constructor);
+    } else {
+      _this.stack = new Error(message).stack;
+    }
+    return _this;
+  }
+
+  createClass(MonteError, null, [{
+    key: 'UnimplementedMethod',
+    value: function UnimplementedMethod(method, methodName) {
+      return new MonteError(method + ' (`' + methodName + '`) needs to be defined in order for the chart to be useful.');
+    }
+  }, {
+    key: 'InvalidArgumentType',
+    value: function InvalidArgumentType(methodName, argumentName, expectedType, received) {
+      return new MonteError('Method (' + methodName + ') argument "' + argumentName + '" of unexpected type. Expected ' + expectedType + ', but was given ' + received + '.');
+    }
+  }]);
+  return MonteError;
+}(Error);
+
+var InstanceGroup = function () {
+  function InstanceGroup(instances, proxyMethodSet) {
+    var _this = this;
+
+    classCallCheck(this, InstanceGroup);
+
+    this._instances = [];
+
+    for (var _len = arguments.length, additionalMethodsToProxy = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+      additionalMethodsToProxy[_key - 2] = arguments[_key];
+    }
+
+    this._methodsToProxy = proxyMethodSet.concat(flattenDeep.apply(undefined, additionalMethodsToProxy));
+
+    this._methodsToProxy.forEach(function (m) {
+      return _this.addProxyMethod(m);
+    });
+    instances.forEach(function (instance) {
+      return _this.addInstance(instance);
+    });
+  }
+
+  createClass(InstanceGroup, [{
+    key: 'addProxyMethod',
+    value: function addProxyMethod(methodName) {
+      this[methodName] = this.invokeProxyMethod.bind(this, methodName);
+    }
+  }, {
+    key: 'removeProxyMethod',
+    value: function removeProxyMethod(methodName) {
+      var index = this._methodsToProxy.indexOf(methodName);
+
+      if (index > -1) {
+        this._methodsToProxy.splice(index, 1);
+      }
+    }
+  }, {
+    key: 'addInstance',
+    value: function addInstance(instance) {
+      if (instance) {
+        this._instances.push(instance);
+      }
+    }
+  }, {
+    key: 'removeChart',
+    value: function removeChart(instance) {
+      var index = this._instances.indexOf(instance);
+
+      if (index > -1) {
+        this._instances.splice(index, 1);
+      }
+    }
+  }, {
+    key: 'invokeProxyMethod',
+    value: function invokeProxyMethod(methodName) {
+      for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+        args[_key2 - 1] = arguments[_key2];
+      }
+
+      this._instances.forEach(function (instance) {
+        if (instance && instance[methodName] && isFunc(instance[methodName])) {
+          instance[methodName].apply(instance, args);
+        } else {
+          throw new MonteError('Cannot invoke ' + methodName + ' on ' + instance);
+        }
+      });
+
+      return this;
+    }
+  }, {
+    key: 'getProxiedMethods',
+    value: function getProxiedMethods() {
+      return this._methodsToProxy;
+    }
+  }, {
+    key: 'destroy',
+    value: function destroy() {
+      for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+        args[_key3] = arguments[_key3];
+      }
+
+      this._instances.forEach(function (instance) {
+        if (instance && instance['destroy'] && isFunc(instance['destroy'])) {
+          instance['destroy'].apply(instance, args);
+        }
+      });
+
+      this._instances.length = 0;
+    }
+  }]);
+  return InstanceGroup;
+}();
+
+var MonteOptionError = function (_MonteError) {
+  inherits(MonteOptionError, _MonteError);
+
+  function MonteOptionError() {
+    classCallCheck(this, MonteOptionError);
+    return possibleConstructorReturn(this, (MonteOptionError.__proto__ || Object.getPrototypeOf(MonteOptionError)).apply(this, arguments));
+  }
+
+  createClass(MonteOptionError, null, [{
+    key: 'RequiredOption',
+    value: function RequiredOption(optionName) {
+      return new MonteError('Option "' + optionName + '" is required.');
+    }
+  }, {
+    key: 'InvalidEnumOption',
+    value: function InvalidEnumOption(optionName, badValue) {
+      return new MonteError('Option "' + optionName + '" must be set to a valid option. The value "' + badValue + '" is not valid.');
+    }
+  }]);
+  return MonteOptionError;
+}(MonteError);
+
+// Use a true undefined in case the `undefined` is overridden for some reason.
+var UNDEF = void 0;
+
+// A deep-first object property getter that falls back to parent levels if the expected property
+// is not present.
+//
+// For example on a generic 3-level object, attempts to access:
+//   obj.levels[0].levels[1].levels[2].prop, then
+//   obj.levels[1].levels[2].prop, then
+//   obj.levels[2].prop, then
+//   obj.prop, then falls back to the
+//   defaultValue.
+//
+// More concretely if the object is transition settings, `level`s are 'line' and 'update', the
+// `property` is 'duration', and the `defaultValue` is 250 the attempts are:
+//   transitionSettings.line.update.duration,then
+//   transitionSettings.update.duration, then
+//   transitionSettings.duration, then
+//   defaultValue.
+function getDepthFirst(obj, levels, property, defaultValue) {
+  var value = defaultValue;
+
+  if (obj) {
+    for (var i = -1; i < levels.length; i++) {
+      var propPath = levels.slice(i + 1).join('.');
+      if (propPath) {
+        propPath += '.';
+      }
+      propPath += property;
+
+      if (has(obj, propPath)) {
+        value = get$1(obj, propPath);
+        break;
+      }
+    }
+  }
+
+  return value;
 }
 
 var OptionValueWrap = function OptionValueWrap(value) {
@@ -4292,203 +4487,72 @@ var EventWatcher = function () {
   return EventWatcher;
 }();
 
-// Based on `ExtendableError` from
-// http://stackoverflow.com/questions/31089801/extending-error-in-javascript-with-es6-syntax
+var MonteGlobal = function () {
+  function MonteGlobal() {
+    classCallCheck(this, MonteGlobal);
 
-var MonteError = function (_Error) {
-  inherits(MonteError, _Error);
-
-  function MonteError(message) {
-    classCallCheck(this, MonteError);
-
-    var _this = possibleConstructorReturn(this, (MonteError.__proto__ || Object.getPrototypeOf(MonteError)).call(this, message));
-
-    _this.name = _this.constructor.name;
-    _this.message = message;
-
-    if (typeof Error.captureStackTrace === 'function') {
-      Error.captureStackTrace(_this, _this.constructor);
-    } else {
-      _this.stack = new Error(message).stack;
-    }
-    return _this;
+    this._developerMode = false;
+    this._developerModeEvents = null;
+    this._resizeWatch = new EventWatcher();
+    this.extensionId = 0;
   }
 
-  createClass(MonteError, null, [{
-    key: 'UnimplementedMethod',
-    value: function UnimplementedMethod(method, methodName) {
-      return new MonteError(method + ' (`' + methodName + '`) needs to be defined in order for the chart to be useful.');
+  createClass(MonteGlobal, [{
+    key: 'getNextExtensionId',
+    value: function getNextExtensionId() {
+      return this.extensionId++; // Post-increment so counts start at zero.
     }
   }, {
-    key: 'InvalidArgumentType',
-    value: function InvalidArgumentType(methodName, argumentName, expectedType, received) {
-      return new MonteError('Method (' + methodName + ') argument "' + argumentName + '" of unexpected type. Expected ' + expectedType + ', but was given ' + received + '.');
+    key: 'getResizeWatcher',
+    value: function getResizeWatcher() {
+      return this._resizeWatch;
+    }
+  }, {
+    key: 'isDeveloperMode',
+    value: function isDeveloperMode() {
+      return this._developerMode;
+    }
+  }, {
+    key: 'setDeveloperModeEvents',
+    value: function setDeveloperModeEvents() {
+      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      this._developerModeEvents = flattenDeep(args);
+      this._developerMode = true;
+    }
+  }, {
+    key: 'getDeveloperModeEvents',
+    value: function getDeveloperModeEvents() {
+      return this._developerModeEvents;
+    }
+  }, {
+    key: 'clearDeveloperModeEvents',
+    value: function clearDeveloperModeEvents() {
+      this._developerModeEvents = null;
+    }
+  }, {
+    key: 'clearDeveloperMode',
+    value: function clearDeveloperMode() {
+      this._developerMode = false;
+    }
+  }, {
+    key: 'enableDeveloperMode',
+    value: function enableDeveloperMode() {
+      this._developerMode = true;
     }
   }]);
-  return MonteError;
-}(Error);
-
-var InstanceGroup = function () {
-  function InstanceGroup(instances, proxyMethodSet) {
-    var _this = this;
-
-    classCallCheck(this, InstanceGroup);
-
-    this._instances = [];
-
-    for (var _len = arguments.length, additionalMethodsToProxy = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-      additionalMethodsToProxy[_key - 2] = arguments[_key];
-    }
-
-    this._methodsToProxy = proxyMethodSet.concat(flattenDeep.apply(undefined, additionalMethodsToProxy));
-
-    this._methodsToProxy.forEach(function (m) {
-      return _this.addProxyMethod(m);
-    });
-    instances.forEach(function (instance) {
-      return _this.addInstance(instance);
-    });
-  }
-
-  createClass(InstanceGroup, [{
-    key: 'addProxyMethod',
-    value: function addProxyMethod(methodName) {
-      this[methodName] = this.invokeProxyMethod.bind(this, methodName);
-    }
-  }, {
-    key: 'removeProxyMethod',
-    value: function removeProxyMethod(methodName) {
-      var index = this._methodsToProxy.indexOf(methodName);
-
-      if (index > -1) {
-        this._methodsToProxy.splice(index, 1);
-      }
-    }
-  }, {
-    key: 'addInstance',
-    value: function addInstance(instance) {
-      if (instance) {
-        this._instances.push(instance);
-      }
-    }
-  }, {
-    key: 'removeChart',
-    value: function removeChart(instance) {
-      var index = this._instances.indexOf(instance);
-
-      if (index > -1) {
-        this._instances.splice(index, 1);
-      }
-    }
-  }, {
-    key: 'invokeProxyMethod',
-    value: function invokeProxyMethod(methodName) {
-      for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-        args[_key2 - 1] = arguments[_key2];
-      }
-
-      this._instances.forEach(function (instance) {
-        if (instance && instance[methodName] && isFunc(instance[methodName])) {
-          instance[methodName].apply(instance, args);
-        } else {
-          throw new MonteError('Cannot invoke ' + methodName + ' on ' + instance);
-        }
-      });
-
-      return this;
-    }
-  }, {
-    key: 'getProxiedMethods',
-    value: function getProxiedMethods() {
-      return this._methodsToProxy;
-    }
-  }, {
-    key: 'destroy',
-    value: function destroy() {
-      for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-        args[_key3] = arguments[_key3];
-      }
-
-      this._instances.forEach(function (instance) {
-        if (instance && instance['destroy'] && isFunc(instance['destroy'])) {
-          instance['destroy'].apply(instance, args);
-        }
-      });
-
-      this._instances.length = 0;
-    }
-  }]);
-  return InstanceGroup;
+  return MonteGlobal;
 }();
 
-var MonteOptionError = function (_MonteError) {
-  inherits(MonteOptionError, _MonteError);
+var global$1 = new MonteGlobal();
 
-  function MonteOptionError() {
-    classCallCheck(this, MonteOptionError);
-    return possibleConstructorReturn(this, (MonteOptionError.__proto__ || Object.getPrototypeOf(MonteOptionError)).apply(this, arguments));
-  }
-
-  createClass(MonteOptionError, null, [{
-    key: 'RequiredOption',
-    value: function RequiredOption(optionName) {
-      return new MonteError('Option "' + optionName + '" is required.');
-    }
-  }, {
-    key: 'InvalidEnumOption',
-    value: function InvalidEnumOption(optionName, badValue) {
-      return new MonteError('Option "' + optionName + '" must be set to a valid option. The value "' + badValue + '" is not valid.');
-    }
-  }]);
-  return MonteOptionError;
-}(MonteError);
-
-// Use a true undefined in case the `undefined` is overridden for some reason.
-var UNDEF = void 0;
-
-// A deep-first object property getter that falls back to parent levels if the expected property
-// is not present.
-//
-// For example on a generic 3-level object, attempts to access:
-//   obj.levels[0].levels[1].levels[2].prop, then
-//   obj.levels[1].levels[2].prop, then
-//   obj.levels[2].prop, then
-//   obj.prop, then falls back to the
-//   defaultValue.
-//
-// More concretely if the object is transition settings, `level`s are 'line' and 'update', the
-// `property` is 'duration', and the `defaultValue` is 250 the attempts are:
-//   transitionSettings.line.update.duration,then
-//   transitionSettings.update.duration, then
-//   transitionSettings.duration, then
-//   defaultValue.
-function getDepthFirst(obj, levels, property, defaultValue) {
-  var value = defaultValue;
-
-  if (obj) {
-    for (var i = -1; i < levels.length; i++) {
-      var propPath = levels.slice(i + 1).join('.');
-      if (propPath) {
-        propPath += '.';
-      }
-      propPath += property;
-
-      if (has(obj, propPath)) {
-        value = get$1(obj, propPath);
-        break;
-      }
-    }
-  }
-
-  return value;
+if (window) {
+  window.MonteGlobal = global$1;
 }
 
 function noop() {}
-
-var global$1 = window ? window.MonteGlobals = {} : {};
-
-// TODO: Begin adoption of generic scale accessors. Every scale should be accompained with a property
-//       `<scaleProperty>Accessor` that translates which value to pass to the scale.
 
 var CLIP_PATH_ID = 'drawPath';
 
@@ -4506,15 +4570,10 @@ var DEFAULTS = {
   customEvents: [],
   extensions: [],
 
-  // TODO: Rework transition features to support the various Update pattern stages.
-  transitionDuration: TRANSITION_DURATION_MS,
-  ease: d3.easeCubic,
-  delay: 0,
-
   transition: {
     duration: TRANSITION_DURATION_MS,
-    ease: d3.easeCubic,
-    delay: 0
+    ease: TRANSITION_EASE,
+    delay: TRANSITION_DELAY_MS
   },
 
   resize: null,
@@ -4568,7 +4627,7 @@ var Chart = function () {
     this._initPublicEvents.apply(this, toConsumableArray(INTERACTION_EVENTS).concat(toConsumableArray(CHART_SUPPORT_EVENTS), toConsumableArray(CHART_LIFECYCLE_EVENTS), toConsumableArray(this.opts.customEvents)));
 
     // Put chart in developer mode if opted into on a chart or global basis
-    if (this.opts.developerMode || global$1.developerMode) {
+    if (this.opts.developerMode || global$1.isDeveloperMode()) {
       this._initDeveloperMode();
     }
 
@@ -4590,7 +4649,7 @@ var Chart = function () {
     this._constructed = true;
 
     // Trigger a resize if everything is ready.
-    if (this._resizeHandler && global$1.resizeWatch.documentReady) {
+    if (this._resizeHandler && global$1.getResizeWatcher().documentReady) {
       this._resizeHandler();
     }
 
@@ -4671,13 +4730,9 @@ var Chart = function () {
 
       // Bind resize function if given.
       if (this.opts.resize) {
-        if (!global$1.resizeWatch) {
-          global$1.resizeWatch = new EventWatcher();
-        }
-
         var resizer = this.opts.resize;
         this._resizeHandler = resizer.resize.bind(resizer, this);
-        global$1.resizeWatch.add(this._resizeHandler);
+        global$1.getResizeWatcher().add(this._resizeHandler);
       }
     }
   }, {
@@ -4715,9 +4770,11 @@ var Chart = function () {
         console.log('[' + _this2 + '] "' + eventName + '": ' + a); // eslint-disable-line no-console
       };
 
+      this.developerMode = true;
+
       // Determine events to watch in developer mode. If `developerMode` is an array use the provided
       // events; otherwise use all registered events.
-      var events = isArray$2(this.opts.developerMode || global$1.developerMode) ? this.opts.developerMode || global$1.developerMode : this._events;
+      var events = isArray$2(this.opts.developerMode) || global$1.getDeveloperModeEvents() ? this.opts.developerMode || global$1.getDeveloperModeEvents() : this._events;
 
       events.forEach(function (eventName) {
         console.log('[' + _this2 + '] Adding listener for "' + eventName + '"'); // eslint-disable-line no-console
@@ -5016,15 +5073,19 @@ var Chart = function () {
      * directly read chart options.
      *
      * For example:
-     *  `.attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.fillScale, d, i, nodes))`
+     *  `.attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.fillScaleAccessor, d, i, nodes))`
      * is equivalent to
-     *  `.attr('fill', this.optionReaderFunc('fillScale')')`
+     *  `.attr('fill', this.optionReaderFunc('fillScaleAccessor')')`
      */
 
   }, {
     key: 'optionReaderFunc',
     value: function optionReaderFunc(optionKey) {
       var _this4 = this;
+
+      if (!isString(optionKey)) {
+        throw MonteError.InvalidArgumentType('optionReaderFunc', 'optionKey', 'string', optionKey);
+      }
 
       if (!this._optionReaderCache[optionKey]) {
         this._optionReaderCache[optionKey] = function () {
@@ -5555,6 +5616,33 @@ var Chart = function () {
       return this.constructor.name;
     }
   }], [{
+    key: 'generateScaleAccessor',
+    value: function generateScaleAccessor(scaleName, propPrefix) {
+      if (propPrefix) {
+        return function (d) {
+          var scalePath = 'opts.' + scaleName;
+          var v = this.getScaledProp(scalePath, propPrefix, d);
+
+          if (this.developerMode) {
+            console.log(scalePath, v); // eslint-disable-line no-console
+          }
+
+          return v;
+        };
+      }
+
+      // If the `propPrefix` is blank than default to index counting.
+      return function (d, i) {
+        var v = get$1(this, 'opts.' + scaleName)(i);
+
+        if (this.developerMode) {
+          console.log(v); // eslint-disable-line no-console
+        }
+
+        return v;
+      };
+    }
+  }, {
     key: 'createInstanceGroup',
     value: function createInstanceGroup(charts) {
       for (var _len13 = arguments.length, additionalMethodsToProxy = Array(_len13 > 1 ? _len13 - 1 : 0), _key13 = 1; _key13 < _len13; _key13++) {
@@ -5883,37 +5971,7 @@ AxesChart.EVENTS = EVENTS;
 
 var GROUP_PROXY_METHODS$1 = ['forEachAxisScale', 'renderAxes', 'replaceScale', 'updateAxesDomains', 'updateAxesRanges', 'updateAxesTransforms'];
 
-var EPSILON = 1e-12;
-var PI = Math.PI;
-var HALF_PI = PI / 2;
-var TAU = 2 * PI;
-
-var math = Object.freeze({
-	EPSILON: EPSILON,
-	PI: PI,
-	HALF_PI: HALF_PI,
-	TAU: TAU
-});
-
 // Serves as the base chart for charts using polar coordinates (pie, donut, guage, etc...)
-// Adds utility common utility functions such as:
-// * placement on an arc given an angle and radius, (cos(a) * r, sin(a) * r)
-//
-// * conversion between Radians (rad) and Degrees (deg)
-//    -- Also add support for CSS values like `turn` and `grad` (gradians)???
-//
-// * constants for angles:
-//    -- Common (quarters / cardinal):
-//        North/Top (0), West/Left (-1/2 PI), East/Right (1/2 PI), South/Bottom (PI)
-//
-//    -- Intermediates (eights / ordinal / intercardinal) (i.e. cardinal bisects):
-//        Northwest/TopLeft (-1/4 PI), etc...
-//
-//    [Note: The top eight points collectively are called the principal (or main) winds]
-//
-//    -- Tertiary (sixteenths / half-winds):
-//        NNE (North-northeast) (1/8 PI), etc...
-
 var PolarChart = function (_Chart) {
   inherits(PolarChart, _Chart);
 
@@ -5938,27 +5996,6 @@ var PolarChart = function (_Chart) {
 
       return 'translate(' + l + ', ' + t + ')';
     }
-  }], [{
-    key: 'getCoord',
-    value: function getCoord(radius, angle) {
-      // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment to account for the starting
-      // angle differences between SVG (top) vs traditional polar coordinates (right). The adjustment
-      // is repeated here for coordinate consistency.
-      var a = angle - HALF_PI;
-      return [Math.cos(a) * radius, Math.sin(a) * radius];
-    }
-  }, {
-    key: 'degreesToRadians',
-    value: function degreesToRadians(deg) {
-      return deg * (PI / 180);
-    } // radians = degrees * (pi/180)
-
-  }, {
-    key: 'radiansToDegrees',
-    value: function radiansToDegrees(rad) {
-      return rad * (180 / PI);
-    } // degrees = radians * (180/pi)
-
   }]);
   return PolarChart;
 }(Chart);
@@ -6027,13 +6064,17 @@ var LINE_CHART_DEFAULTS = {
 
   valuesProp: 'values',
 
+  lineProp: '',
+
   // Callback function to customize the line generator, such as set the interpolate.
   lineCustomize: null,
 
   lineStrokeScale: noop,
+  lineStrokeScaleAccessor: AxesChart.generateScaleAccessor('lineStrokeScale', 'lineProp'),
 
   // Scale function for CSS class to apply per line. Input: line index, Output: String of CSS Class.
   lineCssScale: noop,
+  lineCssScaleAccessor: AxesChart.generateScaleAccessor('lineCssScale', 'lineProp'),
 
   // Static CSS class(es) to apply to every line.
   lineCss: 'line',
@@ -6046,12 +6087,16 @@ var LINE_CHART_DEFAULTS = {
 
   includePoints: true,
 
+  pointProp: '',
   pointFillScale: noop,
+  pointFillScaleAccessor: AxesChart.generateScaleAccessor('pointFillScale', 'pointProp'),
 
   pointStrokeScale: noop,
+  pointStrokeScaleAccessor: AxesChart.generateScaleAccessor('pointStrokeScale', 'pointProp'),
 
   // Scale function for CSS class to apply per line. Input: line index, Output: String of CSS Class.
   pointCssScale: noop,
+  pointCssScaleAccessor: AxesChart.generateScaleAccessor('pointCssScale', 'pointProp'),
 
   // Static CSS class(es) to apply to every line.
   pointCss: 'point',
@@ -6138,10 +6183,11 @@ var LineChart = function (_AxesChart) {
     value: function _resetCssDomains() {
       get(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_resetCssDomains', this).call(this);
 
+      resetScaleDomain(this.opts.lineStrokeScale);
       resetScaleDomain(this.opts.lineCssScale);
+      resetScaleDomain(this.opts.pointFillScale);
+      resetScaleDomain(this.opts.pointStrokeScale);
       resetScaleDomain(this.opts.pointCssScale);
-
-      return this;
     }
 
     // Render the vis.
@@ -6174,10 +6220,10 @@ var LineChart = function (_AxesChart) {
       // Create new lines
       lineGrps.enter().append('g').attr('class', 'monte-line-grp').append('path').call(this.__bindCommonEvents('line')).merge(lineGrps.select('.monte-line')) // Update existing lines and set values on new lines.
       .attr('class', function (d, i) {
-        return _this4._buildCss(['monte-line', _this4.opts.lineCss, _this4.opts.lineCssScale, d.css], d, i);
+        return _this4._buildCss(['monte-line', _this4.opts.lineCss, _this4.opts.lineCssScaleAccessor, d.css], d, i);
       }).transition().call(this._transitionSetup('line', UPDATE)).attr('d', function (d) {
-        return _this4.line(d[_this4.opts.valuesProp]);
-      }).attr('stroke', this.opts.lineStrokeScale);
+        return _this4.line(_this4.getProp('values', d));
+      }).attr('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'));
 
       // Fade out removed lines.
       lineGrps.exit().transition().call(this._transitionSetup('line', EXIT)).style('opacity', 0).remove();
@@ -6195,7 +6241,7 @@ var LineChart = function (_AxesChart) {
 
       // Data join for the points
       var points = lineGrp.selectAll('.monte-point').data(function (d) {
-        return d[_this5.opts.valuesProp];
+        return _this5.getProp('values', d);
       });
 
       var genSym = function genSym(d, i) {
@@ -6210,10 +6256,10 @@ var LineChart = function (_AxesChart) {
       .attr('transform', function (d) {
         return 'translate(' + _this5.getScaledProp('x', d) + ', ' + _this5.getScaledProp('y', d) + ')';
       }).attr('class', function (d) {
-        return _this5._buildCss(['monte-point', lineDatum.css, _this5.opts.lineCssScale, _this5.opts.pointCss, _this5.opts.pointCssScale, d.css], lineDatum, lineIndex);
+        return _this5._buildCss(['monte-point', lineDatum.css, _this5.opts.lineCssScaleAccessor, _this5.opts.pointCss, _this5.opts.pointCssScaleAccessor, d.css], lineDatum, lineIndex);
       });
 
-      points.transition().call(this._transitionSetup('point', UPDATE)).attr('fill', this.opts.pointFillScale).attr('stroke', this.opts.pointStrokeScale).attr('transform', function (d) {
+      points.transition().call(this._transitionSetup('point', UPDATE)).attr('fill', this.optionReaderFunc('pointFillScaleAccessor')).attr('stroke', this.optionReaderFunc('pointStrokeScaleAccessor')).attr('transform', function (d) {
         return 'translate(' + _this5.getScaledProp('x', d) + ', ' + _this5.getScaledProp('y', d) + ')';
       }).attr('d', genSym);
 
@@ -6287,14 +6333,18 @@ var AREA_CHART_DEFAULTS = {
    *
    **********************************************************************************************/
 
+  areaProp: '',
+
   // Callback function to customize the area generator.
   areaCustomize: null,
 
   // Scale function for the `fill` attribute to apply per area.
   areaFillScale: noop,
+  areaFillScaleAccessor: LineChart.generateScaleAccessor('areaFillScale', '  areaProp'),
 
   // Scale function for CSS class to apply per area. Input: line index, Output: String of CSS Class.
   areaCssScale: noop,
+  areaCssScaleAccessor: LineChart.generateScaleAccessor('areaCssScale', '  areaProp'),
 
   // Static CSS class(es) to apply to every area.
   areaCss: 'area',
@@ -6364,8 +6414,7 @@ var AreaChart = function (_LineChart) {
       get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_resetCssDomains', this).call(this);
 
       resetScaleDomain(this.opts.areaCssScale);
-
-      return this;
+      resetScaleDomain(this.opts.areaFillScaleAccessor);
     }
   }, {
     key: '_update',
@@ -6393,12 +6442,12 @@ var AreaChart = function (_LineChart) {
       // Create new area
       var allAreas = area.enter().insert('path', ':first-child').call(this.__bindCommonEvents('area')).merge(area) // Update existing points and set values on new points.
       .attr('class', function (d) {
-        return _this4._buildCss(['monte-area', lineDatum.css, _this4.opts.lineCssScale, _this4.opts.areaCss, _this4.opts.areaCssScale, d.css], lineDatum, lineIndex);
+        return _this4._buildCss(['monte-area', lineDatum.css, _this4.opts.lineCssScaleAccessor, _this4.opts.areaCss, _this4.opts.areaCssScaleAccessor, d.css], lineDatum, lineIndex);
       });
 
       allAreas.transition().call(this._transitionSetup(UPDATE)).attr('d', function (d) {
         return _this4.area(_this4.getProp('values', d));
-      }).attr('fill', this.optionReaderFunc('areaFillScale'));
+      }).attr('fill', this.optionReaderFunc('areaFillScaleAccessor'));
 
       // Fade out removed points.
       area.exit().transition().call(this._transitionSetup(EXIT)).style('opacity', 0).remove();
@@ -6460,6 +6509,11 @@ var SparklineChart = function (_LineChart) {
   return SparklineChart;
 }(LineChart);
 
+var EVENT_UPDATING_LABELS = 'updatingLabels';
+var EVENT_UPDATED_LABELS = 'updatedLabels';
+
+var EVENTS$1 = [EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS];
+
 var BAR_CHART_DEFAULTS = {
   chartCss: 'monte-bar-chart',
 
@@ -6471,16 +6525,15 @@ var BAR_CHART_DEFAULTS = {
   },
 
   barCssScale: noop,
-  barFillScale: noop,
+  barCssScaleAccessor: AxesChart.generateScaleAccessor('barCssScale', 'x'),
 
-  barFillScaleAccessor: function barFillScaleAccessor(d) {
-    return this.getScaledProp('opts.barFillScale', 'x', d);
-  },
+  barFillScale: noop,
+  barFillScaleAccessor: AxesChart.generateScaleAccessor('barFillScale', 'x'),
 
   // Static CSS class(es) to apply to every line.
   barCss: 'bar',
   barGrpCss: function barGrpCss(d) {
-    var value = this.getProp('x', d);
+    var value = this.getProp('y', d);
     var css = 'monte-bar-zero';
 
     if (value > 0) {
@@ -6506,6 +6559,7 @@ var BAR_CHART_DEFAULTS = {
   // TODO: Adopt label placement like arc charts?
   labelProp: 'value',
   labelFillScale: noop,
+  labelFillScaleAccessor: AxesChart.generateScaleAccessor('labelFillScale', 'label'),
   label: function label(d) {
     return this.getProp('label', d);
   },
@@ -6553,7 +6607,7 @@ var BarChart = function (_AxesChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('bar'))));
+      (_babelHelpers$get2 = get(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('bar')), EVENTS$1));
     }
   }, {
     key: '_domainExtent',
@@ -6580,8 +6634,8 @@ var BarChart = function (_AxesChart) {
       get(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_resetCssDomains', this).call(this);
 
       resetScaleDomain(this.opts.barCssScale);
-
-      return this;
+      resetScaleDomain(this.opts.barFillScale);
+      resetScaleDomain(this.opts.labelFillScale);
     }
 
     // Render the vis.
@@ -6594,10 +6648,14 @@ var BarChart = function (_AxesChart) {
       var barGrps = this._updateBars();
 
       if (this.opts.includeLabels) {
+        this.emit(EVENT_UPDATING_LABELS);
+
         barGrps.each(function (d, i, nodes) {
           var node = d3.select(nodes[i]);
           _this3._updateBarLabel(node, d, i, nodes);
         });
+
+        this.emit(EVENT_UPDATED_LABELS);
       }
     }
   }, {
@@ -6616,18 +6674,14 @@ var BarChart = function (_AxesChart) {
 
       barGrps.enter().append('g').attr('class', function (d, i) {
         return _this4._buildCss(['monte-bar-grp', _this4.opts.barGrpCss], d, i);
-      }).append('rect').attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight).call(this.__bindCommonEvents('bar')).merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
+      }).append('rect').attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight).attr('fill-test', 'red').attr('fill', this.optionReaderFunc('barFillScaleAccessor'))
+      // .attr('fill', (...args) => this.tryInvoke(this.opts.barFillScaleAccessor, ...args))
+      .call(this.__bindCommonEvents('bar')).merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
       .attr('class', function (d, i) {
         return _this4._buildCss([_this4.opts.barCss, _this4.opts.barCssScale, d.css], d, i);
-      }).transition().call(this._transitionSetup(ENTER)).attr('fill', function (d, i, nodes) {
-        return _this4.tryInvoke(_this4.opts.barFillScaleAccessor, d, i, nodes);
-      });
-      // .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScale, d, i, nodes));
+      }).transition().call(this._transitionSetup(ENTER));
 
-      // TODO: Begin adoption `optionReaderFunc`
-      // i.e.: .attr('fill', this.optionReaderFunc('barFillScale'));
-
-      barGrps.select('rect').transition().call(this._transitionSetup(UPDATE)).attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight);
+      barGrps.select('rect').attr('fill', this.optionReaderFunc('barFillScaleAccessor')).transition().call(this._transitionSetup(UPDATE)).attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight);
 
       // Fade out removed lines.
       barGrps.exit().transition().call(this._transitionSetup(EXIT)).style('opacity', 0).remove();
@@ -6644,7 +6698,7 @@ var BarChart = function (_AxesChart) {
       var lbl = barGrp.selectAll('.monte-bar-label').data([d]);
 
       lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).attr('fill', function (d1) {
-        return _this5.tryInvoke(_this5.opts.labelFillScale, d1, i, nodes);
+        return _this5.tryInvoke(_this5.opts.labelFillScaleAccessor, d1, i, nodes);
       }).attr('x', function (d1) {
         return _this5.tryInvoke(_this5.opts.labelX, d1, i, nodes);
       }).attr('dx', function (d1) {
@@ -6690,6 +6744,8 @@ var BarChart = function (_AxesChart) {
   return BarChart;
 }(AxesChart);
 
+BarChart.EVENTS = EVENTS$1;
+
 var HBAR_CHART_DEFAULTS = {
   chartCss: 'monte-horizontal-bar-chart',
 
@@ -6699,6 +6755,9 @@ var HBAR_CHART_DEFAULTS = {
     bottom: 40,
     left: 40
   },
+
+  barCssScaleAccessor: BarChart.generateScaleAccessor('barCssScale', 'y'),
+  barFillScaleAccessor: BarChart.generateScaleAccessor('barFillScale', 'y'),
 
   xProp: 'value',
   yProp: 'id',
@@ -6711,6 +6770,19 @@ var HBAR_CHART_DEFAULTS = {
   xDomainCustomize: extentBalanced,
   yDomainCustomize: null,
 
+  barGrpCss: function barGrpCss(d) {
+    var value = this.getProp('x', d);
+    var css = 'monte-bar-zero';
+
+    if (value > 0) {
+      css = 'monte-bar-pos';
+    } else if (value < 0) {
+      css = 'monte-bar-neg';
+    }
+
+    return css;
+  },
+
   labelX: function labelX(d) {
     var value = this.getProp('x', d);
 
@@ -6720,7 +6792,7 @@ var HBAR_CHART_DEFAULTS = {
   labelY: function labelY(d) {
     return this._barY(d) + this.y.bandwidth() / 2;
   },
-  labelYAdjust: '0.5em'
+  labelYAdjust: '0.35em'
 };
 
 var HorizontalBarChart = function (_BarChart) {
@@ -6924,7 +6996,7 @@ var SEGMENT_BAR_MODE_CSS_MAP = (_SEGMENT_BAR_MODE_CSS = {}, defineProperty(_SEGM
 
 var EVENT_MODE_CHANGING = 'modeChanging';
 var EVENT_MODE_CHANGED = 'modeChanged';
-var EVENTS$1 = [EVENT_MODE_CHANGING, EVENT_MODE_CHANGED];
+var EVENTS$2 = [EVENT_MODE_CHANGING, EVENT_MODE_CHANGED];
 
 var SEGMENT_BAR_CHART_DEFAULTS = {
   chartCss: 'monte-segment-bar-chart',
@@ -6949,12 +7021,9 @@ var SEGMENT_BAR_CHART_DEFAULTS = {
   },
 
   barSegCssScale: noop,
+  barSegCssScaleAccessor: AxesChart.generateScaleAccessor('barSegCssScale', 'x'),
   barSegFillScale: noop,
-
-  // TODO: Begin adoption of generic scale accessors.
-  barFillScaleAccessor: function barFillScaleAccessor(d) {
-    return this.getScaledProp('opts.barFillScale', 'x', d);
-  },
+  barSegFillScaleAccessor: AxesChart.generateScaleAccessor('barSegFillScale', 'x'),
 
   xScale: function xScale() {
     return d3.scaleBand().paddingInner(0.1).round(true);
@@ -6966,6 +7035,7 @@ var SEGMENT_BAR_CHART_DEFAULTS = {
 
   labelProp: 'value',
   labelFillScale: noop,
+  labelFillScaleAccessor: AxesChart.generateScaleAccessor('labelFillScale', 'label'),
   label: function label(d) {
     return this.getProp('label', d);
   },
@@ -7019,7 +7089,7 @@ var SegmentBarChart = function (_AxesChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('bargrp')), toConsumableArray(commonEventNames('barseg')), EVENTS$1));
+      (_babelHelpers$get2 = get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('bargrp')), toConsumableArray(commonEventNames('barseg')), EVENTS$2));
     }
   }, {
     key: '_initCore',
@@ -7095,10 +7165,9 @@ var SegmentBarChart = function (_AxesChart) {
     value: function _resetCssDomains() {
       get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_resetCssDomains', this).call(this);
 
-      resetScaleDomain(this.opts.barCssScale);
-      resetScaleDomain(this.opts.barFillScale);
-
-      return this;
+      resetScaleDomain(this.opts.barSegCssScale);
+      resetScaleDomain(this.opts.barSegFillScale);
+      resetScaleDomain(this.opts.labelFillScaleAccessor);
     }
   }, {
     key: 'setMode',
@@ -7233,6 +7302,7 @@ var SegmentBarChart = function (_AxesChart) {
       var translate = this._barGroupTranslate.bind(this);
       var barGrps = this.draw.selectAll('.monte-segment-bar-grp').data(this.displayData);
 
+      // TODO: Change to distinct transitions for ENTER, UPDATE
       var trans = this.draw.transition().call(this._transitionSetup('bars', UPDATE));
 
       barGrps.enter().append('g').attr('class', 'monte-segment-bar-grp').call(this.__bindCommonEvents('bargrp')).merge(barGrps).attr('transform', function (d) {
@@ -7243,8 +7313,8 @@ var SegmentBarChart = function (_AxesChart) {
         var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
 
         innerRects.enter().append('rect').call(_this6.__bindCommonEvents('barseg')).merge(innerRects).attr('class', function (d, i) {
-          return _this6._buildCss(['monte-segment-bar-seg', _this6.opts.barSegCss, _this6.opts.barSegCssScale, d.css], d, i);
-        }).transition(trans).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
+          return _this6._buildCss(['monte-segment-bar-seg', _this6.opts.barSegCss, _this6.opts.barSegCssScaleAccessor, d.css], d, i);
+        }).transition(trans).attr('fill', _this6.optionReaderFunc('barSegFillScaleAccessor')).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
       });
 
       barGrps.exit().transition().call(this._transitionSetup(EXIT)).remove();
@@ -7279,7 +7349,7 @@ var SegmentBarChart = function (_AxesChart) {
       lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).text(function (d1, i, nodes) {
         return _this8.tryInvoke(_this8.opts.label, d1, i, nodes);
       }).transition(transition).attr('fill', function (d1, i, nodes) {
-        return _this8.tryInvoke(_this8.opts.labelFillScale, d1, i, nodes);
+        return _this8.tryInvoke(_this8.opts.labelFillScaleAccessor, d1, i, nodes);
       }).attr('x', function (d1, i, nodes) {
         return _this8.tryInvoke(_this8.opts.labelX, d1, i, nodes);
       }).attr('dx', function (d1, i, nodes) {
@@ -7377,7 +7447,7 @@ var SegmentBarChart = function (_AxesChart) {
   return SegmentBarChart;
 }(AxesChart);
 
-SegmentBarChart.EVENTS = EVENTS$1;
+SegmentBarChart.EVENTS = EVENTS$2;
 
 var GROUP_PROXY_METHODS$2 = ['setMode', 'updateAxesRanges'];
 
@@ -7398,9 +7468,6 @@ function nonMatchingMapValues(map, keyToExclude) {
   return values;
 }
 
-// import { commonEventNames } from '../../tools/commonEventNames';
-// import { resetScaleDomain } from '../../tools/resetScaleDomain';
-
 var HSEGMENT_BAR_CHART_DEFAULTS = {
   chartCss: 'monte-horizontal-segment-bar-chart',
   barSegmentCss: 'bar-segment',
@@ -7413,6 +7480,9 @@ var HSEGMENT_BAR_CHART_DEFAULTS = {
   },
 
   segmentBarMode: SEGMENT_BAR_MODE.STACKED,
+
+  barSegCssScaleAccessor: SegmentBarChart.generateScaleAccessor('barSegCssScale', 'y'),
+  barSegFillScaleAccessor: SegmentBarChart.generateScaleAccessor('barSegFillScale', 'y'),
 
   yProp: 'id',
   xProp: 'values',
@@ -7432,13 +7502,6 @@ var HSEGMENT_BAR_CHART_DEFAULTS = {
   xDomainCustomize: extentBalanced,
   yDomainCustomize: null,
 
-  includeLabels: false,
-
-  labelProp: 'value',
-  labelFillScale: noop,
-  label: function label(d) {
-    return this.getProp('label', d);
-  },
   labelXAdjust: '-0.1em',
   labelX: function labelX(d, i, nodes) {
     var mode = this.option('segmentBarMode');
@@ -7623,25 +7686,24 @@ var SCATTER_PLOT_DEFAULTS = {
   // The size of each point
   pointSize: 64,
 
+  pointProp: '',
+
   pointFillScale: noop,
+  pointFillScaleAccessor: AxesChart.generateScaleAccessor('pointFillScale', 'point'),
 
   pointStrokeScale: noop,
+  pointStrokeScaleAccessor: AxesChart.generateScaleAccessor('pointStrokeScale', 'point'),
 
   // Scale function for CSS class to apply per line. Input: line index, Output: String of CSS Class.
   pointCssScale: noop,
+  pointCssScaleAccessor: AxesChart.generateScaleAccessor('pointCssScale', 'point'),
 
   // Static CSS class(es) to apply to every line.
   pointCss: 'monte-point',
 
   pointSymbol: function pointSymbol(symbol) {
     return symbol.type(d3.symbolCircle);
-  },
-
-  // TODO: Transition to events
-  pointEnterStart: noop,
-  pointEnterEnd: noop,
-  pointExitStart: noop,
-  pointExitEnd: noop
+  }
 };
 
 var ScatterPlot = function (_AxesChart) {
@@ -7697,8 +7759,8 @@ var ScatterPlot = function (_AxesChart) {
       get(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_resetCssDomains', this).call(this);
 
       resetScaleDomain(this.opts.pointCssScale);
-
-      return this;
+      resetScaleDomain(this.opts.pointFillScaleAccessor);
+      resetScaleDomain(this.opts.pointStrokeScaleAccessor);
     }
 
     // Render the vis.
@@ -7725,17 +7787,13 @@ var ScatterPlot = function (_AxesChart) {
         var symbol = _this2.opts.pointSymbol(symbase, d, i);
         return symbol(d, i);
       }).attr('class', function (d, i) {
-        return _this2._buildCss(['monte-point', _this2.opts.pointCss, _this2.opts.pointCssScale, d.css], d, i);
-      }).transition().call(this._transitionSetup('point', UPDATE)).call(this.opts.pointEnterStart).attr('fill', function (d, i) {
-        return _this2.opts.pointFillScale(d.id || i);
-      }).attr('stroke', function (d, i) {
-        return _this2.opts.pointStrokeScale(d.id || i);
-      }).attr('transform', function (d) {
+        return _this2._buildCss(['monte-point', _this2.opts.pointCss, _this2.opts.pointCssScaleAccessor, d.css], d, i);
+      }).transition().call(this._transitionSetup('point', UPDATE)).attr('fill', this.optionReaderFunc('pointFillScaleAccessor')).attr('stroke', this.optionReaderFunc('pointStrokeScaleAccessor')).attr('transform', function (d) {
         return 'translate(' + _this2.getScaledProp('x', d) + ', ' + _this2.getScaledProp('y', d) + ')';
-      }).call(this.opts.pointEnterEnd);
+      });
 
       // Fade out removed points.
-      points.exit().transition().call(this._transitionSetup('point', EXIT)).call(this.opts.pointExitStart).style('opacity', 0).call(this.opts.pointExitEnd).remove();
+      points.exit().transition().call(this._transitionSetup('point', EXIT)).style('opacity', 0).remove();
 
       return points.merge(points.enter().selectAll('.point'));
     }
@@ -7793,9 +7851,13 @@ var ICON_ARRAY_DEFAULTS = {
     return d3.scalePoint().padding(0.5);
   },
 
+  iconProp: '',
   iconFillScale: noop,
+  iconFillScaleAccessor: AxesChart.generateScaleAccessor('iconFillScale', 'icon'),
   iconStrokeScale: noop,
+  iconStrokeScaleAccessor: AxesChart.generateScaleAccessor('iconStrokeScale', 'icon'),
   iconCssScale: noop,
+  iconCssScaleAccessor: AxesChart.generateScaleAccessor('iconCssScale', 'icon'),
   iconCss: 'icon',
   iconSize: 24,
   iconSymbol: function iconSymbol(symbol) {
@@ -7853,8 +7915,8 @@ var IconArray = function (_AxesChart) {
       get(IconArray.prototype.__proto__ || Object.getPrototypeOf(IconArray.prototype), '_resetCssDomains', this).call(this);
 
       resetScaleDomain(this.opts.iconCssScale);
-
-      return this;
+      resetScaleDomain(this.opts.iconFillScale);
+      resetScaleDomain(this.opts.iconStrokeScale);
     }
   }, {
     key: '_domainExtent',
@@ -7954,8 +8016,8 @@ var IconArray = function (_AxesChart) {
       var t = icons.enter().append(type).call(this.__bindCommonEvents('icon')).merge(icons).each(merge).attr('transform', function (d, i, nodes) {
         return transform.call(_this5, d, i, nodes);
       }).attr('class', function (d, i) {
-        return _this5._buildCss(['monte-icon', _this5.opts.iconCss, _this5.opts.iconCssScale, d.css], d, i);
-      }).transition().call(this._transitionSetup('icon', UPDATE)).attr('fill', this.opts.iconFillScale).attr('stroke', this.opts.iconStrokeScale);
+        return _this5._buildCss(['monte-icon', _this5.opts.iconCss, _this5.opts.iconCssScaleAccessor, d.css], d, i);
+      }).transition().call(this._transitionSetup('icon', UPDATE)).attr('fill', this.optionReaderFunc('iconFillScaleAccessor')).attr('stroke', this.optionReaderFunc('iconStrokeScaleAccessor'));
 
       return t;
     }
@@ -7983,14 +8045,26 @@ function iconTransformShift(d, i, nodes) {
   return 'translate(' + (x - xShift) + ', ' + (y - yShift) + ')';
 }
 
+var EPSILON = 1e-12;
+var PI = Math.PI;
+var HALF_PI = PI / 2;
+var TAU = 2 * PI;
+
+var math = Object.freeze({
+	EPSILON: EPSILON,
+	PI: PI,
+	HALF_PI: HALF_PI,
+	TAU: TAU
+});
+
 var polarLabelCssPrefix = 'monte-polar-label-';
 
 var LABEL_PLACEMENT = {
   CENTROID: {
     css: polarLabelCssPrefix + 'centroid',
     radius: function radius(w, h) {
-      var innerRadius = this.tryInvoke(this.opts.innerRadius, w, h);
-      var outerRadius = this.tryInvoke(this.opts.outerRadius, w, h);
+      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
+      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
       return innerRadius + (outerRadius - innerRadius) * 0.5;
     }
   },
@@ -7998,7 +8072,7 @@ var LABEL_PLACEMENT = {
   INNER: {
     css: polarLabelCssPrefix + 'inner',
     radius: function radius(w, h) {
-      var innerRadius = this.tryInvoke(this.opts.innerRadius, w, h);
+      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
       return innerRadius * 0.9;
     }
   },
@@ -8006,7 +8080,7 @@ var LABEL_PLACEMENT = {
   OUTER: {
     css: polarLabelCssPrefix + 'outer',
     radius: function radius(w, h) {
-      var outerRadius = this.tryInvoke(this.opts.outerRadius, w, h);
+      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
       return outerRadius * 1.1;
     }
   }
@@ -8018,6 +8092,59 @@ function polarLabelCentroid() {
 
 function polarLabelInner() {
   return LABEL_PLACEMENT.INNER;
+}
+
+function polarLabelOuter() {
+  return LABEL_PLACEMENT.OUTER;
+}
+
+function polarLabelInnerFactor(factor) {
+  return {
+    css: polarLabelCssPrefix + 'inner-' + factor,
+    radius: function radius(w, h) {
+      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
+      return innerRadius * factor;
+    }
+  };
+}
+
+function polarLabelOuterFactor(factor) {
+  return {
+    css: polarLabelCssPrefix + 'outer-' + factor,
+    radius: function radius(w, h) {
+      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
+      return outerRadius * factor;
+    }
+  };
+}
+
+function polarLabelRotateTangentOrigin(d) {
+  var angle = (d.endAngle - d.startAngle) / 2 + d.startAngle;
+
+  return angle;
+}
+
+function polarLabelRotateTangentFlip(d) {
+  var angle = (d.endAngle - d.startAngle) / 2 + d.startAngle;
+
+  var absAngle = Math.abs(angle);
+  if (absAngle > HALF_PI && absAngle <= 3 * HALF_PI) {
+    angle -= PI;
+  }
+
+  return angle;
+}
+
+function polarLabelRotateRay(d) {
+  var angle = (d.endAngle - d.startAngle) / 2 + d.startAngle - HALF_PI;
+
+  return angle;
+}
+
+function polarLabelRotateRayOpposite(d) {
+  var angle = (d.endAngle - d.startAngle) / 2 + d.startAngle - HALF_PI - PI;
+
+  return angle;
 }
 
 function arcSimpleTween(arc, from, to) {
@@ -8050,6 +8177,33 @@ function classedPattern(selection, pattern, value) {
   });
 }
 
+// https://sites.google.com/site/mymathclassroom/testing-if-two-angles-are-coterminal
+function areCoterminalAngles(a1, a2) {
+  var n = (a1 - a2) / TAU;
+
+  // Angles are coterminal if n is an integer; otherwise not.
+  return Number.isInteger(n);
+}
+
+// Placement on an arc given an radius and angle, (cos(a) * r, sin(a) * r)
+function getCoord(radius, angle) {
+  // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment to account for the starting
+  // angle differences between SVG (top) vs traditional polar coordinates (right). The adjustment
+  // is repeated here for coordinate consistency.
+  var a = angle - HALF_PI;
+  return [Math.cos(a) * radius, Math.sin(a) * radius];
+}
+
+// * conversion between Radians (rad) and Degrees (deg)
+//    -- Also add support for CSS values like `turn` and `grad` (gradians)???
+
+
+
+function radiansToDegrees(rad) {
+  // degrees = radians * (180/pi)
+  return rad * (180 / PI);
+}
+
 // Constrain to smallest draw-area dimension
 function radiusContrain(width, height) {
   var wr = width / 2;
@@ -8060,10 +8214,10 @@ function radiusContrain(width, height) {
 
 var LABEL_CSS_PATTERN = new RegExp('^' + polarLabelCssPrefix + '*');
 
-var EVENT_UPDATING_LABELS = 'updatingLabels';
-var EVENT_UPDATED_LABELS = 'updatedLabels';
+var EVENT_UPDATING_LABELS$1 = 'updatingLabels';
+var EVENT_UPDATED_LABELS$1 = 'updatedLabels';
 
-var EVENTS$2 = [EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS];
+var EVENTS$3 = [EVENT_UPDATING_LABELS$1, EVENT_UPDATED_LABELS$1];
 
 var ARC_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart',
@@ -8076,8 +8230,11 @@ var ARC_CHART_DEFAULTS = {
   arcCss: 'arc',
   arcWedgeCss: 'wedge',
   arcWedgeCssScale: noop,
+  arcWedgeCssScaleAccessor: PolarChart.generateScaleAccessor('arcWedgeCssScale', 'itemValue'),
   arcWedgeFillScale: noop,
+  arcWedgeFillScaleAccessor: PolarChart.generateScaleAccessor('arcWedgeFillScale', 'itemValue'),
   arcWedgeStrokeScale: noop,
+  arcWedgeStrokeScaleAccessor: PolarChart.generateScaleAccessor('arcWedgeStrokeScale', 'itemValue'),
 
   arcWedgeEnter: function arcWedgeEnter(d) {
     return {
@@ -8091,7 +8248,9 @@ var ARC_CHART_DEFAULTS = {
 
   // Background css and fill scales.
   arcBgWedgeCssScale: noop,
+  arcBgWedgeCssScaleAccessor: PolarChart.generateScaleAccessor('arcBgWedgeCssScale', 'itemValue'),
   arcBgWedgeFillScale: noop,
+  arcBgWedgeFillScaleAccessor: PolarChart.generateScaleAccessor('arcBgWedgeFillScale', 'itemValue'),
 
   itemValueProp: 'value',
   pieStartAngle: 0,
@@ -8106,6 +8265,7 @@ var ARC_CHART_DEFAULTS = {
 
   labelProp: 'value',
   labelFillScale: noop,
+  labelFillScaleAccessor: PolarChart.generateScaleAccessor('labelFillScale', 'label'),
   label: function label(d) {
     return this.getProp('label', d.data);
   },
@@ -8166,7 +8326,19 @@ var ArcChart = function (_PolarChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('wedge')), EVENTS$2));
+      (_babelHelpers$get2 = get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('wedge')), EVENTS$3));
+    }
+  }, {
+    key: '_resetCssDomains',
+    value: function _resetCssDomains() {
+      get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_resetCssDomains', this).call(this);
+
+      resetScaleDomain(this.opts.arcWedgeCssScale);
+      resetScaleDomain(this.opts.arcWedgeFillScale);
+      resetScaleDomain(this.opts.arcWedgeStrokeScale);
+      resetScaleDomain(this.opts.arcBgWedgeCssScaleAccessor);
+      resetScaleDomain(this.opts.arcBgWedgeFillScaleAccessor);
+      resetScaleDomain(this.opts.labelFillScaleAccessor);
     }
   }, {
     key: '_updateBounds',
@@ -8192,10 +8364,10 @@ var ArcChart = function (_PolarChart) {
   }, {
     key: '_update',
     value: function _update() {
-      this._updateArcs();
+      var arcGrps = this._updateArcs();
 
       if (this.opts.includeLabels) {
-        this._updateLabels();
+        this._updateLabels(arcGrps);
       }
     }
   }, {
@@ -8207,13 +8379,11 @@ var ArcChart = function (_PolarChart) {
       var arc = this.arc;
 
       arcs.enter().append('g').attr('class', 'monte-arc ' + this.opts.arcCss).append('path').attr('class', function (d, i) {
-        return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScale, d.data.css], d, i);
+        return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScaleAccessor, d.data.css], d, i);
       }).call(this.__bindCommonEvents('wedge')).transition().call(this._transitionSetup('arc', ENTER)).attrTween('d', function (d) {
         var start = _this3.tryInvoke(_this3.opts.arcWedgeEnter, d);
         return arcSimpleTween(arc, start, d);
-      }).attr('fill', function (d, i) {
-        return _this3.opts.arcWedgeFillScale(d.id || i);
-      });
+      }).attr('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor')).attr('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
 
       arcs.selectAll('.monte-arc-wedge').each(function () {
         // Sync data to containing element since it is not done automatically.
@@ -8225,14 +8395,14 @@ var ArcChart = function (_PolarChart) {
 
         delete nd.prev; // Remove old records to prevent building a history tree.
       }).attr('class', function (d, i) {
-        return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScale, d.data.css], d, i);
+        return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScaleAccessor, d.data.css], d, i);
       }).transition().call(this._transitionSetup('arc', UPDATE)).attrTween('d', function (d) {
         return arcSimpleTween(arc, d.prev, d);
-      }).attr('fill', function (d, i) {
-        return _this3.opts.arcWedgeFillScale(d.id || i);
-      });
+      }).attr('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor')).attr('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
 
       arcs.exit().transition().call(this._transitionSetup('arc', EXIT)).style('opacity', 0.01).remove();
+
+      return arcs.merge(arcs.enter().selectAll('.monte-arc'));
     }
   }, {
     key: '_updateBackground',
@@ -8252,52 +8422,62 @@ var ArcChart = function (_PolarChart) {
 
       wedge.enter().append('path').merge(wedge).attr('d', function (d) {
         return d;
-      }).attr('fill', function () {
-        return _this4.opts.arcBgWedgeFillScale();
-      }).attr('class', function (d, i) {
-        return _this4._buildCss(['monte-arc-bg', _this4.opts.arcBgWedgeCssScale], d, i);
+      }).attr('fill', this.optionReaderFunc('arcBgWedgeFillScaleAccessor')).attr('class', function (d, i) {
+        return _this4._buildCss(['monte-arc-bg', _this4.opts.arcBgWedgeCssScaleAccessor], d, i);
       });
     }
   }, {
     key: '_updateLabels',
-    value: function _updateLabels() {
+    value: function _updateLabels(arcGrps) {
       var _this5 = this;
 
-      var labels = this.draw.selectAll('.monte-arc-label').data(this.pieDisplayData);
+      this.emit(EVENT_UPDATING_LABELS$1);
+
       var labelPlacement = this.tryInvoke(this.opts.labelPlacement);
-      var labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
       var css = this.tryInvoke(labelPlacement.css);
 
       // Clear old label CSS from chart and add new.
       classedPattern(this.bound, LABEL_CSS_PATTERN, false);
       this.classed(css, true);
 
-      this.emit(EVENT_UPDATING_LABELS);
-
-      labels.enter().append('text').attr('class', 'monte-arc-label').merge(labels).transition().call(this._transitionSetup('label', UPDATE)).attr('dx', function (d, i, nodes) {
-        return _this5.tryInvoke(_this5.opts.labelXAdjust, d, i, nodes);
-      }).attr('dy', function (d, i, nodes) {
-        return _this5.tryInvoke(_this5.opts.labelYAdjust, d, i, nodes);
-      }).attr('transform', function (d, i, nodes) {
-        // TODO: Update to use `attrTween` and follow arc movement instead of direct translation.
-        //       Stop the label drift through the
-        var angle = _this5.tryInvoke(_this5.opts.labelAngle, d, i, nodes);
-        var coord = ArcChart.getCoord(labelRadius, angle);
-
-        return 'translate(' + coord + ')';
-      }).text(function (d) {
-        return _this5.getProp('label', d.data);
+      arcGrps.each(function (d, i, nodes) {
+        var node = d3.select(nodes[i]);
+        _this5._updateArcLabel(node, d, i, nodes);
       });
 
-      labels.exit().transition().call(this._transitionSetup('label', EXIT)).remove();
+      this.emit(EVENT_UPDATED_LABELS$1);
+    }
+  }, {
+    key: '_updateArcLabel',
+    value: function _updateArcLabel(arcGrp, d, i, nodes) {
+      var _this6 = this;
 
-      this.emit(EVENT_UPDATED_LABELS);
+      var lbl = arcGrp.selectAll('.monte-arc-label').data([d]);
+      var labelPlacement = this.tryInvoke(this.opts.labelPlacement);
+      var labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
+
+      lbl.enter().append('text').attr('class', 'monte-arc-label').merge(lbl).attr('dx', function (d1) {
+        return _this6.tryInvoke(_this6.opts.labelXAdjust, d1, i, nodes);
+      }).attr('dy', function (d1) {
+        return _this6.tryInvoke(_this6.opts.labelYAdjust, d1, i, nodes);
+      }).attr('fill', this.optionReaderFunc('labelFillScaleAccessor')).attr('transform', function (d1) {
+        // TODO: Update to use `attrTween` and follow arc movement instead of direct translation.
+        //       Stop the label drift through the
+        var angle = _this6.tryInvoke(_this6.opts.labelAngle, d1, i, nodes);
+        var coord = getCoord(labelRadius, angle);
+
+        return 'translate(' + coord + ')';
+      }).text(function (d1) {
+        return _this6.tryInvoke(_this6.opts.label, d1, i, nodes);
+      });
+
+      lbl.exit().transition().call(this._transitionSetup('label', EXIT)).remove();
     }
   }]);
   return ArcChart;
 }(PolarChart);
 
-ArcChart.EVENTS = EVENTS$2;
+ArcChart.EVENTS = EVENTS$3;
 
 function needleRoundedEnd() /* options */{
   return function needleRoundedEndDyn(needleHeight, needleBaseWidth) {
@@ -8386,7 +8566,7 @@ var EVENT_UPDATED_BACKGROUND_ARC = 'updatedBackgroundArc';
 var EVENT_UPDATING_NEEDLE = 'updatingNeedle';
 var EVENT_UPDATED_NEEDLE = 'updatedNeedle';
 
-var EVENTS$3 = [EVENT_UPDATING_BACKGROUND_ARC, EVENT_UPDATED_BACKGROUND_ARC, EVENT_UPDATING_NEEDLE, EVENT_UPDATED_NEEDLE];
+var EVENTS$4 = [EVENT_UPDATING_BACKGROUND_ARC, EVENT_UPDATED_BACKGROUND_ARC, EVENT_UPDATING_NEEDLE, EVENT_UPDATED_NEEDLE];
 
 var GAUGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-gauge-chart',
@@ -8395,7 +8575,9 @@ var GAUGE_CHART_DEFAULTS = {
   pieEndAngle: HALF_PI,
 
   arcBgCssScale: noop,
+  arcBgCssScaleAccessor: ArcChart.generateScaleAccessor('arcBgCssScale', 'itemValue'),
   arcBgFillScale: noop,
+  arcBgFillScaleAccessor: ArcChart.generateScaleAccessor('arcBgFillScale', 'itemValue'),
 
   needleBase: 20,
   needleHeight: function needleHeight(outerRadius, innerRadius) {
@@ -8469,7 +8651,7 @@ var GaugeChart = function (_ArcChart) {
         events[_key2] = arguments[_key2];
       }
 
-      (_babelHelpers$get2 = get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, EVENTS$3));
+      (_babelHelpers$get2 = get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, EVENTS$4));
     }
   }, {
     key: '_getLayerTranslate',
@@ -8478,6 +8660,14 @@ var GaugeChart = function (_ArcChart) {
       var l = this.width / 2 + this.margin.left;
       var t = this.height - (this.height - or) + this.margin.top;
       return 'translate(' + l + ', ' + t + ')';
+    }
+  }, {
+    key: '_resetCssDomains',
+    value: function _resetCssDomains() {
+      get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_resetCssDomains', this).call(this);
+
+      resetScaleDomain(this.opts.arcBgCssScaleAccessor);
+      resetScaleDomain(this.opts.arcBgFillScaleAccessor);
     }
   }, {
     key: '_data',
@@ -8491,7 +8681,7 @@ var GaugeChart = function (_ArcChart) {
       var needleValueProp = this.tryInvoke(this.opts.needleValueProp);
 
       // Insert starting label item
-      if (startLabelProp) {
+      if (isDefined(data[startLabelProp])) {
         data[segmentsProp].unshift({
           interval: 0,
           label: data[startLabelProp]
@@ -8549,7 +8739,6 @@ var GaugeChart = function (_ArcChart) {
     value: function _update() {
       get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_update', this).call(this);
 
-      this._updateLabels();
       this._updateNeedle();
     }
   }, {
@@ -8559,8 +8748,8 @@ var GaugeChart = function (_ArcChart) {
 
       this.emit(EVENT_UPDATING_BACKGROUND_ARC);
 
-      this.bg.append('path').attr('fill', this.opts.arcBgFillScale).attr('class', function (d, i) {
-        return _this2._buildCss(['monte-gauge-bg', _this2.opts.arcBgCssScale], d, i);
+      this.bg.append('path').attr('fill', this.optionReaderFunc('arcBgFillScale')).attr('class', function (d, i) {
+        return _this2._buildCss(['monte-gauge-bg', _this2.opts.arcBgCssScaleAccessor], d, i);
       }).attr('d', this.bgArc());
 
       this.emit(EVENT_UPDATED_BACKGROUND_ARC);
@@ -8614,7 +8803,7 @@ var GaugeChart = function (_ArcChart) {
   return GaugeChart;
 }(ArcChart);
 
-GaugeChart.EVENTS = EVENTS$3;
+GaugeChart.EVENTS = EVENTS$4;
 
 var GROUP_PROXY_METHODS$3 = ['needleValue'];
 
@@ -8716,12 +8905,93 @@ var direction = Object.freeze({
 	VERTICAL: VERTICAL
 });
 
+// Constants for angles:
+//    -- Common (quarters / cardinal):
+//        North/Top (0), West/Left (-1/2 PI), East/Right (1/2 PI), South/Bottom (PI)
+//
+//    -- Intermediates (eights / ordinal / intercardinal) (i.e. cardinal bisects):
+//        Northwest/TopLeft (-1/4 PI), etc...
+//
+//    [Note: The top eight points collectively are called the principal (or main) winds]
+//
+//    -- Tertiary (sixteenths / half-winds):
+//        NNE (North-northeast) (1/8 PI), etc...
+var NORTH = 0;
+var NORTH_NORTHWEST = -1 / 8 * PI;
+var NORTHWEST = -1 / 4 * PI;
+var WEST_NORTHWEST = -3 / 8 * PI;
+var WEST = -HALF_PI;
+var WEST_SOUTHWEST = -5 / 8 * PI;
+var SOUTHWEST = -3 / 4 * PI;
+var SOUTH_SOUTHWEST = -7 / 8 * PI;
+var SOUTH = PI;
+var SOUTH_SOUTHEAST = 7 / 8 * PI;
+var SOUTHEAST = 3 / 4 * PI;
+var EAST_SOUTHEAST = 5 / 8 * PI;
+var EAST = HALF_PI;
+var EAST_NORTHEAST = 3 / 8 * PI;
+var NORTHEAST = 1 / 4 * PI;
+var NORTH_NORTHEAST = 1 / 8 * PI;
+
+var TOP = NORTH;
+var TOP_BY_TOP_LEFT = NORTH_NORTHWEST;
+var TOP_LEFT = NORTHWEST;
+var LEFT_BY_TOP_LEFT = WEST_NORTHWEST;
+var LEFT = WEST;
+var LEFT_BY_BOTTOM_LEFT = WEST_SOUTHWEST;
+var BOTTOM_LEFT = SOUTHWEST;
+var BOTTOM_BY_BOTTOM_LEFT = SOUTH_SOUTHWEST;
+var BOTTOM = SOUTH;
+var BOTTOM_BY_BOTTOM_RIGHT = SOUTH_SOUTHEAST;
+var BOTTOM_RIGHT = SOUTHEAST;
+var RIGHT_BY_BOTTOM_RIGHT = EAST_SOUTHEAST;
+var RIGHT = EAST;
+var RIGHT_BY_TOP_RIGHT = EAST_NORTHEAST;
+var TOP_RIGHT = NORTHEAST;
+var TOP_BY_TOP_RIGHT = NORTH_NORTHEAST;
+
+var polar = Object.freeze({
+	NORTH: NORTH,
+	NORTH_NORTHWEST: NORTH_NORTHWEST,
+	NORTHWEST: NORTHWEST,
+	WEST_NORTHWEST: WEST_NORTHWEST,
+	WEST: WEST,
+	WEST_SOUTHWEST: WEST_SOUTHWEST,
+	SOUTHWEST: SOUTHWEST,
+	SOUTH_SOUTHWEST: SOUTH_SOUTHWEST,
+	SOUTH: SOUTH,
+	SOUTH_SOUTHEAST: SOUTH_SOUTHEAST,
+	SOUTHEAST: SOUTHEAST,
+	EAST_SOUTHEAST: EAST_SOUTHEAST,
+	EAST: EAST,
+	EAST_NORTHEAST: EAST_NORTHEAST,
+	NORTHEAST: NORTHEAST,
+	NORTH_NORTHEAST: NORTH_NORTHEAST,
+	TOP: TOP,
+	TOP_BY_TOP_LEFT: TOP_BY_TOP_LEFT,
+	TOP_LEFT: TOP_LEFT,
+	LEFT_BY_TOP_LEFT: LEFT_BY_TOP_LEFT,
+	LEFT: LEFT,
+	LEFT_BY_BOTTOM_LEFT: LEFT_BY_BOTTOM_LEFT,
+	BOTTOM_LEFT: BOTTOM_LEFT,
+	BOTTOM_BY_BOTTOM_LEFT: BOTTOM_BY_BOTTOM_LEFT,
+	BOTTOM: BOTTOM,
+	BOTTOM_BY_BOTTOM_RIGHT: BOTTOM_BY_BOTTOM_RIGHT,
+	BOTTOM_RIGHT: BOTTOM_RIGHT,
+	RIGHT_BY_BOTTOM_RIGHT: RIGHT_BY_BOTTOM_RIGHT,
+	RIGHT: RIGHT,
+	RIGHT_BY_TOP_RIGHT: RIGHT_BY_TOP_RIGHT,
+	TOP_RIGHT: TOP_RIGHT,
+	TOP_BY_TOP_RIGHT: TOP_BY_TOP_RIGHT
+});
+
 
 
 var index = Object.freeze({
 	D3: d3$1,
 	DIRECTION: direction,
 	MATH: math,
+	POLAR: polar,
 	CLICK: CLICK,
 	TOUCHSTART: TOUCHSTART,
 	TOUCHEND: TOUCHEND,
@@ -8824,12 +9094,20 @@ var Extension = function () {
   }, {
     key: 'setChart',
     value: function setChart(chart) {
+      // Prevent setting chart more than once.
+      if (this.chart && this.chart !== chart) {
+        throw new MonteError('An extension should only have the chart set once.');
+      }
+
       this.chart = chart;
 
       var layerName = this.tryInvoke(this.opts.layer);
       if (layerName) {
         this.layer = this.chart[layerName];
       }
+
+      // Get and store extension ID from MonteGlobal
+      this.__extId = global$1.getNextExtensionId();
 
       return this;
     }
@@ -8926,6 +9204,12 @@ var Extension = function () {
 
       return this;
     }
+  }, {
+    key: '_clearDataElements',
+    value: function _clearDataElements() {
+      // Clear elements based on extension ID.
+      this._extCreateSelection.remove();
+    }
 
     /**
      * Invokes a lifecycle event ('destroying', 'updatedBounds', 'rendered', 'optionChanged') with
@@ -8973,7 +9257,7 @@ var Extension = function () {
         if (console && console.error) {
           console.error(e);
         } // eslint-disable-line no-console
-        this.chart.__notify(SUPPRESSED_ERROR, e, e.stack || 'No stack available.');
+        this.__notify(SUPPRESSED_ERROR, e, e.stack || 'No stack available.');
       }
     }
 
@@ -9061,6 +9345,10 @@ var Extension = function () {
 
         return isFunc(value) ? value.call.apply(value, [this].concat(args)) : value;
       } catch (e) {
+        if (console && console.error) {
+          console.error(e);
+        } // eslint-disable-line no-console
+        this.__notify(SUPPRESSED_ERROR, e, e.stack || 'No stack available.');
         return null;
       }
     }
@@ -9101,6 +9389,36 @@ var Extension = function () {
       });
 
       return cssClasses.join(' ');
+    }
+  }, {
+    key: 'getExtId',
+    value: function getExtId() {
+      return this.__extId;
+    }
+  }, {
+    key: '_getExtAttr',
+    value: function _getExtAttr() {
+      return 'monte-ext-' + this.getExtId(); // ID is stored on the element as an attribute.
+    }
+
+    // Sets the extension ID selector ('the ID attribute') on the element.
+
+  }, {
+    key: '_setExtAttrs',
+    value: function _setExtAttrs(selection) {
+      selection.attr(this._getExtAttr(), '');
+    }
+  }, {
+    key: '_extCreateSelection',
+    value: function _extCreateSelection(cssClass) {
+      var extAttr = this._getExtAttr();
+      var selector = '[' + extAttr + ']';
+
+      if (cssClass) {
+        selector += '.' + cssClass;
+      }
+
+      return this.layer.selectAll(selector);
     }
 
     /**
@@ -9176,20 +9494,18 @@ var Arc = function (_Extension) {
         endAngle: isDefined(startAngle) ? startAngle : endAngle
       };
 
-      var segment = this.layer.selectAll('.' + css).data([arcAngles]);
-      var duration = this.tryInvoke(this.chart.opts.transitionDuration);
-      var ease = this.chart.opts.ease;
-      segment.enter().append('path').attr('class', css).attr('d', function (d) {
+      var segment = this._extCreateSelection().data([arcAngles]);
+      segment.enter().append('path').call(this._setExtAttrs.bind(this)).attr('class', css).transition().call(this.chart._transitionSetup('extArc', ENTER)).attrTween('d', function (d) {
         return _this2.arc(d);
       });
 
-      segment.transition().duration(duration).ease(ease).attrTween('d', function (d) {
+      segment.transition().call(this.chart._transitionSetup('extArc', UPDATE)).attrTween('d', function (d) {
         return arcSimpleTween(_this2.arc, _this2.prev, d);
       }).on('end', function (d) {
         return _this2.prev = d;
       });
 
-      segment.exit().transition().duration(duration).ease(ease).style('opacity', 0.01).remove();
+      segment.exit().transition().call(this.chart._transitionSetup('extArc', EXIT)).style('opacity', 0.01).remove();
     }
   }]);
   return Arc;
@@ -9227,19 +9543,11 @@ var Frame = function (_Extension) {
       return prop === 'edges' || prop === 'alignmentShift';
     }
   }, {
-    key: 'clear',
-    value: function clear() {
-      // Remove all elements
-      var css = this.opts.frameLineCss;
-      var edges = this.layer.selectAll('.' + css);
-      edges.remove();
-    }
-  }, {
     key: '_update',
     value: function _update() {
       var chart = this.chart;
       var css = this.opts.frameLineCss;
-      var edges = this.layer.selectAll('.' + css).data(this.opts.edges).order();
+      var edges = this._extCreateSelection().data(this.opts.edges).order();
       var shift = this.opts.alignmentShift;
       var coords = {
         top: [[0 + shift, 0 + shift], [chart.width + shift, 0 + shift]],
@@ -9248,7 +9556,7 @@ var Frame = function (_Extension) {
         left: [[0 + shift, 0 + shift], [0 + shift, chart.height + shift]]
       };
 
-      edges.enter().append('line').attr('class', css).attr('x1', function (d) {
+      edges.enter().append('line').call(this._setExtAttrs.bind(this)).attr('class', css).attr('x1', function (d) {
         return coords[d][0][0];
       }).attr('y1', function (d) {
         return coords[d][0][1];
@@ -9258,7 +9566,7 @@ var Frame = function (_Extension) {
         return coords[d][1][1];
       });
 
-      edges.transition().duration(chart.option('transitionDuration')).attr('x1', function (d) {
+      edges.transition().call(this.chart._transitionSetup('extFrame', UPDATE)).attr('x1', function (d) {
         return coords[d][0][0];
       }).attr('y1', function (d) {
         return coords[d][0][1];
@@ -9348,21 +9656,25 @@ var Grid = function (_Extension) {
       var y2 = this.tryInvoke(this.opts.y2Adjust);
 
       if (cfg.orient === HORIZONTAL) {
-        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition(axisTransition).attr('x1', 0 + x1).attr('y1', AXIS_SHIFT + y1).attr('x2', cfg.axesChart.width + x2).attr('y2', AXIS_SHIFT + y2).attr('transform', function (d) {
+        ticks.enter().append('line').call(this._setExtAttrs.bind(this)).attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition(axisTransition).attr('x1', 0 + x1).attr('y1', AXIS_SHIFT + y1).attr('x2', cfg.axesChart.width + x2).attr('y2', AXIS_SHIFT + y2).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
         });
 
-        ticks.transition(axisTransition).attr('x2', function () {
+        ticks.transition(axisTransition).attr('x1', function () {
+          return 0 + x1;
+        }).attr('x2', function () {
           return cfg.axesChart.width + x2;
         }).attr('transform', function (d) {
           return 'translate(0,' + cfg.scale(d) + ')';
         });
       } else if (cfg.orient === VERTICAL) {
-        ticks.enter().append('line').attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition(axisTransition).attr('x1', AXIS_SHIFT + x1).attr('y1', 0 + y1).attr('x2', AXIS_SHIFT + x2).attr('y2', cfg.axesChart.height + y2).attr('transform', function (d) {
+        ticks.enter().append('line').call(this._setExtAttrs.bind(this)).attr('class', fullCss).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 0).transition(axisTransition).attr('x1', AXIS_SHIFT + x1).attr('y1', 0 + y1).attr('x2', AXIS_SHIFT + x2).attr('y2', cfg.axesChart.height + y2).attr('transform', function (d) {
           return 'translate(' + cfg.scale(d) + ', 0)';
         });
 
-        ticks.transition(axisTransition).attr('y2', function () {
+        ticks.transition(axisTransition).attr('y1', function () {
+          return 0 + y1;
+        }).attr('y2', function () {
           return cfg.axesChart.height + y2;
         }).attr('transform', function (d) {
           return 'translate(' + cfg.scale(d) + ', 0)';
@@ -9428,17 +9740,85 @@ var VerticalLines = function (_Grid2) {
   return VerticalLines;
 }(Grid);
 
+function compose() {
+  for (var _len = arguments.length, funcs = Array(_len), _key = 0; _key < _len; _key++) {
+    funcs[_key] = arguments[_key];
+  }
+
+  return function () {
+    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+      args[_key2] = arguments[_key2];
+    }
+
+    funcs.forEach(function (f) {
+      return f.apply(undefined, args);
+    });
+  };
+}
+
+function readTransforms(t) {
+  var transformPattern = /(.*?)\((.*?)\)\s*/g;
+  var matches = transformPattern.exec(t);
+  var transforms = {};
+
+  if (matches) {
+    for (var i = 1; i < matches.length; i += 2) {
+      var k = matches[i];
+      var v = matches[i + 1].trim();
+
+      if (v.indexOf(' ') > -1 || v.indexOf(',') > -1) {
+        v = v.split(/,\s*|\s+/);
+      }
+
+      transforms[k] = v;
+    }
+  }
+
+  return transforms;
+}
+
+function combineTransforms(transformObj) {
+  var transformStr = '';
+
+  for (var t in transformObj) {
+    if (transformObj.hasOwnProperty(t)) {
+      var values = transformObj[t].join(', ');
+      transformStr += t + '(' + values + ')';
+    }
+  }
+
+  return transformStr;
+}
+
+
+
+var index$1 = Object.freeze({
+	isArray: isArray$2,
+	isDefined: isDefined,
+	isFunc: isFunc,
+	isNumeric: isNumeric,
+	isObject: isObject$2,
+	isString: isString,
+	compose: compose,
+	getDepthFirst: getDepthFirst,
+	mergeOptions: mergeOptions,
+	ReplacePreceding: ReplacePreceding,
+	noop: noop,
+	readTransforms: readTransforms,
+	resetScaleDomain: resetScaleDomain
+});
+
 var LABEL_DEFAULTS = {
   eventPrefix: 'label',
-  labelCss: 'monte-ext-label-id',
-  commonCss: 'monte-ext-label',
+  labelCss: 'monte-ext-label',
   text: '',
   x: 0,
   y: 0,
   dy: '0.35em',
   dx: 0,
   anchor: 'start',
-  labelCustomize: noop
+  labelCustomize: noop,
+  maxWidth: Number.POSITIVE_INFINITY
 };
 
 var Label = function (_Extension) {
@@ -9465,27 +9845,66 @@ var Label = function (_Extension) {
     value: function _update() {
       var _this2 = this;
 
-      var selectorCss = this.tryInvoke(this.opts.labelCss);
-      var commonCss = this.tryInvoke(this.opts.commonCss);
+      var labelCss = this.tryInvoke(this.opts.labelCss);
       var text = this.tryInvoke(this.opts.text);
+      var maxWidth = +this.tryInvoke(this.opts.maxWidth);
 
-      var lbl = this.layer.selectAll('.' + selectorCss).data([text]);
+      var lbl = this._extCreateSelection().data([text]);
 
-      lbl.enter().append('text').attr('class', selectorCss + ' ' + commonCss).merge(lbl).attr('x', this.tryInvoke(this.opts.x)).attr('y', this.tryInvoke(this.opts.y)).attr('dx', this.tryInvoke(this.opts.dx)).attr('dy', this.tryInvoke(this.opts.dy)).attr('text-anchor', this.tryInvoke(this.opts.anchor)).text(function (d) {
+      lbl.enter().append('text').call(this._setExtAttrs.bind(this)).attr('class', labelCss).merge(lbl).text(function (d) {
         return d;
-      }).call(function () {
+      }).attr('text-anchor', this.tryInvoke(this.opts.anchor)).call(function (lblSel) {
+        return _this2._checkMaxWidth(lblSel, maxWidth);
+      }).attr('x', this.tryInvoke(this.opts.x)).attr('y', this.tryInvoke(this.opts.y)).attr('dx', this.tryInvoke(this.opts.dx)).attr('dy', this.tryInvoke(this.opts.dy)).call(function () {
         for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
           args[_key2] = arguments[_key2];
         }
 
-        _this2.tryInvoke.apply(_this2, [_this2.opts.labelCustomize].concat(args));
+        return _this2.tryInvoke.apply(_this2, [_this2.opts.labelCustomize].concat(args));
       });
 
       lbl.exit().remove();
     }
+  }, {
+    key: '_checkMaxWidth',
+    value: function _checkMaxWidth(lblSel, maxWidth) {
+      if (isNumeric(maxWidth) && maxWidth > 0) {
+        var el = lblSel.node();
+        var currentWidth = el.getBBox().width;
+
+        if (currentWidth > maxWidth) {
+          var currentFontSize = getFontSize(el);
+          var newFontSize = currentFontSize * maxWidth / currentWidth;
+
+          // Store original font size to be potentially restored later.
+          if (!this.origFontSize) {
+            this.origFontSize = currentFontSize;
+          }
+
+          lblSel.style('font-size', newFontSize + 'px');
+        } else if (isDefined(this.origFontSize) && currentWidth < maxWidth) {
+          // The font size has been changed and no longer needs to be scaled down
+          var _currentFontSize = getFontSize(el);
+          var _newFontSize = _currentFontSize * maxWidth / currentWidth;
+
+          if (_newFontSize > this.origFontSize) {
+            // New font would be larger than the original, don't grow but use restore original font size
+            lblSel.style('font-size', this.origFontSize + 'px');
+          } else {
+            // Use new intermediate font size
+            lblSel.style('font-size', _newFontSize + 'px');
+          }
+        }
+      }
+    }
   }]);
   return Label;
 }(Extension);
+
+function getFontSize(el) {
+  var style = window.getComputedStyle(el, null);
+  return parseFloat(style.getPropertyValue('font-size'), 10);
+}
 
 var POLAR_GRID_DEFAULTS = {
   eventPrefix: 'polargrid',
@@ -9538,7 +9957,7 @@ var PolarGrid = function (_Extension) {
 
       var radii = this.tryInvoke(this.opts.arcRadii);
       var data = radii.sort(this.opts.arcSort);
-      var arcs = this.layer.selectAll('.' + this.opts.arcCss).data(data);
+      var arcs = this._extCreateSelection().data(data);
       var startAngle = this.tryInvoke(this.opts.startAngle);
       var endAngle = this.tryInvoke(this.opts.endAngle);
       var arcAngles = isDefined(startAngle) && isDefined(endAngle) ? {
@@ -9549,10 +9968,12 @@ var PolarGrid = function (_Extension) {
         endAngle: isDefined(startAngle) ? startAngle : endAngle
       };
 
-      arcs.enter().append('path').merge(arcs).attr('class', this.tryInvoke(this.opts.arcCss)).attr('d', function (d) {
+      arcs.enter().append('path').call(this._setExtAttrs.bind(this)).merge(arcs).attr('class', this.tryInvoke(this.opts.arcCss)).attr('d', function (d) {
         arcAngles.radius = d;
         return _this2.arc(arcAngles);
       });
+
+      arcs.exit().remove();
     }
   }]);
   return PolarGrid;
@@ -9600,12 +10021,11 @@ var PolarLine = function (_Extension) {
 
       var css = this.tryInvoke(this.opts.lineCss);
       var angle = this.tryInvoke(this.opts.angle);
-      var line = this.layer.selectAll('.' + css).data([{ startAngle: angle, endAngle: angle }]);
-      var newLine = line.enter().append('line').attr('class', css);
-      var duration = this.tryInvoke(this.chart.opts.transitionDuration);
+      var line = this._extCreateSelection().data([{ startAngle: angle, endAngle: angle }]);
+      var newLine = line.enter().append('line').call(this._setExtAttrs.bind(this)).attr('class', css);
 
       if (isDefined(angle)) {
-        newLine.merge(line).transition().duration(duration).attr('x1', function (d) {
+        newLine.merge(line).transition().call(this.chart._transitionSetup('extPolarLine', UPDATE)).attr('x1', function (d) {
           return _this2.innerArc.centroid(d)[0];
         }).attr('y1', function (d) {
           return _this2.innerArc.centroid(d)[1];
@@ -9624,55 +10044,108 @@ var PolarLine = function (_Extension) {
   return PolarLine;
 }(Extension);
 
-var POLAR_TICKS_DEFAULTS$1 = {
-  startAngle: 0,
-  endAngle: TAU,
-  tickInterval: 1 / 4 * TAU, // Every 90deg
-  innerRadius: 0,
-  outerRadius: 100,
-  tickCss: 'monte-polar-tick',
-  includeEnd: true
+var POLAR_ROTATE_LABEL_DEFAULTS = {
+  layer: 'draw',
+  eventPrefix: 'polarRotateLabel',
+  labelCss: 'monte-arc-label',
+  rotation: polarLabelRotateTangentFlip
 };
 
-// https://sites.google.com/site/mymathclassroom/testing-if-two-angles-are-coterminal
-function areCoterminalAngles(a1, a2) {
-  var n = (a1 - a2) / TAU;
+var PolarRotateLabel = function (_Extension) {
+  inherits(PolarRotateLabel, _Extension);
 
-  // Angles are coterminal if n is an integer; otherwise not.
-  return Number.isInteger(n);
-}
+  function PolarRotateLabel() {
+    classCallCheck(this, PolarRotateLabel);
+    return possibleConstructorReturn(this, (PolarRotateLabel.__proto__ || Object.getPrototypeOf(PolarRotateLabel)).apply(this, arguments));
+  }
 
-var PolarTicks$1 = function () {
+  createClass(PolarRotateLabel, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(PolarRotateLabel.prototype.__proto__ || Object.getPrototypeOf(PolarRotateLabel.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_ROTATE_LABEL_DEFAULTS]));
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var _this2 = this;
+
+      var css = this.tryInvoke(this.opts.labelCss);
+      var labels = this.layer.selectAll('.' + css);
+
+      labels.attr('transform', function (d, i, nodes) {
+        var nodeSel = d3.select(nodes[i]);
+        var rotate = radiansToDegrees(_this2.tryInvoke(_this2.opts.rotation, d, i, nodes));
+        var currentTransforms = readTransforms(nodeSel.attr('transform'));
+        currentTransforms.rotate = [rotate]; // Replace existing if it's there; otherwise add it.
+
+        return combineTransforms(currentTransforms);
+      });
+    }
+  }]);
+  return PolarRotateLabel;
+}(Extension);
+
+var POLAR_TICKS_DEFAULTS = {
+  eventPrefix: 'polarticks',
+  startAngle: 0,
+  endAngle: TAU,
+  tickInterval: 1 / 8 * TAU, // 8 ticks, one every 45 deg
+  innerRadius: 0,
+  outerRadius: 100,
+  tickCss: 'monte-ext-polar-tick',
+  suppressEnd: false
+};
+
+var PolarTicks = function (_Extension) {
+  inherits(PolarTicks, _Extension);
+
   function PolarTicks() {
     classCallCheck(this, PolarTicks);
-
-    for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
-      options[_key] = arguments[_key];
-    }
-
-    this.opts = mergeOptions.apply(undefined, options.concat([POLAR_TICKS_DEFAULTS$1]));
-
-    // TODO: Rework to use `getCoord` from `PolarChart`?
-    this.innerArc = d3.arc().innerRadius(this.opts.innerRadius).outerRadius(this.opts.innerRadius);
-    this.outerArc = d3.arc().innerRadius(this.opts.outerRadius).outerRadius(this.opts.outerRadius);
+    return possibleConstructorReturn(this, (PolarTicks.__proto__ || Object.getPrototypeOf(PolarTicks)).apply(this, arguments));
   }
 
   createClass(PolarTicks, [{
-    key: 'update',
-    value: function update(sel) {
-      var _this = this;
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(PolarTicks.prototype.__proto__ || Object.getPrototypeOf(PolarTicks.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_TICKS_DEFAULTS]));
+
+      this.innerArc = d3.arc().innerRadius(this.opts.innerRadius).outerRadius(this.opts.innerRadius);
+      this.outerArc = d3.arc().innerRadius(this.opts.outerRadius).outerRadius(this.opts.outerRadius);
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var _this2 = this;
 
       var data = [];
-      var tickCount = Math.abs(this.opts.endAngle - this.opts.startAngle) / this.opts.tickInterval;
+      var startAngle = this.tryInvoke(this.opts.startAngle);
+      var endAngle = this.tryInvoke(this.opts.endAngle);
+      var tickInterval = this.tryInvoke(this.opts.tickInterval);
+      var suppressEnd = this.tryInvoke(this.opts.suppressEnd);
+      var tickCss = this.tryInvoke(this.opts.tickCss);
+
+      var tickCount = Math.abs(endAngle - startAngle) / tickInterval;
 
       // Include every tick, within the arc unless they would overlap at the start and end (such as
       // start (0) and end of a circle (2Pi)).
-      if (this.opts.includeEnd && !areCoterminalAngles(this.opts.startAngle, this.opts.endAngle)) {
+      if (!suppressEnd && !areCoterminalAngles(startAngle, endAngle)) {
         tickCount++;
       }
 
       for (var i = 0; i < tickCount; i++) {
-        var angle = this.opts.startAngle + i * this.opts.tickInterval;
+        var angle = startAngle + i * tickInterval;
 
         // Create data structure that `arc` handles.
         data.push({
@@ -9682,64 +10155,22 @@ var PolarTicks$1 = function () {
         });
       }
 
-      var ticks = sel.selectAll('.' + this.opts.tickCss).data(data); // , (d, i) => d.startAngle);
+      var ticks = this._extCreateSelection().data(data);
 
-      ticks.enter().append('line').merge(ticks).attr('class', this.opts.tickCss).attr('x1', function (d) {
-        return _this.innerArc.centroid(d)[0];
+      ticks.enter().append('line').call(this._setExtAttrs.bind(this)).merge(ticks).attr('class', tickCss).attr('x1', function (d) {
+        return _this2.innerArc.centroid(d)[0];
       }).attr('y1', function (d) {
-        return _this.innerArc.centroid(d)[1];
+        return _this2.innerArc.centroid(d)[1];
       }).attr('x2', function (d) {
-        return _this.outerArc.centroid(d)[0];
+        return _this2.outerArc.centroid(d)[0];
       }).attr('y2', function (d) {
-        return _this.outerArc.centroid(d)[1];
+        return _this2.outerArc.centroid(d)[1];
       });
 
       ticks.exit().remove();
     }
   }]);
   return PolarTicks;
-}();
-
-var POLAR_TICKS_DEFAULTS = {
-  eventPrefix: 'polarticks',
-  startAngle: 0,
-  endAngle: TAU,
-  tickInterval: 1 / 8 * TAU, // 8 ticks, one every 45 deg
-  innerRadius: 0,
-  outerRadius: 100,
-  tickCss: 'monte-ext-polar-tick'
-};
-
-var PolarTicks$$1 = function (_Extension) {
-  inherits(PolarTicks$$1, _Extension);
-
-  function PolarTicks$$1() {
-    classCallCheck(this, PolarTicks$$1);
-    return possibleConstructorReturn(this, (PolarTicks$$1.__proto__ || Object.getPrototypeOf(PolarTicks$$1)).apply(this, arguments));
-  }
-
-  createClass(PolarTicks$$1, [{
-    key: '_initOptions',
-    value: function _initOptions() {
-      var _babelHelpers$get;
-
-      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
-        options[_key] = arguments[_key];
-      }
-
-      (_babelHelpers$get = get(PolarTicks$$1.prototype.__proto__ || Object.getPrototypeOf(PolarTicks$$1.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_TICKS_DEFAULTS]));
-    }
-  }, {
-    key: '_update',
-    value: function _update() {
-      if (!this.polarTicksDraw) {
-        this.polarTicksDraw = new PolarTicks$1(this.opts);
-      }
-
-      this.polarTicksDraw.update(this.layer);
-    }
-  }]);
-  return PolarTicks$$1;
 }(Extension);
 
 var BAR_BG_DEFAULTS = {
@@ -9786,10 +10217,10 @@ var BarBg = function (_Extension) {
         data = this._buildData(barChart, chartData);
       }
 
-      var bgs = this.layer.selectAll('.' + this.opts.barBgCss).data(data);
+      var bgs = this._extCreateSelection().data(data);
       var sizeAdjust = this._sizeAdjust(barChart);
 
-      bgs.enter().append('rect').merge(bgs).attr('class', this.opts.barBgCss).attr('x', function () {
+      bgs.enter().append('rect').call(this._setExtAttrs.bind(this)).merge(bgs).attr('class', this.opts.barBgCss).attr('x', function () {
         return barChart._barX.bind(barChart).apply(undefined, arguments) + _this2._xShift(sizeAdjust);
       }).attr('y', function () {
         return barChart._barY.bind(barChart).apply(undefined, arguments) + _this2._yShift(sizeAdjust);
@@ -9992,10 +10423,10 @@ var ReferenceLine = function (_Extension) {
         this.lineData = [];
       }
 
-      var lines = this.layer.selectAll('.' + this.opts.css).data(this.lineData);
+      var lines = this._extCreateSelection().data(this.lineData);
 
       // Enter
-      var enter = lines.enter().append('g').attr('class', this.opts.css);
+      var enter = lines.enter().append('g').call(this._setExtAttrs.bind(this)).attr('class', this.opts.css);
       enter.append('text');
       enter.append('line');
 
@@ -10036,60 +10467,6 @@ var ReferenceLine = function (_Extension) {
   }]);
   return ReferenceLine;
 }(Extension);
-
-function compose() {
-  for (var _len = arguments.length, funcs = Array(_len), _key = 0; _key < _len; _key++) {
-    funcs[_key] = arguments[_key];
-  }
-
-  return function () {
-    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-      args[_key2] = arguments[_key2];
-    }
-
-    funcs.forEach(function (f) {
-      return f.apply(undefined, args);
-    });
-  };
-}
-
-function readTransforms(t) {
-  var transformPattern = /(.*?)\((.*?)\)\s*/g;
-  var matches = transformPattern.exec(t);
-  var transforms = {};
-
-  if (matches) {
-    for (var i = 1; i < matches.length; i += 2) {
-      var k = matches[i];
-      var v = matches[i + 1].trim();
-
-      if (v.indexOf(' ') > -1 || v.indexOf(',') > -1) {
-        v = v.split(/,\s*|\s+/);
-      }
-
-      transforms[k] = v;
-    }
-  }
-
-  return transforms;
-}
-
-
-
-var index$1 = Object.freeze({
-	isArray: isArray$2,
-	isDefined: isDefined,
-	isFunc: isFunc,
-	isNumeric: isNumeric,
-	isObject: isObject$2,
-	compose: compose,
-	getDepthFirst: getDepthFirst,
-	mergeOptions: mergeOptions,
-	ReplacePreceding: ReplacePreceding,
-	noop: noop,
-	readTransforms: readTransforms,
-	resetScaleDomain: resetScaleDomain
-});
 
 // import isFunc from '../tools/is';
 
@@ -10260,7 +10637,8 @@ exports.ExtVerticalLines = VerticalLines;
 exports.ExtLabel = Label;
 exports.ExtPolarGrid = PolarGrid;
 exports.ExtPolarLine = PolarLine;
-exports.ExtPolarTicks = PolarTicks$$1;
+exports.ExtPolarRotateLabel = PolarRotateLabel;
+exports.ExtPolarTicks = PolarTicks;
 exports.ExtBarBg = BarBg;
 exports.ExtHorizontalBarBg = HorizontalBarBg;
 exports.ExtReferenceLine = ReferenceLine;
@@ -10280,6 +10658,15 @@ exports.HorizontalResizer = HorizontalResizer;
 exports.HorizontalRatioResizer = HorizontalRatioResizer;
 exports.Resizer = Resizer;
 exports.VerticalResizer = VerticalResizer;
+exports.polarLabelCentroid = polarLabelCentroid;
+exports.polarLabelInner = polarLabelInner;
+exports.polarLabelOuter = polarLabelOuter;
+exports.polarLabelInnerFactor = polarLabelInnerFactor;
+exports.polarLabelOuterFactor = polarLabelOuterFactor;
+exports.polarLabelRotateTangentOrigin = polarLabelRotateTangentOrigin;
+exports.polarLabelRotateTangentFlip = polarLabelRotateTangentFlip;
+exports.polarLabelRotateRay = polarLabelRotateRay;
+exports.polarLabelRotateRayOpposite = polarLabelRotateRayOpposite;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
