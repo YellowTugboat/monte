@@ -11,9 +11,6 @@ import { global } from '../support/MonteGlobal';
 import { mergeOptions } from '../tools/mergeOptions';
 import { noop } from '../tools/noop';
 
-// TODO: Begin adoption of generic scale accessors. Every scale should be accompained with a property
-//       `<scaleProperty>Accessor` that translates which value to pass to the scale.
-
 const CLIP_PATH_ID = 'drawPath';
 
 const DEFAULTS = {
@@ -30,15 +27,10 @@ const DEFAULTS = {
   customEvents: [],
   extensions: [],
 
-  // TODO: Rework transition features to support the various Update pattern stages.
-  transitionDuration: TRANSITION_DURATION_MS,
-  ease: d3.easeCubic,
-  delay: 0,
-
   transition: {
     duration: TRANSITION_DURATION_MS,
-    ease: d3.easeCubic,
-    delay: 0,
+    ease: TRANSITION_EASE,
+    delay: TRANSITION_DELAY_MS,
   },
 
   resize: null,

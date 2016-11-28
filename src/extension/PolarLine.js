@@ -1,4 +1,5 @@
 import { Extension } from './Extension';
+import { UPDATE } from '../const/d3';
 import { isDefined } from '../tools/is';
 
 const POLAR_LINE_DEFAULTS = {
@@ -25,7 +26,6 @@ export class PolarLine extends Extension {
   _update() {
     const css = this.tryInvoke(this.opts.lineCss);
     const angle = this.tryInvoke(this.opts.angle);
-    const duration = this.tryInvoke(this.chart.opts.transitionDuration);
     const line = this._extCreateSelection().data([{ startAngle: angle, endAngle: angle}]);
     const newLine = line.enter().append('line')
       .call(this._setExtAttrs.bind(this))
@@ -34,7 +34,7 @@ export class PolarLine extends Extension {
     if (isDefined(angle)) {
       newLine.merge(line)
         .transition()
-          .duration(duration)
+          .call(this.chart._transitionSetup('extPolarLine', UPDATE))
           .attr('x1', (d) => this.innerArc.centroid(d)[0])
           .attr('y1', (d) => this.innerArc.centroid(d)[1])
           .attr('x2', (d) => this.outerArc.centroid(d)[0])

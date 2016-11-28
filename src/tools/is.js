@@ -1,8 +1,11 @@
 export const undef = void 0;
 
 export function isNumeric(v) {
-  return typeof v === 'number' &&
-    isFinite(v);
+  return typeof v === 'number' && isFinite(v);
+}
+
+export function isString(v) {
+  return typeof v === 'string';
 }
 
 export function isFunc(v) {

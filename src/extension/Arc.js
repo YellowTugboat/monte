@@ -1,3 +1,4 @@
+import { ENTER, EXIT, UPDATE } from '../const/d3';
 import { Extension } from './Extension';
 import { TAU } from '../const/math';
 import { arcSimpleTween } from '../util/tween';
@@ -36,23 +37,21 @@ export class Arc extends Extension {
     };
 
     const segment = this._extCreateSelection().data([arcAngles]);
-    const duration = this.tryInvoke(this.chart.opts.transitionDuration);
-    const ease = this.chart.opts.ease;
     segment.enter().append('path')
       .call(this._setExtAttrs.bind(this))
       .attr('class', css)
-      .attr('d', (d) => this.arc(d));
+      .transition()
+        .call(this.chart._transitionSetup('extArc', ENTER))
+        .attrTween('d', (d) => this.arc(d));
 
     segment.transition()
-      .duration(duration)
-      .ease(ease)
+      .call(this.chart._transitionSetup('extArc', UPDATE))
       .attrTween('d', (d) => arcSimpleTween(this.arc, this.prev, d))
       .on('end', (d) => this.prev = d);
 
     segment.exit()
       .transition()
-        .duration(duration)
-        .ease(ease)
+        .call(this.chart._transitionSetup('extArc', EXIT))
         .style('opacity', 0.01)
         .remove();
   }

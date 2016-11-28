@@ -1,4 +1,4 @@
-import { AXIS_SHIFT } from '../const/d3';
+import { AXIS_SHIFT, UPDATE } from '../const/d3';
 import { Extension } from './Extension';
 
 const FRAME_DEFAULTS = {
@@ -16,13 +16,6 @@ export class Frame extends Extension {
 
   _shouldOptionUpdate(prop) {
     return prop === 'edges' || prop === 'alignmentShift';
-  }
-
-  _clearDataElements() {
-    // Remove all elements
-    const css = this.opts.frameLineCss;
-    const edges = this.layer.selectAll(`.${css}`);
-    edges.remove();
   }
 
   _update() {
@@ -46,7 +39,7 @@ export class Frame extends Extension {
         .attr('y2', (d) => coords[d][1][1]);
 
     edges.transition()
-      .duration(chart.option('transitionDuration'))
+      .call(this.chart._transitionSetup('extFrame', UPDATE))
       .attr('x1', (d) => coords[d][0][0])
       .attr('y1', (d) => coords[d][0][1])
       .attr('x2', (d) => coords[d][1][0])

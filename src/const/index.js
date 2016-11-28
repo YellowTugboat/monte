@@ -9,4 +9,7 @@ export * from './events';
 import * as MATH from './math';
 export { MATH };
 
+import * as POLAR from './polar';
+export { POLAR };
+
 export * from './undef';
