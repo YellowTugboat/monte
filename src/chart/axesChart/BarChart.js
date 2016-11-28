@@ -16,16 +16,15 @@ const BAR_CHART_DEFAULTS = {
   },
 
   barCssScale: noop,
-  barFillScale: noop,
+  barCssScaleAccessor: AxesChart.generateScaleAccessor('barCssScale', 'x'),
 
-  barFillScaleAccessor: function(d) {
-    return this.getScaledProp('opts.barFillScale', 'x', d);
-  },
+  barFillScale: noop,
+  barFillScaleAccessor: AxesChart.generateScaleAccessor('barFillScale', 'x'),
 
   // Static CSS class(es) to apply to every line.
   barCss: 'bar',
   barGrpCss: function(d) {
-    const value = this.getProp('x', d);
+    const value = this.getProp('y', d);
     let css = 'monte-bar-zero';
 
     if (value > 0) {
@@ -52,6 +51,7 @@ const BAR_CHART_DEFAULTS = {
   // TODO: Adopt label placement like arc charts?
   labelProp: 'value',
   labelFillScale: noop,
+  labelFillScaleAccessor: AxesChart.generateScaleAccessor('labelFillScale', 'label'),
   label: function(d) {
     return this.getProp('label', d);
   },
@@ -103,8 +103,8 @@ export class BarChart extends AxesChart {
     super._resetCssDomains();
 
     resetScaleDomain(this.opts.barCssScale);
-
-    return this;
+    resetScaleDomain(this.opts.barFillScale);
+    resetScaleDomain(this.opts.labelFillScale);
   }
 
   // Render the vis.
@@ -137,6 +137,9 @@ export class BarChart extends AxesChart {
         .attr('y', barY)
         .attr('width', barWidth)
         .attr('height', barHeight)
+        .attr('fill-test', 'red')
+        .attr('fill', this.optionReaderFunc('barFillScaleAccessor'))
+        // .attr('fill', (...args) => this.tryInvoke(this.opts.barFillScaleAccessor, ...args))
         .call(this.__bindCommonEvents('bar'))
       .merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
         .attr('class', (d, i) => this._buildCss([
@@ -144,14 +147,10 @@ export class BarChart extends AxesChart {
           this.opts.barCssScale,
           d.css], d, i))
       .transition()
-        .call(this._transitionSetup(ENTER))
-        .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScaleAccessor, d, i, nodes));
-        // .attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.barFillScale, d, i, nodes));
-
-        // TODO: Begin adoption `optionReaderFunc`
-        // i.e.: .attr('fill', this.optionReaderFunc('barFillScale'));
+        .call(this._transitionSetup(ENTER));
 
     barGrps.select('rect')
+      .attr('fill', this.optionReaderFunc('barFillScaleAccessor'))
       .transition()
         .call(this._transitionSetup(UPDATE))
         .attr('x', barX)
@@ -177,7 +176,7 @@ export class BarChart extends AxesChart {
     lbl.enter().append('text')
       .attr('class', 'monte-bar-label')
       .merge(lbl)
-        .attr('fill', (d1) => this.tryInvoke(this.opts.labelFillScale, d1, i, nodes))
+        .attr('fill', (d1) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
         .attr('x', (d1) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
         .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
         .attr('y', (d1) => this.tryInvoke(this.opts.labelY, d1, i, nodes))

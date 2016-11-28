@@ -1,7 +1,7 @@
 import * as EV from '../const/events';
 import { TRANSITION_DELAY_MS, TRANSITION_DURATION_MS, TRANSITION_EASE } from '../const/d3';
 import { get as _get, set as _set, isEqual } from '../external/lodash';
-import { isArray, isDefined, isFunc, isObject } from '../tools/is';
+import { isArray, isDefined, isFunc, isObject, isString } from '../tools/is';
 import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
@@ -191,6 +191,8 @@ export class Chart {
 
       console.log(`[${this}] "${eventName}": ${a}`); // eslint-disable-line no-console
     };
+
+    this.developerMode = true;
 
     // Determine events to watch in developer mode. If `developerMode` is an array use the provided
     // events; otherwise use all registered events.
@@ -439,11 +441,15 @@ export class Chart {
    * directly read chart options.
    *
    * For example:
-   *  `.attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.fillScale, d, i, nodes))`
+   *  `.attr('fill', (d, i, nodes) => this.tryInvoke(this.opts.fillScaleAccessor, d, i, nodes))`
    * is equivalent to
-   *  `.attr('fill', this.optionReaderFunc('fillScale')')`
+   *  `.attr('fill', this.optionReaderFunc('fillScaleAccessor')')`
    */
   optionReaderFunc(optionKey) {
+    if (!isString(optionKey)) {
+      throw MonteError.InvalidArgumentType('optionReaderFunc', 'optionKey', 'string', optionKey);
+    }
+
     if (!this._optionReaderCache[optionKey]) {
       this._optionReaderCache[optionKey] = (...args) =>
         this.tryInvoke(this.opts[optionKey], ...args);
@@ -844,6 +850,32 @@ export class Chart {
    */
   toString() {
     return this.constructor.name;
+  }
+
+  static generateScaleAccessor(scaleName, propPrefix) {
+    if (propPrefix) {
+      return function(d) {
+        const scalePath = `opts.${scaleName}`;
+        const v = this.getScaledProp(scalePath, propPrefix, d);
+
+        if (this.developerMode) {
+          console.log(scalePath, v); // eslint-disable-line no-console
+        }
+
+        return v;
+      };
+    }
+
+    // If the `propPrefix` is blank than default to index counting.
+    return function(d, i) {
+      const v = _get(this, `opts.${scaleName}`)(i);
+
+      if (this.developerMode) {
+        console.log(v); // eslint-disable-line no-console
+      }
+
+      return v;
+    };
   }
 
   static createInstanceGroup(charts, ...additionalMethodsToProxy) {

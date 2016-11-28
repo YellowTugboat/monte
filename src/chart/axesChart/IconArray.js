@@ -55,9 +55,13 @@ const ICON_ARRAY_DEFAULTS = {
     return d3.scalePoint().padding(0.5);
   },
 
+  iconProp: '',
   iconFillScale: noop,
+  iconFillScaleAccessor: AxesChart.generateScaleAccessor('iconFillScale', 'icon'),
   iconStrokeScale: noop,
+  iconStrokeScaleAccessor: AxesChart.generateScaleAccessor('iconStrokeScale', 'icon'),
   iconCssScale: noop,
+  iconCssScaleAccessor: AxesChart.generateScaleAccessor('iconCssScale', 'icon'),
   iconCss: 'icon',
   iconSize: 24,
   iconSymbol: (symbol) => symbol.type(d3.symbolCircle),
@@ -95,8 +99,8 @@ export class IconArray extends AxesChart {
     super._resetCssDomains();
 
     resetScaleDomain(this.opts.iconCssScale);
-
-    return this;
+    resetScaleDomain(this.opts.iconFillScale);
+    resetScaleDomain(this.opts.iconStrokeScale);
   }
 
   _domainExtent(data, scaleName) {
@@ -187,12 +191,12 @@ export class IconArray extends AxesChart {
         .attr('transform', (d, i, nodes) => transform.call(this, d, i, nodes))
         .attr('class', (d, i) => this._buildCss(['monte-icon',
           this.opts.iconCss,
-          this.opts.iconCssScale,
+          this.opts.iconCssScaleAccessor,
           d.css], d, i))
         .transition()
           .call(this._transitionSetup('icon', UPDATE))
-          .attr('fill', this.opts.iconFillScale)
-          .attr('stroke', this.opts.iconStrokeScale);
+          .attr('fill', this.optionReaderFunc('iconFillScaleAccessor'))
+          .attr('stroke', this.optionReaderFunc('iconStrokeScaleAccessor'));
 
     return t;
   }

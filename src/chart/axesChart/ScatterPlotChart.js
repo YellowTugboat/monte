@@ -17,23 +17,22 @@ const SCATTER_PLOT_DEFAULTS = {
   // The size of each point
   pointSize: 64,
 
+  pointProp: '',
+
   pointFillScale: noop,
+  pointFillScaleAccessor: AxesChart.generateScaleAccessor('pointFillScale', 'point'),
 
   pointStrokeScale: noop,
+  pointStrokeScaleAccessor: AxesChart.generateScaleAccessor('pointStrokeScale', 'point'),
 
   // Scale function for CSS class to apply per line. Input: line index, Output: String of CSS Class.
   pointCssScale: noop,
+  pointCssScaleAccessor: AxesChart.generateScaleAccessor('pointCssScale', 'point'),
 
   // Static CSS class(es) to apply to every line.
   pointCss: 'monte-point',
 
   pointSymbol: (symbol) => symbol.type(d3.symbolCircle),
-
-  // TODO: Transition to events
-  pointEnterStart: noop,
-  pointEnterEnd: noop,
-  pointExitStart: noop,
-  pointExitEnd: noop,
 };
 
 export class ScatterPlot extends AxesChart {
@@ -64,8 +63,8 @@ export class ScatterPlot extends AxesChart {
     super._resetCssDomains();
 
     resetScaleDomain(this.opts.pointCssScale);
-
-    return this;
+    resetScaleDomain(this.opts.pointFillScaleAccessor);
+    resetScaleDomain(this.opts.pointStrokeScaleAccessor);
   }
 
   // Render the vis.
@@ -91,23 +90,19 @@ export class ScatterPlot extends AxesChart {
         .attr('class', (d, i) => this._buildCss(
           ['monte-point',
             this.opts.pointCss,
-            this.opts.pointCssScale,
+            this.opts.pointCssScaleAccessor,
             d.css], d, i))
       .transition()
         .call(this._transitionSetup('point', UPDATE))
-        .call(this.opts.pointEnterStart)
-        .attr('fill', (d, i) => this.opts.pointFillScale(d.id || i))
-        .attr('stroke', (d, i) => this.opts.pointStrokeScale(d.id || i))
-        .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
-        .call(this.opts.pointEnterEnd);
+        .attr('fill', this.optionReaderFunc('pointFillScaleAccessor'))
+        .attr('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
+        .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`);
 
     // Fade out removed points.
     points.exit()
       .transition()
       .call(this._transitionSetup('point', EXIT))
-      .call(this.opts.pointExitStart)
       .style('opacity', 0)
-      .call(this.opts.pointExitEnd)
       .remove();
 
     return points.merge(points.enter().selectAll('.point'));

@@ -11,6 +11,9 @@ const HBAR_CHART_DEFAULTS = {
     left: 40,
   },
 
+  barCssScaleAccessor: BarChart.generateScaleAccessor('barCssScale', 'y'),
+  barFillScaleAccessor: BarChart.generateScaleAccessor('barFillScale', 'y'),
+
   xProp: 'value',
   yProp: 'id',
 
@@ -21,6 +24,20 @@ const HBAR_CHART_DEFAULTS = {
 
   xDomainCustomize: extentBalanced,
   yDomainCustomize: null,
+
+  barGrpCss: function(d) {
+    const value = this.getProp('x', d);
+    let css = 'monte-bar-zero';
+
+    if (value > 0) {
+      css = 'monte-bar-pos';
+    }
+    else if (value < 0) {
+      css = 'monte-bar-neg';
+    }
+
+    return css;
+  },
 
   labelX: function(d) {
     const value = this.getProp('x', d);
@@ -33,7 +50,7 @@ const HBAR_CHART_DEFAULTS = {
   labelY: function(d) {
     return this._barY(d) + this.y.bandwidth() / 2;
   },
-  labelYAdjust: '0.5em',
+  labelYAdjust: '0.35em',
 };
 
 export class HorizontalBarChart extends BarChart {

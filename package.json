@@ -15,7 +15,7 @@
     "lint": "eslint src/**",
     "package-version": "json2module package.json > build/package.js",
     "package-umd": "rollup --config config/rollup.config.umd.js",
-    "package-umd-min": "rollup --config config/rollup.config.umd.min.js",
+    "package-umd-min": "npm run lint && rollup --config config/rollup.config.umd.min.js",
     "watch": "npm run package-version && nodemon -e js -w *.js -w src -x \"npm run package-version && npm run package-umd\"",
     "build": "npm run package-version && npm run package-umd && npm run package-umd-min"
   },

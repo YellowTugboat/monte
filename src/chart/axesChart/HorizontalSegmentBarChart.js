@@ -1,9 +1,6 @@
 import { SEGMENT_BAR_MODE, SegmentBarChart } from './SegmentBarChart';
 import { MonteOptionError } from '../../support/MonteOptionError';
-// import { commonEventNames } from '../../tools/commonEventNames';
 import { extentBalanced } from '../../util/extents';
-import { noop } from '../../tools/noop';
-// import { resetScaleDomain } from '../../tools/resetScaleDomain';
 
 const HSEGMENT_BAR_CHART_DEFAULTS = {
   chartCss: 'monte-horizontal-segment-bar-chart',
@@ -17,6 +14,9 @@ const HSEGMENT_BAR_CHART_DEFAULTS = {
   },
 
   segmentBarMode: SEGMENT_BAR_MODE.STACKED,
+
+  barSegCssScaleAccessor: SegmentBarChart.generateScaleAccessor('barSegCssScale', 'y'),
+  barSegFillScaleAccessor: SegmentBarChart.generateScaleAccessor('barSegFillScale', 'y'),
 
   yProp: 'id',
   xProp: 'values',
@@ -36,13 +36,7 @@ const HSEGMENT_BAR_CHART_DEFAULTS = {
   xDomainCustomize: extentBalanced,
   yDomainCustomize: null,
 
-  includeLabels: false,
 
-  labelProp: 'value',
-  labelFillScale: noop,
-  label: function(d) {
-    return this.getProp('label', d);
-  },
   labelXAdjust: '-0.1em',
   labelX: function(d, i, nodes) {
     const mode = this.option('segmentBarMode');

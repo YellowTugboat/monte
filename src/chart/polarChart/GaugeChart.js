@@ -2,10 +2,12 @@ import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { ArcChart } from './ArcChart';
 import { HALF_PI } from '../../const/math';
 import { UNDEF } from '../../const/undef';
+import { isDefined } from '../../tools/is';
 import { needleRoundedEnd } from '../../util/needle';
 import { noop } from '../../tools/noop';
 import { polarLabelInner } from '../../util/polarLabels';
 import { radiusContrain } from '../../util/dimension';
+import { resetScaleDomain } from '../../tools/resetScaleDomain';
 
 const EVENT_UPDATING_BACKGROUND_ARC = 'updatingBackgroundArc';
 const EVENT_UPDATED_BACKGROUND_ARC = 'updatedBackgroundArc';
@@ -24,7 +26,9 @@ const GAUGE_CHART_DEFAULTS = {
   pieEndAngle: HALF_PI,
 
   arcBgCssScale: noop,
+  arcBgCssScaleAccessor: ArcChart.generateScaleAccessor('arcBgCssScale', 'itemValue'),
   arcBgFillScale: noop,
+  arcBgFillScaleAccessor: ArcChart.generateScaleAccessor('arcBgFillScale', 'itemValue'),
 
   needleBase: 20,
   needleHeight: function(outerRadius, innerRadius) {
@@ -85,6 +89,13 @@ export class GaugeChart extends ArcChart {
     return `translate(${l}, ${t})`;
   }
 
+  _resetCssDomains() {
+    super._resetCssDomains();
+
+    resetScaleDomain(this.opts.arcBgCssScaleAccessor);
+    resetScaleDomain(this.opts.arcBgFillScaleAccessor);
+  }
+
   _data(data) {
     this.rawData = data;
 
@@ -95,7 +106,7 @@ export class GaugeChart extends ArcChart {
     const needleValueProp = this.tryInvoke(this.opts.needleValueProp);
 
     // Insert starting label item
-    if (startLabelProp) {
+    if (isDefined(data[startLabelProp])) {
       data[segmentsProp].unshift({
         interval: 0,
         label: data[startLabelProp],
@@ -151,10 +162,10 @@ export class GaugeChart extends ArcChart {
     this.emit(EVENT_UPDATING_BACKGROUND_ARC);
 
     this.bg.append('path')
-      .attr('fill', this.opts.arcBgFillScale)
+      .attr('fill', this.optionReaderFunc('arcBgFillScale'))
       .attr('class', (d, i) => this._buildCss(
         ['monte-gauge-bg',
-          this.opts.arcBgCssScale], d, i))
+          this.opts.arcBgCssScaleAccessor], d, i))
       .attr('d', this.bgArc());
 
     this.emit(EVENT_UPDATED_BACKGROUND_ARC);

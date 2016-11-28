@@ -21,14 +21,18 @@ const AREA_CHART_DEFAULTS = {
    *
    **********************************************************************************************/
 
+  areaProp: '',
+
   // Callback function to customize the area generator.
   areaCustomize: null,
 
   // Scale function for the `fill` attribute to apply per area.
   areaFillScale: noop,
+  areaFillScaleAccessor: LineChart.generateScaleAccessor('areaFillScale', '  areaProp'),
 
   // Scale function for CSS class to apply per area. Input: line index, Output: String of CSS Class.
   areaCssScale: noop,
+  areaCssScaleAccessor: LineChart.generateScaleAccessor('areaCssScale', '  areaProp'),
 
   // Static CSS class(es) to apply to every area.
   areaCss: 'area',
@@ -70,8 +74,7 @@ export class AreaChart extends LineChart {
     super._resetCssDomains();
 
     resetScaleDomain(this.opts.areaCssScale);
-
-    return this;
+    resetScaleDomain(this.opts.areaFillScaleAccessor);
   }
 
   _update() {
@@ -95,15 +98,15 @@ export class AreaChart extends LineChart {
         .attr('class', (d) => this._buildCss(
           ['monte-area',
             lineDatum.css,
-            this.opts.lineCssScale,
+            this.opts.lineCssScaleAccessor,
             this.opts.areaCss,
-            this.opts.areaCssScale,
+            this.opts.areaCssScaleAccessor,
             d.css], lineDatum, lineIndex));
 
     allAreas.transition()
         .call(this._transitionSetup(UPDATE))
         .attr('d', (d) => this.area(this.getProp('values', d)))
-        .attr('fill', this.optionReaderFunc('areaFillScale'));
+        .attr('fill', this.optionReaderFunc('areaFillScaleAccessor'));
 
     // Fade out removed points.
     area.exit()

@@ -22,13 +22,17 @@ const LINE_CHART_DEFAULTS = {
 
   valuesProp: 'values',
 
+  lineProp: '',
+
   // Callback function to customize the line generator, such as set the interpolate.
   lineCustomize: null,
 
   lineStrokeScale: noop,
+  lineStrokeScaleAccessor: AxesChart.generateScaleAccessor('lineStrokeScale', 'lineProp'),
 
   // Scale function for CSS class to apply per line. Input: line index, Output: String of CSS Class.
   lineCssScale: noop,
+  lineCssScaleAccessor: AxesChart.generateScaleAccessor('lineCssScale', 'lineProp'),
 
   // Static CSS class(es) to apply to every line.
   lineCss: 'line',
@@ -41,12 +45,16 @@ const LINE_CHART_DEFAULTS = {
 
   includePoints: true,
 
+  pointProp: '',
   pointFillScale: noop,
+  pointFillScaleAccessor: AxesChart.generateScaleAccessor('pointFillScale', 'pointProp'),
 
   pointStrokeScale: noop,
+  pointStrokeScaleAccessor: AxesChart.generateScaleAccessor('pointStrokeScale', 'pointProp'),
 
   // Scale function for CSS class to apply per line. Input: line index, Output: String of CSS Class.
   pointCssScale: noop,
+  pointCssScaleAccessor: AxesChart.generateScaleAccessor('pointCssScale', 'pointProp'),
 
   // Static CSS class(es) to apply to every line.
   pointCss: 'point',
@@ -94,10 +102,11 @@ export class LineChart extends AxesChart {
   _resetCssDomains() {
     super._resetCssDomains();
 
+    resetScaleDomain(this.opts.lineStrokeScale);
     resetScaleDomain(this.opts.lineCssScale);
+    resetScaleDomain(this.opts.pointFillScale);
+    resetScaleDomain(this.opts.pointStrokeScale);
     resetScaleDomain(this.opts.pointCssScale);
-
-    return this;
   }
 
   // Render the vis.
@@ -126,12 +135,12 @@ export class LineChart extends AxesChart {
         .attr('class', (d, i) => this._buildCss(
           ['monte-line',
             this.opts.lineCss,
-            this.opts.lineCssScale,
+            this.opts.lineCssScaleAccessor,
             d.css], d, i))
         .transition()
           .call(this._transitionSetup('line', UPDATE))
-          .attr('d', (d) => this.line(d[this.opts.valuesProp]))
-          .attr('stroke', this.opts.lineStrokeScale);
+          .attr('d', (d) => this.line(this.getProp('values', d)))
+          .attr('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'));
 
     // Fade out removed lines.
     lineGrps.exit()
@@ -149,7 +158,7 @@ export class LineChart extends AxesChart {
     const lineGrp = d3.select(node);
 
     // Data join for the points
-    const points = lineGrp.selectAll('.monte-point').data((d) => d[this.opts.valuesProp]);
+    const points = lineGrp.selectAll('.monte-point').data((d) => this.getProp('values', d));
 
     const genSym = (d, i) => {
       const size = this.tryInvoke(this.opts.pointSize, d, i);
@@ -167,15 +176,15 @@ export class LineChart extends AxesChart {
         .attr('class', (d) => this._buildCss(
           ['monte-point',
             lineDatum.css,
-            this.opts.lineCssScale,
+            this.opts.lineCssScaleAccessor,
             this.opts.pointCss,
-            this.opts.pointCssScale,
+            this.opts.pointCssScaleAccessor,
             d.css], lineDatum, lineIndex));
 
     points.transition()
         .call(this._transitionSetup('point', UPDATE))
-        .attr('fill', this.opts.pointFillScale)
-        .attr('stroke', this.opts.pointStrokeScale)
+        .attr('fill', this.optionReaderFunc('pointFillScaleAccessor'))
+        .attr('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
         .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
         .attr('d', genSym);
 

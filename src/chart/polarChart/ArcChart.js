@@ -8,6 +8,7 @@ import { commonEventNames } from '../../tools/commonEventNames';
 import { getCoord } from '../../util/polar';
 import { noop } from '../../tools/noop';
 import { radiusContrain } from '../../util/dimension';
+import { resetScaleDomain } from '../../tools/resetScaleDomain';
 
 const LABEL_CSS_PATTERN = new RegExp(`^${polarLabelCssPrefix}*`);
 
@@ -29,8 +30,11 @@ const ARC_CHART_DEFAULTS = {
   arcCss: 'arc',
   arcWedgeCss: 'wedge',
   arcWedgeCssScale: noop,
+  arcWedgeCssScaleAccessor: PolarChart.generateScaleAccessor('arcWedgeCssScale', 'itemValue'),
   arcWedgeFillScale: noop,
+  arcWedgeFillScaleAccessor: PolarChart.generateScaleAccessor('arcWedgeFillScale', 'itemValue'),
   arcWedgeStrokeScale: noop,
+  arcWedgeStrokeScaleAccessor: PolarChart.generateScaleAccessor('arcWedgeStrokeScale', 'itemValue'),
 
   arcWedgeEnter: (d) => ({
     startAngle: d.endAngle,
@@ -42,7 +46,9 @@ const ARC_CHART_DEFAULTS = {
 
   // Background css and fill scales.
   arcBgWedgeCssScale: noop,
+  arcBgWedgeCssScaleAccessor: PolarChart.generateScaleAccessor('arcBgWedgeCssScale', 'itemValue'),
   arcBgWedgeFillScale: noop,
+  arcBgWedgeFillScaleAccessor: PolarChart.generateScaleAccessor('arcBgWedgeFillScale', 'itemValue'),
 
   itemValueProp: 'value',
   pieStartAngle: 0,
@@ -55,6 +61,7 @@ const ARC_CHART_DEFAULTS = {
 
   labelProp: 'value',
   labelFillScale: noop,
+  labelFillScaleAccessor: PolarChart.generateScaleAccessor('labelFillScale', 'label'),
   label: function(d) {
     return this.getProp('label', d.data);
   },
@@ -92,6 +99,17 @@ export class ArcChart extends PolarChart {
       ...commonEventNames('wedge'),   // Wedge events
       ...EVENTS
     );
+  }
+
+  _resetCssDomains() {
+    super._resetCssDomains();
+
+    resetScaleDomain(this.opts.arcWedgeCssScale);
+    resetScaleDomain(this.opts.arcWedgeFillScale);
+    resetScaleDomain(this.opts.arcWedgeStrokeScale);
+    resetScaleDomain(this.opts.arcBgWedgeCssScaleAccessor);
+    resetScaleDomain(this.opts.arcBgWedgeFillScaleAccessor);
+    resetScaleDomain(this.opts.labelFillScaleAccessor);
   }
 
   _updateBounds() {
@@ -132,7 +150,7 @@ export class ArcChart extends PolarChart {
           .attr('class', (d, i) => this._buildCss(
             ['monte-arc-wedge',
               this.opts.arcWedgeCss,
-              this.opts.arcWedgeCssScale,
+              this.opts.arcWedgeCssScaleAccessor,
               d.data.css], d, i))
           .call(this.__bindCommonEvents('wedge'))
           .transition()
@@ -141,7 +159,8 @@ export class ArcChart extends PolarChart {
               const start = this.tryInvoke(this.opts.arcWedgeEnter, d);
               return arcSimpleTween(arc, start, d);
             })
-            .attr('fill', (d, i) => this.opts.arcWedgeFillScale(d.id || i));
+            .attr('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor'))
+            .attr('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
 
     arcs.selectAll('.monte-arc-wedge')
         .each(function() {
@@ -157,14 +176,15 @@ export class ArcChart extends PolarChart {
         .attr('class', (d, i) => this._buildCss(
           ['monte-arc-wedge',
             this.opts.arcWedgeCss,
-            this.opts.arcWedgeCssScale,
+            this.opts.arcWedgeCssScaleAccessor,
             d.data.css], d, i))
         .transition()
           .call(this._transitionSetup('arc', UPDATE))
           .attrTween('d', function(d) {
             return arcSimpleTween(arc, d.prev, d);
           })
-          .attr('fill', (d, i) => this.opts.arcWedgeFillScale(d.id || i));
+          .attr('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor'))
+          .attr('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
 
     arcs.exit()
       .transition()
@@ -187,14 +207,15 @@ export class ArcChart extends PolarChart {
         .append('path')
       .merge(wedge)
         .attr('d', (d) => d)
-        .attr('fill', () => this.opts.arcBgWedgeFillScale())
+        .attr('fill', this.optionReaderFunc('arcBgWedgeFillScaleAccessor'))
         .attr('class', (d, i) => this._buildCss(
           ['monte-arc-bg',
-            this.opts.arcBgWedgeCssScale], d, i));
+            this.opts.arcBgWedgeCssScaleAccessor], d, i));
   }
 
   _updateLabels() {
-    const labels = this.draw.selectAll('.monte-arc-label').data(this.pieDisplayData);
+    // TODO: Group label inside of arc group instead of using overlay layer.
+    const labels = this.overlay.selectAll('.monte-arc-label').data(this.pieDisplayData);
     const labelPlacement = this.tryInvoke(this.opts.labelPlacement);
     const labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
     const css = this.tryInvoke(labelPlacement.css);
@@ -212,6 +233,7 @@ export class ArcChart extends PolarChart {
         .call(this._transitionSetup('label', UPDATE))
         .attr('dx', (d, i, nodes) => this.tryInvoke(this.opts.labelXAdjust, d, i, nodes))
         .attr('dy', (d, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d, i, nodes))
+        .attr('fill', this.optionReaderFunc('labelFillScaleAccessor'))
         .attr('transform', (d, i, nodes) => {
           // TODO: Update to use `attrTween` and follow arc movement instead of direct translation.
           //       Stop the label drift through the
@@ -220,7 +242,7 @@ export class ArcChart extends PolarChart {
 
           return `translate(${coord})`;
         })
-        .text((d) => this.getProp('label', d.data));
+        .text((d, i, nodes) => this.tryInvoke(this.opts.label, d, i, nodes));
 
     labels.exit()
       .transition()
