@@ -18,3 +18,16 @@ export function readTransforms(t) {
 
   return transforms;
 }
+
+export function combineTransforms(transformObj) {
+  let transformStr = '';
+
+  for (const t in transformObj) {
+    if (transformObj.hasOwnProperty(t)) {
+      const values = transformObj[t].join(', ');
+      transformStr += `${t}(${values})`;
+    }
+  }
+
+  return transformStr;
+}

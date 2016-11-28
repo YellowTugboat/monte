@@ -52,6 +52,7 @@ export {
 export { Label as ExtLabel } from './src/extension/Label';
 export { PolarGrid as ExtPolarGrid } from './src/extension/PolarGrid';
 export { PolarLine as ExtPolarLine } from './src/extension/PolarLine';
+export { PolarRotateLabel as ExtPolarRotateLabel } from './src/extension/PolarRotateLabel';
 export { PolarTicks as ExtPolarTicks } from './src/extension/PolarTicks';
 
 export {
@@ -93,3 +94,15 @@ export {
   Resizer,
   VerticalResizer,
 } from './src/util/resizeHandlers';
+
+export {
+  polarLabelCentroid,
+  polarLabelInner,
+  polarLabelOuter,
+  polarLabelInnerFactor,
+  polarLabelOuterFactor,
+  polarLabelRotateTangentOrigin,
+  polarLabelRotateTangentFlip,
+  polarLabelRotateRay,
+  polarLabelRotateRayOpposite,
+} from './src/util/polarLabels';

@@ -1,4 +1,4 @@
-export { isArray, isDefined, isFunc, isNumeric, isObject } from './is';
+export { isArray, isDefined, isFunc, isNumeric, isObject, isString } from './is';
 export { compose } from './compose';
 export { getDepthFirst } from './getDepthFirst';
 export { mergeOptions, ReplacePreceding } from './mergeOptions';

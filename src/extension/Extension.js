@@ -187,7 +187,7 @@ export class Extension {
     }
     catch (e) {
       if (console && console.error) { console.error(e); } // eslint-disable-line no-console
-      this.chart.__notify(EV.SUPPRESSED_ERROR, e, e.stack || 'No stack available.');
+      this.__notify(EV.SUPPRESSED_ERROR, e, e.stack || 'No stack available.');
     }
   }
 
@@ -258,6 +258,8 @@ export class Extension {
       return isFunc(value) ? value.call(this, ...args) : value;
     }
     catch (e) {
+      if (console && console.error) { console.error(e); } // eslint-disable-line no-console
+      this.__notify(EV.SUPPRESSED_ERROR, e, e.stack || 'No stack available.');
       return null;
     }
   }
