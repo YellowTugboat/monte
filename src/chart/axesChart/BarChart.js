@@ -5,6 +5,13 @@ import { extentBalanced } from '../../util/extents';
 import { noop } from '../../tools/noop';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
 
+const EVENT_UPDATING_LABELS = 'updatingLabels';
+const EVENT_UPDATED_LABELS = 'updatedLabels';
+
+const EVENTS = [
+  EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS,
+];
+
 const BAR_CHART_DEFAULTS = {
   chartCss: 'monte-bar-chart',
 
@@ -82,7 +89,8 @@ export class BarChart extends AxesChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('bar')   // Bar events
+      ...commonEventNames('bar'),   // Bar events
+      ...EVENTS
     );
   }
 
@@ -112,10 +120,14 @@ export class BarChart extends AxesChart {
     const barGrps = this._updateBars();
 
     if (this.opts.includeLabels) {
+      this.emit(EVENT_UPDATING_LABELS);
+
       barGrps.each((d, i, nodes) => {
         const node = d3.select(nodes[i]);
         this._updateBarLabel(node, d, i, nodes);
       });
+
+      this.emit(EVENT_UPDATED_LABELS);
     }
   }
 
@@ -202,3 +214,5 @@ export class BarChart extends AxesChart {
     return this.height - this.getScaledProp('y', d);
   }
 }
+
+BarChart.EVENTS = EVENTS;
