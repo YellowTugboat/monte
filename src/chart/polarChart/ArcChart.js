@@ -133,10 +133,10 @@ export class ArcChart extends PolarChart {
   }
 
   _update() {
-    this._updateArcs();
+    const arcGrps = this._updateArcs();
 
     if (this.opts.includeLabels) {
-      this._updateLabels();
+      this._updateLabels(arcGrps);
     }
   }
 
@@ -191,6 +191,8 @@ export class ArcChart extends PolarChart {
         .call(this._transitionSetup('arc', EXIT))
         .style('opacity', 0.01)
         .remove();
+
+    return arcs.merge(arcs.enter().selectAll('.monte-arc'));
   }
 
   _updateBackground() {
@@ -213,43 +215,49 @@ export class ArcChart extends PolarChart {
             this.opts.arcBgWedgeCssScaleAccessor], d, i));
   }
 
-  _updateLabels() {
-    // TODO: Group label inside of arc group instead of using overlay layer.
-    const labels = this.overlay.selectAll('.monte-arc-label').data(this.pieDisplayData);
+  _updateLabels(arcGrps) {
+    this.emit(EVENT_UPDATING_LABELS);
+
     const labelPlacement = this.tryInvoke(this.opts.labelPlacement);
-    const labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
     const css = this.tryInvoke(labelPlacement.css);
 
     // Clear old label CSS from chart and add new.
     classedPattern(this.bound, LABEL_CSS_PATTERN, false);
     this.classed(css, true);
 
-    this.emit(EVENT_UPDATING_LABELS);
+    arcGrps.each((d, i, nodes) => {
+      const node = d3.select(nodes[i]);
+      this._updateArcLabel(node, d, i, nodes);
+    });
 
-    labels.enter().append('text')
-        .attr('class', 'monte-arc-label')
-      .merge(labels)
-        .transition()
-        .call(this._transitionSetup('label', UPDATE))
-        .attr('dx', (d, i, nodes) => this.tryInvoke(this.opts.labelXAdjust, d, i, nodes))
-        .attr('dy', (d, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d, i, nodes))
+    this.emit(EVENT_UPDATED_LABELS);
+  }
+
+  _updateArcLabel(arcGrp, d, i, nodes) {
+    const lbl = arcGrp.selectAll('.monte-arc-label').data([d]);
+    const labelPlacement = this.tryInvoke(this.opts.labelPlacement);
+    const labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
+
+    lbl.enter().append('text')
+      .attr('class', 'monte-arc-label')
+      .merge(lbl)
+        .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
+        .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
         .attr('fill', this.optionReaderFunc('labelFillScaleAccessor'))
-        .attr('transform', (d, i, nodes) => {
+        .attr('transform', (d1) => {
           // TODO: Update to use `attrTween` and follow arc movement instead of direct translation.
           //       Stop the label drift through the
-          const angle = this.tryInvoke(this.opts.labelAngle, d, i, nodes);
+          const angle = this.tryInvoke(this.opts.labelAngle, d1, i, nodes);
           const coord = getCoord(labelRadius, angle);
 
           return `translate(${coord})`;
         })
-        .text((d, i, nodes) => this.tryInvoke(this.opts.label, d, i, nodes));
+        .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes));
 
-    labels.exit()
+    lbl.exit()
       .transition()
       .call(this._transitionSetup('label', EXIT))
       .remove();
-
-    this.emit(EVENT_UPDATED_LABELS);
   }
 }
 

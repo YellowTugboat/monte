@@ -154,7 +154,6 @@ export class GaugeChart extends ArcChart {
   _update() {
     super._update();
 
-    this._updateLabels();
     this._updateNeedle();
   }
 
