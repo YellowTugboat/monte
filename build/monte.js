@@ -1,11 +1,11 @@
-// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha21 Copyright 2016 Yellow Tugboat
+// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha22 Copyright 2016 Yellow Tugboat
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
     (factory((global.Monte = global.Monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha21";
+var version = "0.0.0-alpha22";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -4858,7 +4858,7 @@ var Chart = function () {
       this.__notify(DESTROYING);
 
       if (this._resizeHandler) {
-        global$1.resizeWatch.remove(this._resizeHandler);
+        global$1.getResizeWatcher().remove(this._resizeHandler);
       }
 
       this._destroy();
@@ -9496,7 +9496,9 @@ var Arc = function (_Extension) {
 
       var segment = this._extCreateSelection().data([arcAngles]);
       segment.enter().append('path').call(this._setExtAttrs.bind(this)).attr('class', css).transition().call(this.chart._transitionSetup('extArc', ENTER)).attrTween('d', function (d) {
-        return _this2.arc(d);
+        return arcSimpleTween(_this2.arc, _this2.prev, d);
+      }).on('end', function (d) {
+        return _this2.prev = d;
       });
 
       segment.transition().call(this.chart._transitionSetup('extArc', UPDATE)).attrTween('d', function (d) {
@@ -10415,7 +10417,7 @@ var ReferenceLine = function (_Extension) {
     value: function _update() {
       var _this2 = this;
 
-      this.lineData = this.tryInvoke(this.opts.data, this.chart.data());
+      this.lineData = this.tryInvoke(this.opts.data);
 
       if (!isArray$2(this.lineData) && isDefined(this.lineData)) {
         this.lineData = [this.lineData];

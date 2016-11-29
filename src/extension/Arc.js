@@ -42,7 +42,8 @@ export class Arc extends Extension {
       .attr('class', css)
       .transition()
         .call(this.chart._transitionSetup('extArc', ENTER))
-        .attrTween('d', (d) => this.arc(d));
+        .attrTween('d', (d) => arcSimpleTween(this.arc, this.prev, d))
+        .on('end', (d) => this.prev = d);
 
     segment.transition()
       .call(this.chart._transitionSetup('extArc', UPDATE))

@@ -258,7 +258,7 @@ export class Chart {
     this.__notify(EV.DESTROYING);
 
     if (this._resizeHandler) {
-      global.resizeWatch.remove(this._resizeHandler);
+      global.getResizeWatcher().remove(this._resizeHandler);
     }
 
     this._destroy();

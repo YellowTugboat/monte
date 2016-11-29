@@ -64,7 +64,7 @@ export class ReferenceLine extends Extension {
   }
 
   _update() {
-    this.lineData = this.tryInvoke(this.opts.data, this.chart.data());
+    this.lineData = this.tryInvoke(this.opts.data);
 
     if (!isArray(this.lineData) && isDefined(this.lineData)) {
       this.lineData = [this.lineData];
