@@ -92,10 +92,12 @@ export class ScatterPlot extends AxesChart {
             this.opts.pointCss,
             this.opts.pointCssScaleAccessor,
             d.css], d, i))
+        .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
+        .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
       .transition()
         .call(this._transitionSetup('point', UPDATE))
-        .attr('fill', this.optionReaderFunc('pointFillScaleAccessor'))
-        .attr('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
+        .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
+        .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
         .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`);
 
     // Fade out removed points.

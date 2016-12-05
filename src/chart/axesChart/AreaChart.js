@@ -106,7 +106,7 @@ export class AreaChart extends LineChart {
     allAreas.transition()
         .call(this._transitionSetup(UPDATE))
         .attr('d', (d) => this.area(this.getProp('values', d)))
-        .attr('fill', this.optionReaderFunc('areaFillScaleAccessor'));
+        .style('fill', this.optionReaderFunc('areaFillScaleAccessor'));
 
     // Fade out removed points.
     area.exit()

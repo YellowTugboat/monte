@@ -140,7 +140,7 @@ export class LineChart extends AxesChart {
         .transition()
           .call(this._transitionSetup('line', UPDATE))
           .attr('d', (d) => this.line(this.getProp('values', d)))
-          .attr('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'));
+          .style('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'));
 
     // Fade out removed lines.
     lineGrps.exit()
@@ -183,8 +183,8 @@ export class LineChart extends AxesChart {
 
     points.transition()
         .call(this._transitionSetup('point', UPDATE))
-        .attr('fill', this.optionReaderFunc('pointFillScaleAccessor'))
-        .attr('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
+        .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
+        .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
         .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
         .attr('d', genSym);
 

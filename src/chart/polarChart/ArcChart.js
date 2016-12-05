@@ -159,8 +159,8 @@ export class ArcChart extends PolarChart {
               const start = this.tryInvoke(this.opts.arcWedgeEnter, d);
               return arcSimpleTween(arc, start, d);
             })
-            .attr('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor'))
-            .attr('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
+            .style('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor'))
+            .style('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
 
     arcs.selectAll('.monte-arc-wedge')
         .each(function() {
@@ -183,8 +183,8 @@ export class ArcChart extends PolarChart {
           .attrTween('d', function(d) {
             return arcSimpleTween(arc, d.prev, d);
           })
-          .attr('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor'))
-          .attr('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
+          .style('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor'))
+          .style('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
 
     arcs.exit()
       .transition()
@@ -209,7 +209,7 @@ export class ArcChart extends PolarChart {
         .append('path')
       .merge(wedge)
         .attr('d', (d) => d)
-        .attr('fill', this.optionReaderFunc('arcBgWedgeFillScaleAccessor'))
+        .style('fill', this.optionReaderFunc('arcBgWedgeFillScaleAccessor'))
         .attr('class', (d, i) => this._buildCss(
           ['monte-arc-bg',
             this.opts.arcBgWedgeCssScaleAccessor], d, i));

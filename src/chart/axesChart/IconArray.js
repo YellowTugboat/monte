@@ -195,8 +195,8 @@ export class IconArray extends AxesChart {
           d.css], d, i))
         .transition()
           .call(this._transitionSetup('icon', UPDATE))
-          .attr('fill', this.optionReaderFunc('iconFillScaleAccessor'))
-          .attr('stroke', this.optionReaderFunc('iconStrokeScaleAccessor'));
+          .style('fill', this.optionReaderFunc('iconFillScaleAccessor'))
+          .style('stroke', this.optionReaderFunc('iconStrokeScaleAccessor'));
 
     return t;
   }

@@ -286,7 +286,7 @@ export class SegmentBarChart extends AxesChart {
                   this.opts.barSegCssScaleAccessor,
                   d.css], d, i))
               .transition(trans)
-                .attr('fill', this.optionReaderFunc('barSegFillScaleAccessor'))
+                .style('fill', this.optionReaderFunc('barSegFillScaleAccessor'))
                 .attr('x', barXInner)
                 .attr('y', barYInner)
                 .attr('width', barWidth)
@@ -323,7 +323,7 @@ export class SegmentBarChart extends AxesChart {
       .merge(lbl)
         .text((d1, i, nodes) => this.tryInvoke(this.opts.label, d1, i, nodes))
         .transition(transition)
-          .attr('fill', (d1, i, nodes) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
+          .style('fill', (d1, i, nodes) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
           .attr('x', (d1, i, nodes) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
           .attr('dx', (d1, i, nodes) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
           .attr('y', (d1, i, nodes) => this.tryInvoke(this.opts.labelY, d1, i, nodes))

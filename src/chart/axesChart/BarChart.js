@@ -149,9 +149,7 @@ export class BarChart extends AxesChart {
         .attr('y', barY)
         .attr('width', barWidth)
         .attr('height', barHeight)
-        .attr('fill-test', 'red')
-        .attr('fill', this.optionReaderFunc('barFillScaleAccessor'))
-        // .attr('fill', (...args) => this.tryInvoke(this.opts.barFillScaleAccessor, ...args))
+        .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
         .call(this.__bindCommonEvents('bar'))
       .merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
         .attr('class', (d, i) => this._buildCss([
@@ -162,7 +160,7 @@ export class BarChart extends AxesChart {
         .call(this._transitionSetup(ENTER));
 
     barGrps.select('rect')
-      .attr('fill', this.optionReaderFunc('barFillScaleAccessor'))
+      .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
       .transition()
         .call(this._transitionSetup(UPDATE))
         .attr('x', barX)
@@ -188,7 +186,7 @@ export class BarChart extends AxesChart {
     lbl.enter().append('text')
       .attr('class', 'monte-bar-label')
       .merge(lbl)
-        .attr('fill', (d1) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
+        .style('fill', (d1) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
         .attr('x', (d1) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
         .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
         .attr('y', (d1) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
