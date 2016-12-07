@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
+
+<head>
     <meta charset="UTF-8">
     <title>Monte</title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.4/css/bootstrap.min.css" integrity="sha384-2hfp1SzUoho7/TsGGGDaFdsuuDL0LX2hnUp6VkX3CUQ2K4K+xjboZdsXyp4oUHZj" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css?family=Lato:300|Open+Sans:400" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="stylesheets/main.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="build/main.css" media="screen">
 
     <link rel="icon" type="image/png" href="img/logo_32.png" sizes="32x32">
     <link rel="icon" type="image/png" href="img/logo_64.png" sizes="64x64">
@@ -17,57 +18,908 @@
     <link rel="icon" type="image/png" href="img/logo_196.png" sizes="196x196">
     <link rel="icon" type="image/png" href="img/logo_256.png" sizes="256x256">
     <link rel="icon" type="image/png" href="img/logo_400.png" sizes="400x400">
-  </head>
-  <body>
-    <section class="page-header">
-      <div class="container">
+</head>
 
-        <div class="row">
-          <div class="col-xs-12 col-md-6">
-            <div class="logo-grp">
+<body>
+  <header class="page-header">
+    <div class="container">
+      <div class="row">
+        <div class="col-xs-12 col-md-6">
+          <div class="logo-grp">
               <img src="img/monte-logo.min.svg" class="logo" height="100" />
               <h1 class="monte inline">Monte</h1>
-            </div>
-            <p>A JavaScript library of common charts, based on D3.js, built for extension and modification.</p>
           </div>
-
-          <div class="col-xs-12 col-md-6">
-
-          </div>
+          <p>
+            Monte: leverage your D3 knowledge to build customized SVG charts for the modern web.
+          </p>
         </div>
 
-        <!-- <a href="https://github.com/YellowTugboat/monte" class="btn">View on GitHub</a>
-        <a href="https://github.com/YellowTugboat/monte/zipball/master" class="btn">Download .zip</a>
-        <a href="https://github.com/YellowTugboat/monte/tarball/master" class="btn">Download .tar.gz</a> -->
+        <div class="col-xs-12 col-md-6">
+          <div id="headerChart"></div>
+          <!-- <div class="reset-header"><button class="btn light tight">Reset</button></div> -->
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-content">
+
+  <section>
+    <div class="container">
+      <div class="row">
+        <div class="col-xs-12">
+          <h1>Preview Releases Available</h2>
+          <p>
+            Preview releases are currently available for the <i>brave</i>. Fair warning: the
+            API is subject to change and documentation is still pending.
+          </p>
+        </div>
+
+        <div class="col-xs-12 col-md-6">
+          <h2>NPM</h2>
+          <p>
+            <code>npm install monte</code>
+          </p>
+        </div>
+
+        <div class="col-xs-12 col-md-6">
+          <h2>GitHub</h2>
+          <p>
+            <a href="https://github.com/YellowTugboat/monte">YellowTugboat/monte</a>
+          </p>
+        </div>
+
+          <!-- <a href="https://github.com/YellowTugboat/monte" class="btn">View on GitHub</a>
+      <a href="https://github.com/YellowTugboat/monte/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/YellowTugboat/monte/tarball/master" class="btn">Download .tar.gz</a> -->
+      </div>
+    </div>
+  </section>
+
+  <hr class="fat" />
+    <section class="overview">
+      <div class="container">
+        <div class="row">
+          <div class="col-xs-12">
+            <h1 id="overview">Overview</h1>
+            <p>
+              Monte is a JavaScript library of SVG charts, based on <a href="http://d3js.org">D3.js</a>
+              and built for customization, modification, and extension.
+            </p>
+
+            <p>
+              More details are available about motivation, leverging D3 knowledge, chart basics,
+              customization / modification, and road map.
+            </p>
+
+            <div id="more-details" class="more-details compact">
+              <h2>Motivation</h2>
+              <p>
+                The motivation for Monte stems from working in the UI/UX consulting field where
+                relatively minor changes to charts could result in conflicts, complications, and large
+                amounts of work&mdash;or were flat out impossible/impractical. This is all due to the
+                assumptions, restrictions, architecture choices, etc... that other libraries have made.
+              </p>
+
+              <p>
+                Monte strives to find the balance between reuse and custom functionality.
+              </p>
+
+              <h2>Modern Web Ready</h2>
+              <p>
+                Monte uses D3 version 4+ and is written in ES6. Builds are transpiled to ES5 using
+                Babel. SVG is utilized for ease of styling, exporting for other uses, and at a later
+                point to adopt ARIA for accessibility.
+              </p>
+
+              <h2>Leverage D3 Knowledge</h2>
+              <p>
+                Monte follows D3 practices (like the <a href="http://bl.ocks.org/mbostock/3808218">
+                General Update Pattern</a> and <a href="https://bl.ocks.org/mbostock/3019563">Margin
+                Convention</a>); charts often accept and expose native D3 types without wrapping (such
+                as axes, scales, selections, transitions, lines, symbols, shapes, and others); and
+                limits non-D3 dependencies.
+              </p>
+
+              <p>
+                Monte also attempts to use similar terms, names, and overall language as D3 for
+                general consistency.
+              </p>
+
+              <h2>Basics</h2>
+              <p>
+                Standard charts (Bar, Line, Scatter, etc...) are provided and have enough basic
+                behavior to be used right out of the box. They can be heavily modified through the use
+                of options and extensions.
+              </p>
+
+              <p>
+                Options control margins, sizes, data binding, CSS classes, scales, feature placement,
+                and other configurable options. In most cases options can be static values or functions
+                that are invoked at various stages: chart options are generally invoked relatively rarely
+                (such as setting the inner radius on a donut), but data specific options are invoked
+                with data changes (such as color of a given node).
+              </p>
+
+              <p>
+                Extensions provide reusable functionality; many of which are chart-type independent.
+                Chart modifications are <i>encouraged</i> and accomplished within the chart's
+                lifecycle events to keep everything in sync.
+              </p>
+
+              <h2>Modification</h2>
+              <p>
+                Beyond options and extensions charts can be modified directly through callbacks bound
+                to lifecycle events. For example, the <b>updated</b> event fires after the chart has
+                refreshed the drawn items on screen in response to a data change. The chart can use
+                <code>on('updated', function() { ...})</code> to have a callback execute custom
+                modifications such as updating a label, drawing a reference line, or notifying other
+                charts to react in some way.
+              </p>
+
+              <p>
+                Further modifications are accomplished through extending a chart type (i.e. use the
+                ES6 keyword <code>extends</code>). In fact all of the standard charts extend from
+                base charts and many of the standard charts extend from other standard charts: Area
+                charts are extended from Line charts.
+              </p>
+
+              <p>
+                Foundation charts (<code>Chart</code>, <code>AxesChart</code>, and
+                <code>PolarChart</code>) can be extended to take advantage of Monte's infrastructure
+                without inheriting the drawing behavior of concrete charts (<code>BarChart</code>,
+                <code>ArcChart</code>, and many others.) Foundation charts are base classes for the
+                concrete charts can be used to build custom charts quickly that follow the same
+                behaviors as the other Monte charts. Allowing for consistency in how charts are
+                consumed throughout an application.
+              </p>
+
+              <h2>Future Features / Roadmap</h2>
+              <p>
+                There is no particular timeline for support of these features, but they are the ones
+                at the top of mind. In no particular order, expected future features:
+                <ul>
+                  <li>accessibility using ARIA for built-in charts;</li>
+                  <li>
+                    additional chart types, such as Chord, Choropleth, Heat Map, Polar Area, Matrix
+                    Diagram, Radar, and others;
+                  </li>
+                  <li>
+                    extensions for interactivity (cross hair reference lines, hover reference line,
+                    brushing, lasso selection, Voronoi); and
+                  </li>
+                  <li>
+                    extensions for rendering (error bars, error bands, OHLC and Candlestick bars).
+                  </li>
+                </ul>
+              </p>
+            </div>
+
+            <button id="show-details" class="btn btn-sm btn-primary show-details">Show Details</button>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="main-content">
+    <hr class="fat" />
+
+    <section>
       <div class="container">
-        <div class="row grp">
+        <div class="row">
           <div class="col-xs-12">
-            <h1>Preview Available</h2>
-            <p>
-              Preview releases are currently available for the <i>brave</i>. Fair warning: the
-              interface is subject to change and documentation is still pending.
-            </p>
-          </div>
-
-          <div class="col-xs-12 col-md-6">
-            <h2>NPM</h2>
-            <p>
-              <code>npm install monte</code>
-            </p>
-          </div>
-
-          <div class="col-xs-12 col-md-6">
-            <h2>GitHub</h2>
-            <p>
-              <a href="https://github.com/YellowTugboat/monte">YellowTugboat/monte</a>
-            </p>
+            <h1>Demos</h1>
           </div>
         </div>
 
+        <div class="row grp">
+          <div class="col-xs-12">
+            <h2 class="row col-xs-12">Bars</h2>
+            <h3 class="row col-xs-12">Standard</h3>
+            <div class="row col-xs-12 col-sm-5">
+              Vertical
+              <div id="barChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>BarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">AxesChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><div><small><code>ExtHorizontalLines</code></small></div></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+            <div class="row col-xs-12 col-sm-5 offset-sm-2">
+              Horizontal
+              <div id="hbarChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>HorizontalBarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">BarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td>
+                    <div><small><code>ExtVerticalLines</code></small></div>
+                    <div><small><code>ExtHorizontalBarBg</code></small></div>
+                  </td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+
+            <h3 class="row col-xs-12">Tornado</h3>
+            <div class="row col-xs-12 col-sm-5">
+              Vertical
+              <div id="tornadoBarChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>BarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">AxesChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><div><small><code>ExtHorizontalLines</code></small></div></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+            <div class="row col-xs-12 col-sm-5 offset-sm-2">
+              Horizontal
+              <div id="tornadoHBarChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>HorizontalBarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">BarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><div><small><code>ExtVerticalLines</code></small></div></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+
+            <h3 class="row col-xs-12">Grouped &amp; Stacked</h3>
+            <div class="row col-xs-12 col-sm-5">
+              Vertical
+              <div id="segBarChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>SegmentBarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">BarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><span class="none">(None)</span></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+            <div class="row col-xs-12 col-sm-5 offset-sm-2">
+              Horizontal
+              <div id="segHBarChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>SegmentHorizontalBarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">SegmentBarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><span class="none">(None)</span></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+
+            <h3 class="row col-xs-12">Simple</h3>
+            <div class="row col-sm-5">
+              Vertical
+              <div id="simpleBarChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>SimpleBarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">BarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><span class="none">(None)</span></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+            <div class="row col-sm-5 offset-sm-2">
+              Horizontal
+              <div id="simpleHBarChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>SimpleHorizontalBarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">HorizontalBarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><span class="none">(None)</span></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="container">
+        <div class="row grp">
+          <div class="col-xs-12">
+            <h2>Lines</h2>
+
+            <div class="row col-xs-12 col-sm-5">
+              Standard
+              <div id="lineChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>LineChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">AxesChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><span class="none">(None)</span></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+
+            <div class="row col-xs-12 col-sm-5 offset-sm-2">
+              Area
+              <div id="areaChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>AreaChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">LineChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td>
+                    <div><small><code>ExtFrame</code></small></div>
+                    <div><small><code>ExtGrid</code></small></div>
+                  </td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+
+            <div class="row col-xs-12">
+              <div>Sparkline</div>
+              <div><small class="subtitle">(A set of individual sparkline instances)</small></div>
+              <div class="col-sm-2">
+                <div id="sparklineChart1" class="sparkline-multiple spark1"></div>
+                <div id="sparklineChart2" class="sparkline-multiple spark2"></div>
+                <div id="sparklineChart3" class="sparkline-multiple spark3"></div>
+                <div id="sparklineChart4" class="sparkline-multiple spark4"></div>
+                <div id="sparklineChart5" class="sparkline-multiple spark5"></div>
+              </div>
+              <div class="col-sm-9 offset-sm-1">
+                <table class="table table-bordered">
+                  <tr>
+                    <td>Class</td>
+                    <td><small><code>SparklineChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Base Class</td>
+                    <td><small><code class="extends">LineChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Extensions</td>
+                    <td><span class="none">(None)</span></td>
+                  </tr>
+                  <!-- <tr>
+                    <td>Notable Options</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>More</td>
+                    <td></td>
+                  </tr> -->
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="row grp">
+          <div class="col-xs-12">
+            <h2>Arcs &amp; Polar</h2>
+
+            <div class="row col-xs-12 col-sm-5">
+              <h3>Pie</h3>
+              <div id="pieChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>ArcChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">PolarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><span class="none">(None)</span></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+
+            <div class="row col-xs-12 col-sm-5 offset-sm-2">
+              <h3>Donut</h3>
+              <div id="donutChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>ArcChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">PolarChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td>
+                    <div><small><code>ExtLabel</code></small></div>
+                    <div><small><code>ExtPolarRotateLabel</code></small></div>
+                  </td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+
+            <div class="row col-xs-12">
+              <h3>Single Wedges</h3>
+              <div>
+                <small class="subtitle">(A set of individual wedge instances)</small>
+              </div>
+              <div class="col-sm-5">
+                <div id="wedge1" class="wedge-multiple"></div>
+                <div id="wedge2" class="wedge-multiple"></div>
+                <div id="wedge3" class="wedge-multiple"></div>
+                <div id="wedge4" class="wedge-multiple"></div>
+              </div>
+
+              <div class="col-sm-6 offset-sm-1">
+                <table class="table table-bordered">
+                  <tr>
+                    <td>Class</td>
+                    <td><small><code>WedgeChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Base Class</td>
+                    <td><small><code class="extends">ArcChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Extensions</td>
+                    <td><span class="none">(None)</span></td>
+                  </tr>
+                  <!-- <tr>
+                    <td>Notable Options</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>More</td>
+                    <td></td>
+                  </tr> -->
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="container">
+        <div class="row grp">
+          <div class="col-xs-12">
+            <h2>Gauges</h2>
+
+            <div class="row col-xs-12">
+              <div>Speedometer Example</div>
+              <div id="gaugeSpeedometer" class="col-sm-5"></div>
+              <div class="col-sm-6 offset-sm-1">
+                <table class="table table-bordered">
+                  <tr>
+                    <td>Class</td>
+                    <td><small><code>GaugeChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Base Class</td>
+                    <td><small><code class="extends">ArcChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Extensions</td>
+                    <td>
+                        <div><small><code>ExtPolarTicks</code></small></div>
+                        <div><small><code>ExtLabel</code></small></div>
+                    </td>
+                  </tr>
+                  <!-- <tr>
+                    <td>Notable Options</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>More</td>
+                    <td></td>
+                  </tr> -->
+                </table>
+              </div>
+            </div>
+
+            <div class="row col-xs-12 vspace">
+              <div>Percent Example</div>
+              <div id="gaugePercent" class="col-sm-5"></div>
+              <div class="col-sm-6 offset-sm-1">
+                <table class="table table-bordered">
+                  <tr>
+                    <td>Class</td>
+                    <td><small><code>GaugeChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Base Class</td>
+                    <td><small><code class="extends">ArcChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Extensions</td>
+                    <td>
+                      <div><small><code>ExtArc</code></small></div>
+                      <div><small><code>ExtPolarTicks</code> x2</small></div>
+                      <div><small><code>ExtLabel</code></small></div>
+                    </td>
+                  </tr>
+                  <!-- <tr>
+                    <td>Notable Options</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>More</td>
+                    <td></td>
+                  </tr> -->
+                </table>
+              </div>
+            </div>
+
+            <div class="row col-xs-12 vspace">
+              <div>Range Example <small class="subtitle">(w/ positive and negative values)</small></div>
+              <div id="gaugeRange" class="col-sm-5"></div>
+              <div class="col-sm-6 offset-sm-1">
+                <table class="table table-bordered">
+                  <tr>
+                    <td>Class</td>
+                    <td><small><code>GaugeChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Base Class</td>
+                    <td><small><code class="extends">ArcChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Extensions</td>
+                    <td>
+                      <div><small><code>ExtArc</code> x2</small></div>
+                      <div><small><code>ExtLabel</code></small></div>
+                    </td>
+                  </tr>
+                  <!-- <tr>
+                    <td>Notable Options</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>More</td>
+                    <td></td>
+                  </tr> -->
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="row grp">
+          <div class="col-xs-12">
+            <h2>Scatter Plot</h2>
+
+            <div class="row col-xs-12 col-sm-5">
+              Standard Example
+              <div id="scatterPlot"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>ScatterPlotChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">AxesChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><div><small><code>ExtVerticalLines</code></small></div></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+
+            <div class="row col-xs-12 col-sm-5 offset-sm-2">
+              Powers of 2 Example
+              <div id="scatterPow2"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>ScatterPlotChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">AxesChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><div><small><code>ExtGrid</code></small></div></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="container">
+        <div class="row grp">
+          <div class="col-xs-12">
+            <h2>Icon Array</h2>
+
+            <div class="row col-xs-12">
+              <h3>D3 Symbol Icons</h3>
+              <div id="d3IconArray" class="col-sm-3"></div>
+              <div class="col-sm-8 offset-sm-1">
+                <table class="table table-bordered">
+                  <tr>
+                    <td>Class</td>
+                    <td><small><code>IconArray</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Base Class</td>
+                    <td><small><code class="extends">AxesChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Extensions</td>
+                    <td><span class="none">(None)</span></td>
+                  </tr>
+                  <!-- <tr>
+                    <td>Notable Options</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>More</td>
+                    <td></td>
+                  </tr> -->
+                </table>
+              </div>
+            </div>
+
+            <div class="row col-xs-12">
+              <h3>SVG Use-Def Icons</h3>
+              <div id="svgUseDefIconArray" class="col-sm-3"></div>
+              <div class="col-sm-8 offset-sm-1">
+                <table class="table table-bordered">
+                  <tr>
+                    <td>Class</td>
+                    <td><small><code>IconArray</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Base Class</td>
+                    <td><small><code class="extends">AxesChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Extensions</td>
+                    <td><span class="none">(None)</span></td>
+                  </tr>
+                  <!-- <tr>
+                    <td>Notable Options</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>More</td>
+                    <td></td>
+                  </tr> -->
+                </table>
+              </div>
+            </div>
+
+            <div class="row col-xs-12">
+              <h3>SVG Use-External Icons</h3>
+              <div id="svgUseExtIconArray" class="col-sm-3"></div>
+              <div class="col-sm-8 offset-sm-1">
+                <table class="table table-bordered">
+                  <tr>
+                    <td>Class</td>
+                    <td><small><code>IconArray</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Base Class</td>
+                    <td><small><code class="extends">AxesChart</code></small></td>
+                  </tr>
+                  <tr>
+                    <td>Extensions</td>
+                    <td><span class="none">(None)</span></td>
+                  </tr>
+                  <!-- <tr>
+                    <td>Notable Options</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>More</td>
+                    <td></td>
+                  </tr> -->
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="fat" />
+
+    <section>
+      <div class="container">
         <div class="row grp">
           <div class="col-xs-12">
             <h1>License</h2>
@@ -79,11 +931,37 @@
         </div>
       </div>
     </section>
+  </div>
 
-    <footer>
-      <div class="container">
-        <i class="fa fa-map-marker"></i> Fresh from the <a href="https://en.wikipedia.org/wiki/Front_Range_Urban_Corridor">Front Range</a><br />
-        Copyright &copy; 2016 <a href="http://yellowtugboat.com">Yellow Tugboat</a></div>
-    </footer>
-  </body>
+  <footer>
+    <div class="container">
+      <i class="fa fa-map-marker"></i> Fresh from the <a href="https://en.wikipedia.org/wiki/Front_Range_Urban_Corridor">Front Range</a><br />
+      Copyright &copy; 2016 <a href="http://yellowtugboat.com">Yellow Tugboat</a>
+    </div>
+  </footer>
+
+  <script src="https://d3js.org/d3.v4.js"></script>
+  <script src="https://unpkg.com/monte@0.0.0-alpha22/build/monte.min.js"></script>
+  <!-- <script src="monte.js"></script> -->
+  <script src="build/index.min.js"></script>
+
+  <script type="">
+    var showDetails = d3.select('#show-details');
+    var moreDetails = d3.select('#more-details');
+
+    showDetails.on('click', function() {
+      if (moreDetails.classed('in')) {
+        moreDetails.classed('in', false);
+        showDetails.text('Show Details');
+        location.href="#overview";
+      }
+      else {
+        moreDetails.classed('in', true);
+        showDetails.text('Hide Details');
+      }
+
+      return false;
+    });
+  </script>
+</body>
 </html>

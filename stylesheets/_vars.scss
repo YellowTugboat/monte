@@ -1,12 +1,28 @@
-$montePrimary: #19aeff;
-$monteSecondary: #005c94;
-$monteAlt: #292930;
-$monteAccent: #F06449;
-$monteAccent2: #443742;
-// #483D3F
+@import "colors.json";
 
+// Raw Colors
+// $montePrimary: #19aeff;
+// $monteSecondary: #005c94;
+// $monteAlt: #292930;
+// $monteAccent: #FB4B4E; // #FB4B4E; #CF5C36; #8B1E3F; #443742; #483D3F
+// $monteAccent2: #B73739;
+// $monteGreyDark: #666;
+// $monteGreyMedium: #888;
+// $monteGreyLight: #BBB;
+// $monteGreyLighter: #DDD;
+// $monteGreyLightest: #f0f0f0;
+
+$offWhite: $monteGreyLightest;
+$black: #000000;
+$white: #ffffff;
+
+// Chart Features
+$monteDomain: $monteGreyLight;
+$monteTick: $monteGreyMedium;
+
+// HTML Features
 $header: $monteAlt;
-$headerText: $monteSecondary; // rgba(25,174,255, 0.65);
-$bg: #fff;
-$footer: #f0f0f0;
+$headerText: $monteSecondary;
+$bg: $white;
+$footer: $monteAlt;
 $codeGrey: #e8e8ef;

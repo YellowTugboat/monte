@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+
+var path = require('path');
+var fs = require('fs');
+var colorSet = require('../stylesheets/colors.json')
+
+var inputTemplateFile = 'js/schemes.js.tmpl';
+var inputColorSetFile = 'stylesheets/colors.json';
+var outputFile = 'build/schemes.js';
+
+function readTemplateFile() {
+  fs.readFile(inputTemplateFile, 'utf8', function(err, templateData) {
+    readColorSet(templateData);
+  });
+}
+
+function readColorSet(templateData) {
+
+  fs.readFile(inputColorSetFile, 'utf8', function(err, colorSetData) {
+      var re = /<<colorSet>>/i;
+      var outputData = templateData.replace(re, colorSetData.trim());
+
+      writeOutputFile(outputData);
+    });
+}
+
+function writeOutputFile(outputData) {
+  fs.writeFile(outputFile, outputData, 'utf8', function (err) {
+      if (err) {
+        console.error(err);
+      }
+
+      console.log('Done.');
+    });
+}
+
+readTemplateFile();

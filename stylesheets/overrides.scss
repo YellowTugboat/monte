@@ -1,0 +1,27 @@
+@import 'vars';
+
+.btn.btn-primary {
+  color: $white;
+  background-color: $monteAlt;
+  border-color: $monteAlt;
+  outline: none;
+
+  &.hover,
+  &:hover,
+  &.active,
+  &:active,
+  &.focus,
+  &:focus {
+    background-color: $monteAccent;
+    border-color: $monteAccent2;
+  }
+}
+
+section.alt {
+  .table-bordered {
+    td,
+    th {
+      border-color: $monteGreyLighter;
+    }
+  }
+}

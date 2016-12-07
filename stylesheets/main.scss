@@ -1,13 +1,15 @@
-@import '_vars';
+@import 'vars';
 @import 'node_modules/bootstrap/scss/variables';
 @import 'node_modules/bootstrap/scss/mixins/breakpoints';
+@import 'overrides';
 
-.inline {
-  display: inline-block;
+html,
+body {
+  background-color: $monteAlt;
 }
 
-body {
-  background-color: $footer;
+.table {
+  font-size: 14px;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -15,17 +17,66 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 200;
 }
 
-section {
-  position: relative;;
+hr.fat {
+  margin: 100px 50px;
+  border-top: 2px dotted $monteAlt;
+}
 
-  .row h1 {
-    //text-align: center;
-    font-size: 3rem;
-    margin-bottom: 10px;
+section {
+  position: relative;
+
+  &.overview {
+    .row h2 {
+      margin-top: 60px;
+    }
   }
 
-  .row h2 {
-    margin-top: 20px;
+  .row {
+    .vspace {
+      margin-top: 50px;
+    }
+
+     h1 {
+      //text-align: center;
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+     h2 {
+      margin-top: 20px;
+    }
+
+     h3 {
+      margin-top: 50px;
+    }
+
+    .subtitle {
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+  }
+
+  &.alt {
+    background-color: #f0f3f4;
+
+    .monte-chart {
+      .monte-ext-grid-line {
+        stroke: $monteGreyLighter;
+      }
+    }
+  }
+}
+
+.more-details.compact {
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 1s ease-in, opacity 1s;
+  overflow: hidden;
+
+  &.in {
+    max-height: 2500px;
+    opacity: 1;
+    transition: max-height 5s ease-out, opacity 2s;
   }
 }
 
@@ -44,14 +95,44 @@ h1.monte {
   color: $montePrimary;
 }
 
+.inline {
+  display: inline-block;
+}
+
+.btn {
+  &.light {
+    background-color: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.35);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  &.tight {
+    font-size: 12px;
+    padding: 2px 10px;
+  }
+}
+
+.show-details {
+  margin-top: 10px;
+}
+
+.reset-header {
+  text-align: center;
+}
+
 .logo-grp {
   margin-bottom: 20px;
 }
 
 .main-content {
   background-color: $bg;
-  padding: 70px 10px;
+  padding: 70px 0;
   min-height: 300px;
+  font-size: 16px;
+
+  i {
+    color: $black;
+  }
 }
 
 .page-header {
@@ -82,9 +163,10 @@ h1.monte {
 
 footer {
   background-color: $footer;
+  color: $offWhite;
   text-align: center;
   line-height: 50px;
-  padding-bottom: 20px;
+  padding: 50px 0 50px;
 }
 
 .grp {
@@ -96,12 +178,415 @@ footer {
 }
 
 code {
-  color: $monteAccent2;
+  color: $monteAccent;
   background-color: $codeGrey;
+}
+
+.none {
+  opacity: 0.65;
 }
 
 @include media-breakpoint-down(sm) {
   .page-header {
     text-align: center;
+  }
+}
+
+#headerChart {
+  .bar {
+    fill: rgba(255, 255, 255, 0.1);
+
+    &.over {
+      opacity: initial;
+    }
+  }
+
+  .line,
+  .line-seg {
+    stroke: rgba(255, 255, 255, 0.5);
+    fill: none;
+    stroke-width: 2px;
+  }
+
+  circle {
+    stroke: rgba(255, 255, 255, 0.5);
+    fill: $monteAlt;
+  }
+}
+
+.monte-chart {
+  &.monte-no-domain-lines {
+    .domain {
+      stroke-width: 0;
+    }
+  }
+
+  &.monte-grid-ticks {
+    .tick line {
+      stroke: $monteGreyLightest;
+    }
+  }
+
+  .domain {
+    stroke: $monteDomain;
+  }
+
+  .tick {
+    line {
+      stroke: $monteDomain;
+    }
+
+    text {
+      fill: $monteTick;
+    }
+  }
+
+  .monte-ext-grid-line {
+    stroke: $monteGreyLightest;
+  }
+}
+
+.monte-bar-chart {
+  .monte-bar-grp {
+    rect {
+      fill: $montePrimary;
+    }
+
+    .monte-bar-label {
+      fill: $monteAlt;
+      text-anchor: middle;
+      font-size: 12px;
+    }
+  }
+}
+
+.monte-horizontal-bar-chart {
+  .monte-bar-grp {
+    rect {
+      fill: $monteAlt;
+    }
+
+    .monte-bar-label {
+      fill: $monteAccent;
+      font-size: 12px;
+    }
+  }
+}
+
+.monte-ext-bar-bg {
+  fill: $codeGrey;
+}
+
+.monte-simple-bar-chart,
+.monte-simple-horizontal-bar-chart {
+  border: 1px solid $monteAlt;
+
+  rect {
+    fill: $monteAccent;
+  }
+}
+
+.monte-simple-horizontal-bar-chart {
+  margin: 45px 0;
+}
+
+.monte-horizontal-segment-bar-chart {
+  rect {
+    &:nth-child(1) {
+      fill: $montePrimary;
+    }
+
+    &:nth-child(2) {
+      fill: $monteSecondary;
+    }
+
+    &:nth-child(3) {
+      fill: $monteAccent;
+    }
+  }
+}
+
+.monte-segment-bar-chart {
+  rect {
+    &:nth-child(1) {
+      fill: $monteAccent;
+    }
+
+    &:nth-child(2) {
+      fill: $monteAccent2;
+    }
+
+    &:nth-child(3) {
+      fill: $monteAlt;
+    }
+  }
+}
+
+.monte-tornado-chart {
+  .monte-bar-grp {
+    .monte-bar-label {
+      fill: $monteAlt;
+    }
+
+    &.monte-bar-pos rect {
+      fill: $montePrimary;
+    }
+
+    &.monte-bar-neg rect {
+      fill: $monteAccent;
+    }
+  }
+
+  &.monte-horizontal-bar-chart {
+    .monte-bar-grp {
+      .monte-bar-label {
+        fill: $white;
+      }
+
+      &.monte-bar-pos .monte-bar-label {
+        text-anchor: end;
+      }
+
+      &.monte-bar-neg .monte-bar-label {
+        text-anchor: start;
+      }
+    }
+  }
+}
+
+.monte-line-chart,
+.monte-sparkline-chart,
+.monte-area-chart {
+  .monte-line {
+    stroke: black;
+    fill: transparent;
+  }
+}
+
+.monte-line-chart {
+  .main-line { stroke:  $montePrimary; }
+  .second-line { stroke: $monteSecondary; }
+  .third-line { stroke: $monteAlt; }
+  .fourth-line { stroke: $monteAccent; }
+  .alt-line { stroke: $monteAccent2; }
+
+  .monte-point {
+    fill: white;
+  }
+}
+
+.monte-area-chart {
+  fill-opacity: 0.5;
+
+  .monte-line {
+    stroke: #666;
+    stroke-opacity: 0.5;
+  }
+
+  .monte-area.main-line { fill:  $montePrimary; }
+  .monte-area.second-line { fill: $monteSecondary; }
+  .monte-area.third-line { fill: $monteAlt; }
+  .monte-area.fourth-line { fill: $monteAccent; }
+  .monte-area.alt-line { fill: $monteAccent2; }
+}
+
+.sparkline-multiple {
+  display: inline-block;
+  margin-right: 10px;
+
+  &.spark1 .monte-sparkline-chart {
+    .line { stroke:  $montePrimary; }
+    .point { stroke:  $montePrimary; }
+  }
+
+  &.spark2 .monte-sparkline-chart {
+    .line { stroke: $monteSecondary; }
+    .point { stroke: $monteSecondary; }
+  }
+
+  &.spark3 .monte-sparkline-chart {
+    .line { stroke: $monteAlt; }
+    .point { stroke: $monteAlt; }
+  }
+
+  &.spark4 .monte-sparkline-chart {
+    .line { stroke: $monteAccent; }
+    .point { stroke: $monteAccent; }
+  }
+
+  &.spark5 .monte-sparkline-chart {
+    .line { stroke: $monteAccent2; }
+    .point { stroke: $monteAccent2; }
+  }
+}
+
+
+.monte-arc-chart {
+  &.light-labels {
+    .monte-arc-label {
+      fill: $monteGreyLight;
+    }
+  }
+}
+
+.monte-arc-bg,
+.monte-gauge-bg,
+.monte-wedge-chart .monte-arc .monte-arc-wedge.monte-arc-placeholder {
+  fill: $monteGreyLightest;
+}
+
+.monte-arc {
+  &:nth-child(1) .monte-arc-wedge { fill: $montePrimary; }
+  &:nth-child(2) .monte-arc-wedge { fill: $monteSecondary; }
+  &:nth-child(3) .monte-arc-wedge { fill: $monteAlt; }
+  &:nth-child(4) .monte-arc-wedge { fill: $monteAccent; }
+  &:nth-child(5) .monte-arc-wedge { fill: $monteAccent2; }
+  &:nth-child(6) .monte-arc-wedge { fill: $monteGreyDark; }
+  &:nth-child(7) .monte-arc-wedge { fill: $monteGreyMedium; }
+  &:nth-child(8) .monte-arc-wedge { fill: $monteGreyLight; }
+  &:nth-child(9) .monte-arc-wedge { fill: $monteGreyLighter; }
+}
+
+#pieChart {
+  .monte-arc-label {
+    fill: $white;
+  }
+
+  .monte-arc {
+    &:nth-child(9) .monte-arc-label { fill: $monteGreyDark; }
+  }
+}
+
+.arc-keystone {
+  stroke: #63326E;
+  fill: #42113C;
+  stroke-width: 2px;
+}
+
+.donut-label-lg {
+  font-size: 75px;
+}
+
+.monte-arc-label {
+  text-anchor: middle;
+  font-size: 12px;
+}
+
+.wedge-multiple {
+  display: inline-block;;
+}
+
+.monte-gauge-value-label {
+  text-anchor: middle;
+  font-size: 72px;
+  font-weight: lighter,
+}
+
+.monte-gauge-arc-fill {
+  stroke: $monteSecondary;
+}
+
+.monte-gauge-needle {
+  fill: $montePrimary;
+}
+
+.monte-gauge-frame {
+  fill: transparent;
+  stroke: $monteGreyMedium;
+  stroke-width: 3px;
+}
+
+.monte-ext-polar-tick {
+  stroke: $monteGreyLighter;
+}
+
+#gaugePercent {
+  .monte-gauge-bg {
+    fill: $montePrimary;
+    stroke: $montePrimary;
+    stroke-width: 20px;
+  }
+
+  .monte-gauge-needle {
+    fill: $monteAccent;
+  }
+
+  .monte-arc-label {
+    fill: #fff;
+  }
+
+  .monte-gauge-value-label {
+    fill: rgba(255, 255, 255, 0.5);
+    font-weight: 300;
+    font-size: 96px;
+  }
+}
+
+#gaugeRange {
+  .monte-gauge-bg {
+    fill: transparent;
+  }
+
+  .monte-arc-bg {
+    fill: $monteGreyLighter;
+  }
+
+  .monte-arc-wedge {
+    fill: transparent;
+  }
+
+  .monte-arc-pos {
+    fill: $montePrimary;
+  }
+
+  .monte-arc-neg {
+    fill: $monteAccent;
+  }
+
+  .monte-gauge-needle {
+    fill: $monteGreyDark;
+  }
+
+  .monte-ext-label {
+    font-size: 42px;
+    font-weight: 200;
+  }
+}
+
+#scatterPlot {
+  .monte-point {
+    opacity: 0.75;
+  }
+}
+
+.trend-line {
+  stroke: $monteGreyMedium;
+}
+
+.red-dots .monte-point {
+  fill: $monteAccent;
+}
+
+.monte-icon {
+  &.man {
+    fill: $montePrimary;
+  }
+
+  &.woman {
+    fill: $monteAccent;
+  }
+
+  &.shot {
+    fill: $monteGreyMedium;
+  }
+
+  &.goal {
+    fill: $monteAccent;
+  }
+
+  &.empty {
+    stroke: $monteAccent;
+    stroke-width: 2;
+    fill: $monteGreyLighter;
   }
 }
