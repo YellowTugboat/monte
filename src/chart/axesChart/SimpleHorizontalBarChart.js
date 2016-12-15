@@ -7,10 +7,10 @@ const SIMPLE_HORT_BAR_CHART_DEFAULTS = {
   boundingHeight: 10,
 
   margin: {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+    top: 1,
+    right: 1,
+    bottom: 1,
+    left: 1,
   },
 
   suppressAxes: true,
@@ -36,5 +36,37 @@ export class HorizontalSimpleBarChart extends HorizontalBarChart {
 
     this.rawData = data;
     super._data([datum], ...tail);
+  }
+
+  _update() {
+    super._update();
+
+    this._updateSupport();
+  }
+
+  _updateSupport() {
+    const barSupport = { left: this.x.domain()[0], right: this.x.domain()[1] };
+    const bgBar = this.bg.selectAll('.monte-bar-bg').data([barSupport]);
+    const frame = this.draw.selectAll('.monte-frame').data([barSupport]);
+
+    bgBar.enter().append('rect')
+        .attr('class', 'monte-simple-bar-bg')
+      .merge(bgBar)
+        .attr('x', (d) => this.y(d.left))
+        .attr('y', 0)
+        .attr('width', (d) => this.x(d.right))
+        .attr('height', this.y.bandwidth());
+
+    bgBar.exit().remove();
+
+    frame.enter().append('rect')
+        .attr('class', 'monte-simple-bar-frame')
+      .merge(frame)
+        .attr('x', (d) => this.y(d.left))
+        .attr('y', 0)
+        .attr('width', (d) => this.x(d.right))
+        .attr('height', this.y.bandwidth());
+
+    frame.exit().remove();
   }
 }

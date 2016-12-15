@@ -7,10 +7,10 @@ const SIMPLE_BAR_CHART_DEFAULTS = {
   boundingHeight: 100,
 
   margin: {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+    top: 1,
+    right: 1,
+    bottom: 1,
+    left: 1,
   },
 
   suppressAxes: true,
@@ -36,5 +36,37 @@ export class SimpleBarChart extends BarChart {
 
     this.rawData = data;
     super._data([datum], ...tail);
+  }
+
+  _update() {
+    super._update();
+
+    this._updateSupport();
+  }
+
+  _updateSupport() {
+    const barSupport = { bottom: this.y.domain()[1], top: this.y.domain()[0] };
+    const bgBar = this.bg.selectAll('.monte-bar-bg').data([barSupport]);
+    const frame = this.draw.selectAll('.monte-frame').data([barSupport]);
+
+    bgBar.enter().append('rect')
+        .attr('class', 'monte-simple-bar-bg')
+      .merge(bgBar)
+        .attr('x', 0)
+        .attr('y', (d) => this.y(d.bottom))
+        .attr('width', this.x.bandwidth())
+        .attr('height', (d) => this.y(d.top));
+
+    bgBar.exit().remove();
+
+    frame.enter().append('rect')
+        .attr('class', 'monte-simple-bar-frame')
+      .merge(frame)
+        .attr('x', 0)
+        .attr('y', (d) => this.y(d.bottom))
+        .attr('width', this.x.bandwidth())
+        .attr('height', (d) => this.y(d.top));
+
+    frame.exit().remove();
   }
 }
