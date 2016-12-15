@@ -11,25 +11,24 @@ export const ICON_MODE = {
   SVG_USE_EXTERNAL: 'svgUseExternal',
 };
 
-export const ICON_PLACEMENT = {
-  BottomToTopLeftToRightPlacement: {
-    rowIndex: function(d, i) {
-      return Math.floor(i / this.opts.columns);
-    },
-
-    columnIndex: function(d, i) {
-      return i % this.opts.columns;
-    },
+// TODO: export icon arrangements on Monte object.
+export const iconArrangeBottomTop = {
+  rowIndex: function(d, i) {
+    return Math.floor(i / this.opts.columns);
   },
 
-  TopToBottomLeftToRightPlacement: {
-    rowIndex: function(d, i) {
-      return this.opts.rows - Math.floor(i / this.opts.columns) - 1;
-    },
+  columnIndex: function(d, i) {
+    return i % this.opts.columns;
+  },
+};
 
-    columnIndex: function(d, i) {
-      return i % this.opts.columns;
-    },
+export const iconArrangeTopBottom = {
+  rowIndex: function(d, i) {
+    return this.opts.rows - Math.floor(i / this.opts.columns) - 1;
+  },
+
+  columnIndex: function(d, i) {
+    return i % this.opts.columns;
   },
 };
 
@@ -79,7 +78,7 @@ const ICON_ARRAY_DEFAULTS = {
   rows: 10,
   columns: 10,
 
-  placement: ICON_PLACEMENT.TopToBottomLeftToRightPlacement,
+  arrangement: iconArrangeTopBottom,
 
   svgVersion: 1, // SVG version 1 requires `xlink:href` for <use> references, but SVG version 2 adds a regular `href` to use instead.
 };
@@ -203,8 +202,8 @@ export class IconArray extends AxesChart {
 }
 
 function iconTransform(d, i, nodes) {
-  const col = this.tryInvoke(this.opts.placement.columnIndex, d, i, nodes);
-  const row = this.tryInvoke(this.opts.placement.rowIndex, d, i, nodes);
+  const col = this.tryInvoke(this.opts.arrangement.columnIndex, d, i, nodes);
+  const row = this.tryInvoke(this.opts.arrangement.rowIndex, d, i, nodes);
   const x = this.getScaledProp('x', col);
   const y = this.getScaledProp('y', row);
 
@@ -212,8 +211,8 @@ function iconTransform(d, i, nodes) {
 }
 
 function iconTransformShift(d, i, nodes) {
-  const col = this.tryInvoke(this.opts.placement.columnIndex, d, i, nodes);
-  const row = this.tryInvoke(this.opts.placement.rowIndex, d, i, nodes);
+  const col = this.tryInvoke(this.opts.arrangement.columnIndex, d, i, nodes);
+  const row = this.tryInvoke(this.opts.arrangement.rowIndex, d, i, nodes);
   const x = this.getScaledProp('x', col);
   const y = this.getScaledProp('y', row);
   const xShift = this.opts.iconSvgWidth / 2;

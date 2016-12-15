@@ -19,7 +19,11 @@ export { SegmentBarChart } from './src/chart/axesChart/SegmentBarChart';
 export { HorizontalSegmentBarChart } from './src/chart/axesChart/HorizontalSegmentBarChart';
 
 export { ScatterPlot } from './src/chart/axesChart/ScatterPlotChart';
-export { IconArray } from './src/chart/axesChart/IconArray';
+export {
+  IconArray,
+  iconArrangeBottomTop,
+  iconArrangeTopBottom,
+} from './src/chart/axesChart/IconArray';
 
 // Polar coordinates
 export { ArcChart } from './src/chart/polarChart/ArcChart';
