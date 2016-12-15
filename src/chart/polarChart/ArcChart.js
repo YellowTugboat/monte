@@ -1,13 +1,15 @@
 import { ENTER, EXIT, UPDATE } from '../../const/d3';
-import { polarLabelCentroid, polarLabelCssPrefix } from '../../util/polarLabels';
+import { arcLabelTween, arcSimpleTween } from '../../util/tween';
+import { polarLabelCentroid, polarLabelCssPrefix, polarLabelRotateTangentFlip } from '../../util/polarLabels';
 import { PolarChart } from './PolarChart';
 import { TAU } from '../../const/math';
-import { arcSimpleTween } from '../../util/tween';
 import { classedPattern } from '../../util/css';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { getCoord } from '../../util/polar';
 import { noop } from '../../tools/noop';
+import { radiansToDegrees } from '../../util/polar';
 import { radiusContrain } from '../../util/dimension';
+import { readTransforms } from '../../tools/transform';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
 
 const LABEL_CSS_PATTERN = new RegExp(`^${polarLabelCssPrefix}*`);
@@ -15,9 +17,7 @@ const LABEL_CSS_PATTERN = new RegExp(`^${polarLabelCssPrefix}*`);
 const EVENT_UPDATING_LABELS = 'updatingLabels';
 const EVENT_UPDATED_LABELS = 'updatedLabels';
 
-const EVENTS = [
-  EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS,
-];
+const EVENTS = [ EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS ];
 
 const ARC_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart',
@@ -57,6 +57,7 @@ const ARC_CHART_DEFAULTS = {
 
   includeLabels: false,
   labelPlacement: polarLabelCentroid,
+  labelRotation: polarLabelRotateTangentFlip,
   labelAngle: (d) => d.startAngle + (d.endAngle - d.startAngle) / 2,
 
   labelProp: 'value',
@@ -79,13 +80,13 @@ export class ArcChart extends PolarChart {
 
     // Initialize the arc generator
     this.arc = d3.arc()
-      .cornerRadius(this.opts.cornerRadius);
+      .cornerRadius(this.tryInvoke(this.opts.cornerRadius));
 
-    this.pie = d3.pie().value((d) => d[this.opts.itemValueProp])
+    this.pie = d3.pie().value((d) => this.getProp('itemValue', d))
       .sortValues(null)
-      .startAngle(this.opts.pieStartAngle)
-      .endAngle(this.opts.pieEndAngle)
-      .padAngle(this.opts.piePadAngle);
+      .startAngle(this.tryInvoke(this.opts.pieStartAngle))
+      .endAngle(this.tryInvoke(this.opts.pieEndAngle))
+      .padAngle(this.tryInvoke(this.opts.piePadAngle));
   }
 
   _initCustomize() {
@@ -237,26 +238,59 @@ export class ArcChart extends PolarChart {
     const lbl = arcGrp.selectAll('.monte-arc-label').data([d]);
     const labelPlacement = this.tryInvoke(this.opts.labelPlacement);
     const labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
+    const radius = this.tryInvoke(labelRadius, d, i, nodes);
+    const angle = this.tryInvoke(this.opts.labelAngle, d, i, nodes);
+    const rotate = radiansToDegrees(this.tryInvoke(this.opts.labelRotation, d, i, nodes));
+    const coord = getCoord(radius, angle);
 
     lbl.enter().append('text')
       .attr('class', 'monte-arc-label')
-      .merge(lbl)
+      .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
+      .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
+      .attr('transform', () => `translate(${coord}) rotate(${rotate})`)
+      .attr('angle', angle)
+      .attr('radius', labelRadius)
+      .style('opacity', 0)
+      .style('fill', this.optionReaderFunc('labelFillScaleAccessor'))
+      .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes))
+      .transition()
+        .call((t) => {
+          const ts = this._transitionSettings('label', ENTER);
+          this._transitionConfigure(t, ts, d, i, nodes);
+        })
+        .style('opacity', 1);
+
+    lbl.style('fill', this.optionReaderFunc('labelFillScaleAccessor'))
+        .style('opacity', 1)
         .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
         .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
-        .attr('fill', this.optionReaderFunc('labelFillScaleAccessor'))
-        .attr('transform', (d1) => {
-          // TODO: Update to use `attrTween` and follow arc movement instead of direct translation.
-          //       Stop the label drift through the
-          const angle = this.tryInvoke(this.opts.labelAngle, d1, i, nodes);
-          const coord = getCoord(labelRadius, angle);
+        .transition()
+          .call((t) => {
+            const ts = this._transitionSettings('label', UPDATE);
+            this._transitionConfigure(t, ts, d, i, nodes);
+          })
+          .attrTween('transform', () => {
+            const currentTransforms = readTransforms(lbl.attr('transform'));
+            const from = {
+              angle: +lbl.attr('angle'),
+              radius: +lbl.attr('radius'),
+              rotate: currentTransforms.rotate || 0,
+            };
+            const to = { angle, radius, rotate };
 
-          return `translate(${coord})`;
-        })
-        .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes));
+            return arcLabelTween(from, to, radius);
+          })
+          .attr('angle', angle)
+          .attr('radius', labelRadius)
+          .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes));
 
     lbl.exit()
       .transition()
-      .call(this._transitionSetup('label', EXIT))
+      .call((t) => {
+        const ts = this._transitionSettings('label', EXIT);
+        this._transitionConfigure(t, ts, d, i, nodes);
+      })
+      .attr('opacity', 0)
       .remove();
   }
 }

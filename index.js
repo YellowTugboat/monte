@@ -102,11 +102,14 @@ export {
 export {
   polarLabelCentroid,
   polarLabelInner,
-  polarLabelOuter,
+  polarLabelInnerAdjust,
   polarLabelInnerFactor,
+  polarLabelOuter,
+  polarLabelOuterAdjust,
   polarLabelOuterFactor,
   polarLabelRotateTangentOrigin,
   polarLabelRotateTangentFlip,
   polarLabelRotateRay,
+  polarLabelRotateRayFlip,
   polarLabelRotateRayOpposite,
 } from './src/util/polarLabels';
