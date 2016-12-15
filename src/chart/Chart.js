@@ -179,6 +179,7 @@ export class Chart {
     this.dispatch = d3.dispatch(...events);
   }
 
+  // TODO: Allow enabling/disabling of developerMode from `option`.
   _initDeveloperMode() {
     const echo = (eventName, ...args) => {
       let a = '(no arguments)';
@@ -186,7 +187,12 @@ export class Chart {
       if (args && args.length > 0) {
         a = '\n';
 
-        args.forEach((v, i) => a += `\t${i}: ${v}\n`);
+        args.forEach((v, i) => {
+          if (isDefined(v)) {
+            const s = isFunc(v) ? `func: '${v.name || 'anonymous'}'` : v;
+            a += `\t${i}: ${s}\n`;
+          }
+        });
       }
 
       console.log(`[${this}] "${eventName}": ${a}`); // eslint-disable-line no-console
@@ -871,7 +877,7 @@ export class Chart {
         const scalePath = `opts.${scaleName}`;
         const v = this.getScaledProp(scalePath, propPrefix, d);
 
-        if (this.developerMode) {
+        if (this.developerMode && v !== UNDEF) {
           console.log(scalePath, v); // eslint-disable-line no-console
         }
 
