@@ -15,8 +15,8 @@ const CLIP_PATH_ID = 'drawPath';
 
 const DEFAULTS = {
   css: '',
-  boundingWidth: 800,
-  boundingHeight: 450,
+  boundingWidth: 250,
+  boundingHeight: 250,
   margin: {
     top: 0,
     right: 0,
@@ -100,7 +100,7 @@ export class Chart {
     this._updateBounds();
 
     // Bind initial extensions to this chart instance.
-    this._bindExt(this.opts.extensions);
+    this._bindExt(this.tryInvoke(this.opts.extensions));
 
     // Do the various setup rendering (Axis, BG, etc...)
     this._initRender();
