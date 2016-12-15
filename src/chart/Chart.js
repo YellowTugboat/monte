@@ -614,13 +614,26 @@ export class Chart {
   // * `<propertDefaultValue>`
   _transitionSetup(...levels) {
     return (transition) => {
-      const transitionSettings = this.tryInvoke(this.opts.transition);
-      const duration = getDepthFirst(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
-      const delay = getDepthFirst(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
-      const ease = getDepthFirst(transitionSettings, levels, 'ease', TRANSITION_EASE);
-
+      const { duration, delay, ease } = this._transitionSettings(...levels);
       transition.duration(duration).delay(delay).ease(ease);
     };
+  }
+
+  _transitionConfigure(transition, transitionSettings, d, i, nodes) {
+    const { duration, delay, ease } = transitionSettings;
+
+    transition.duration(this.tryInvoke(duration, d, i, nodes))
+      .delay(this.tryInvoke(delay, d, i, nodes))
+      .ease(ease);
+  }
+
+  _transitionSettings(...levels) {
+    const transitionSettings = this.tryInvoke(this.opts.transition);
+    const duration = getDepthFirst(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
+    const delay = getDepthFirst(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
+    const ease = getDepthFirst(transitionSettings, levels, 'ease', TRANSITION_EASE);
+
+    return { duration, delay, ease };
   }
 
   /**
