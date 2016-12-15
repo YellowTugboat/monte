@@ -28,6 +28,7 @@ export {
 // Polar coordinates
 export { ArcChart } from './src/chart/polarChart/ArcChart';
 export { GaugeChart } from './src/chart/polarChart/GaugeChart';
+export { PolarAreaChart } from './src/chart/polarChart/PolarAreaChart';
 export { WedgeChart } from './src/chart/polarChart/WedgeChart';
 
 // Const
