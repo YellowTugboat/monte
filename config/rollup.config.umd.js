@@ -6,7 +6,7 @@ export default {
   format: 'umd',
   entry: 'index.js',
   dest: 'build/monte.js',
-  moduleName: 'Monte',
+  moduleName: 'monte',
   banner: `// ${homepage} Version ${version} Copyright ${(new Date).getFullYear()} ${author.name}`,
   plugins: [
     nodeResolve({ jsnext: true, main: true }),
