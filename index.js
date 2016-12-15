@@ -46,6 +46,7 @@ export {
 // Extensions
 export { Extension } from './src/extension/Extension';
 export { Arc as ExtArc } from './src/extension/Arc';
+export { AxisLabelWrap as ExtAxisLabelWrap } from './src/extension/AxisLabelWrap';
 export { Frame as ExtFrame } from './src/extension/Frame';
 
 export {
