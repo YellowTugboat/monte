@@ -4,9 +4,10 @@ import { Chart } from '../Chart';
 import { MonteError } from '../../support/MonteError';
 import { noop } from '../../tools/noop';
 
-const EVENT_AXIS_RENDERED = 'axisRendered';
+const EVENT_AXIS_PRERENDER = 'axisPrerender';
 const EVENT_AXIS_RENDERING = 'axisRendering';
-const EVENTS = [EVENT_AXIS_RENDERED, EVENT_AXIS_RENDERING];
+const EVENT_AXIS_RENDERED = 'axisRendered';
+const EVENTS = [EVENT_AXIS_PRERENDER, EVENT_AXIS_RENDERING, EVENT_AXIS_RENDERED];
 
 const AXES_CHART_DEFAULTS = {
   // The axes X and Y are generally assumed. In some cases it may be desirable to add an additional
@@ -114,10 +115,10 @@ export class AxesChart extends Chart {
 
       if (isArray(customize)) {
         const axis = this[`${scaleName}Axis`];
-        customize.forEach((customFunc) => customFunc(axis));
+        customize.forEach((customFunc) => customFunc.call(this, axis));
       }
       else if (isFunc(customize)) {
-        customize(this[`${scaleName}Axis`]);
+        customize.call(this, this[`${scaleName}Axis`]);
       }
     });
   }
@@ -153,6 +154,8 @@ export class AxesChart extends Chart {
     super.replaceScale(scaleName, newScaleConstructor);
     this[`${scaleName}Axis`].scale(this[scaleName]);
     this.renderAxes();
+
+    return this;
   }
 
   updateAxesTransforms() {
@@ -162,13 +165,18 @@ export class AxesChart extends Chart {
 
       if (trans) { axisGrp.attr('transform', trans(this.width, this.height)); }
     });
+
+    return this;
   }
 
   updateAxesRanges() {
     this.forEachAxisScale((scaleName) => {
-      const range = this.__axisOpt(scaleName, 'Range')(this.width, this.height);
+      const rangeFunc = this.__axisOpt(scaleName, 'Range');
+      const range = rangeFunc.call(this, this.width, this.height);
       this[scaleName].range(range);
     });
+
+    return this;
   }
 
   updateAxesDomains() {
@@ -182,6 +190,8 @@ export class AxesChart extends Chart {
 
       this[scaleName].domain(extent);
     });
+
+    return this;
   }
 
   renderAxes() {
@@ -197,13 +207,18 @@ export class AxesChart extends Chart {
     this.forEachAxisScale((scaleName) => {
       if (isSuppressArray && suppressAxes.indexOf(scaleName) > -1) { return; }
 
+      const axis = this[`${scaleName}Axis`];
+      this.emit(EVENT_AXIS_PRERENDER, scaleName, axis);
+
       this.support.select(`.${scaleName}-axis`)
         .transition(t)
-          .on('start', () => this.emit(EVENT_AXIS_RENDERING))
-          .call(this[`${scaleName}Axis`])
+          .on('start', () => this.emit(EVENT_AXIS_RENDERING, scaleName, axis))
+          .call(axis)
           .call(this._setLabel.bind(this, scaleName))
-          .call((t) => this.emit(EVENT_AXIS_RENDERED, t));
+          .call((t) => this.emit(EVENT_AXIS_RENDERED, scaleName, axis, t));
     });
+
+    return this;
   }
 
   _domainExtent(data, scaleName) { // eslint-disable-line no-unused-vars
@@ -213,6 +228,8 @@ export class AxesChart extends Chart {
   // Loops over each scale name that is bound to an axis.
   forEachAxisScale(f) {
     this.axes.forEach(f);
+
+    return this;
   }
 
   _setLabel(scaleName, transition) { // eslint-disable-line no-unused-vars

@@ -1,11 +1,14 @@
+import { ENTER, UPDATE } from '../const/d3';
 import { HORIZONTAL, VERTICAL } from '../const/direction';
 import { AXIS_SHIFT } from '../const/d3';
 import { Extension } from './Extension';
 import { ReplacePreceding } from '../tools/mergeOptions';
+import { isDefined } from '../tools/is';
 
 const GRID_DEFAULTS = {
   eventPrefix: 'grid',
   scalePrefixes: ['x', 'y'],
+  axisLayer: 'support',
   prefixCssMap: {
     'x': 'v-line',
     'y': 'h-line',
@@ -25,8 +28,16 @@ export class Grid extends Extension {
     super._initOptions(...options, GRID_DEFAULTS);
   }
 
-  _update(binding, axisTransition) {
+  _update(scaleName, axis, axisTransition) {
     const axesChart = this.chart;
+
+    // Set transition defaults if `axisTransition` is undefined or null.
+    if (!isDefined(axisTransition)) {
+      const action = this.chart.hasRendered ? UPDATE : ENTER;
+      const axisLayerName = this.tryInvoke(this.opts.axisLayer);
+      const axisLayer = this.chart[axisLayerName];
+      axisTransition = axisLayer.transition().call(this.chart._transitionSetup('axis', action));
+    }
 
     // Draw all axis
     axesChart.forEachAxisScale((scaleName) => {
