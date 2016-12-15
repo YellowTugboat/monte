@@ -63,8 +63,8 @@ export class ScatterPlot extends AxesChart {
     super._resetCssDomains();
 
     resetScaleDomain(this.opts.pointCssScale);
-    resetScaleDomain(this.opts.pointFillScaleAccessor);
-    resetScaleDomain(this.opts.pointStrokeScaleAccessor);
+    resetScaleDomain(this.opts.pointFillScale);
+    resetScaleDomain(this.opts.pointStrokeScale);
   }
 
   // Render the vis.
