@@ -12,7 +12,7 @@ const DEFAULTS = {
   layer: 'bg',
 
   // The chart events to listen for.
-  binding: [EV.DESTROYING, EV.RENDERED, EV.UPDATED_BOUNDS],
+  binding: [EV.DESTROYING, EV.RENDERED, EV.UPDATED, EV.UPDATED_BOUNDS],
 
   // Flag for global updates for any option change.
   // Subclasses can override `_shouldOptionUpdate` for nuanced behavior.
@@ -201,11 +201,11 @@ export class Extension {
   }
 
   _update(binding, chart) { // eslint-disable-line no-unused-vars
-    throw MonteError.UnimplementedMethod('Update', '_update');
+    throw MonteError.UnimplementedMethod('Update', '_update', 'extension');
   }
 
   /**
-   * Invoke `_render` if defined; otherwise invoke the extension update-cycle.
+   * Invoke `_render` if defined.
    */
   render(...args) {
     if (this._render) {
@@ -213,22 +213,16 @@ export class Extension {
       this._render(...args);
       this.__notify(EV.RENDERED);
     }
-    else {
-      this.update(...args);
-    }
   }
 
   /**
-   * Invoke `_updateBounds` if defined; otherwise invoke the extension update-cycle.
+   * Invoke `_updateBounds` if defined.
    */
   updateBounds(...args) {
     if (this._updateBounds) {
       this.__notify(EV.UPDATING_BOUNDS);
       this._updateBounds(...args);
       this.__notify(EV.UPDATED_BOUNDS);
-    }
-    else {
-      this.update(...args);
     }
   }
 

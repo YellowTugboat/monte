@@ -15,8 +15,8 @@ export class MonteError extends Error {
     }
   }
 
-  static UnimplementedMethod(method, methodName) {
-    return new MonteError(`${method} (\`${methodName}\`) needs to be defined in order for the chart to be useful.`);
+  static UnimplementedMethod(method, methodName, sourceType='chart') {
+    return new MonteError(`${method} (\`${methodName}\`) needs to be defined in order for the ${sourceType} to be useful.`);
   }
 
   static InvalidArgumentType(methodName, argumentName, expectedType, received) {
