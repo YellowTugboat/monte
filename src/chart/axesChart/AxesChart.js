@@ -222,6 +222,12 @@ export class AxesChart extends Chart {
   }
 
   _domainExtent(data, scaleName) { // eslint-disable-line no-unused-vars
+    if (this.opts.directUse) {
+      // Provide simple default extent that can be overridden by the corresponding
+      // `<scaleName>DomainCustomize` option.
+      return [0, 1];
+    }
+
     throw MonteError.UnimplementedMethod('Domain Extent', '_domainExtent');
   }
 
