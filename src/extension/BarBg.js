@@ -4,8 +4,10 @@ const BAR_BG_DEFAULTS = {
   eventPrefix: 'barbg',
   barBgCss: 'monte-ext-bar-bg',
   data: null,
-  maxValue: null,  // Maximum value
+  maxValue: null,     // Maximum value
   maxValueProp: null, // Maximum value taken from chart data
+  minValue: null,     // Minimum value
+  minValueProp: null, // Minimum value taken from chart data
   enlarge: 0.05,
   cornerRadius: 0,
 };
@@ -29,21 +31,19 @@ export class BarBg extends Extension {
 
     const bgs = this._extCreateSelection().data(data);
     const sizeAdjust = this._sizeAdjust(barChart);
+    const css = this.tryInvoke(this.opts.barBgCss);
 
     bgs.enter().append('rect')
       .call(this._setExtAttrs.bind(this))
       .merge(bgs)
-        .attr('class', this.opts.barBgCss)
-        .attr('x', (...args) => barChart._barX.bind(barChart)(...args) + this._xShift(sizeAdjust))
-        .attr('y', (...args) => barChart._barY.bind(barChart)(...args) + this._yShift(sizeAdjust))
-        .attr('width', (d) => {
-          const bw = barChart._barWidth(d);
-          const wa = this._widthAdjust(sizeAdjust);
-          let v = bw + wa;
-          return v;
-        })
-        .attr('height', (...args) => barChart._barHeight.bind(barChart)(...args) + this._heightAdjust(sizeAdjust))
+        .attr('class', css)
+        .attr('x', (...args) => this._x(barChart, sizeAdjust, ...args))
+        .attr('y', (...args) => this._y(barChart, sizeAdjust, ...args))
+        .attr('width', (...args) => this._width(barChart, sizeAdjust, ...args))
+        .attr('height', (...args) => this._height(barChart, sizeAdjust, ...args))
         .attr('rx', (d, i) => this.tryInvoke(this.opts.cornerRadius, d, i));
+
+    bgs.exit().remove();
   }
 
   _buildData(barChart, chartData) {
@@ -51,11 +51,15 @@ export class BarBg extends Extension {
     const domain = barChart.y.domain();
 
     for (let i = 0; i < data.length; i++) {
-      const maxVal = this.opts.maxValue ? chartData[i][this.opts.maxValue] : null;
+      const minValueProp = this.tryInvoke(this.opts.minValueProp);
+      const maxValueProp = this.tryInvoke(this.opts.maxValueProp);
+      const minVal = minValueProp ? chartData[i][minValueProp] : null;
+      const maxVal = maxValueProp ? chartData[i][maxValueProp] : null;
 
       data[i] = {
         [barChart.option('xProp')]: chartData[i][barChart.option('xProp')],
-        [barChart.option('yProp')]: maxVal || this.opts.maxValue || domain[1],
+        'min': minVal || this.opts.minValue || domain[0],
+        'max': maxVal || this.opts.maxValue || domain[1],
       };
     }
 
@@ -63,11 +67,21 @@ export class BarBg extends Extension {
   }
 
   _sizeAdjust(barChart) {
-    return barChart.x.bandwidth() * this.opts.enlarge;
+    const enlarge = this.tryInvoke(this.opts.enlarge);
+    return barChart.x.bandwidth() * enlarge;
+  }
+
+  _x(barChart, sizeAdjust, ...args) {
+    const v = barChart._barX.bind(barChart)(...args) + this._xShift(sizeAdjust);
+    return v;
   }
 
   _xShift(sizeAdjust) {
     return -sizeAdjust;
+  }
+
+  _y(barChart, sizeAdjust, d) {
+    return barChart.y(d.max) + this._yShift(sizeAdjust);
   }
 
   _yShift(sizeAdjust) { // eslint-disable-line no-unused-vars
@@ -78,8 +92,20 @@ export class BarBg extends Extension {
     return 2 * sizeAdjust;
   }
 
+  _width(barChart, sizeAdjust, d) {
+    const bw = barChart._barWidth(d);
+    const wa = this._widthAdjust(sizeAdjust);
+    return bw + wa;
+  }
+
   _heightAdjust(sizeAdjust) { // eslint-disable-line no-unused-vars
     return 0;
+  }
+
+  _height(barChart, sizeAdjust, d) {
+    const z = barChart.y(0);
+    const h = (barChart.y(d.min) - z) + (z - barChart.y(d.max));
+    return h + this._heightAdjust(sizeAdjust);
   }
 }
 
@@ -89,11 +115,15 @@ export class HorizontalBarBg extends BarBg {
     const domain = hBarChart.x.domain();
 
     for (let i = 0; i < data.length; i++) {
-      const maxVal = this.opts.maxValueProp ? chartData[i][this.opts.maxValueProp] : null;
+      const minValueProp = this.tryInvoke(this.opts.minValueProp);
+      const maxValueProp = this.tryInvoke(this.opts.maxValueProp);
+      const minVal = minValueProp ? chartData[i][minValueProp] : null;
+      const maxVal = maxValueProp ? chartData[i][maxValueProp] : null;
 
       data[i] = {
-        [hBarChart.option('xProp')]: maxVal || this.opts.maxValue || domain[1],
         [hBarChart.option('yProp')]: chartData[i][hBarChart.option('yProp')],
+        'min': minVal || this.opts.minValue || domain[0],
+        'max': maxVal || this.opts.maxValue || domain[1],
       };
     }
 
@@ -104,8 +134,17 @@ export class HorizontalBarBg extends BarBg {
     return barChart.y.bandwidth() * this.opts.enlarge;
   }
 
+  _x(barChart, sizeAdjust, d) {
+    return barChart.x(d.min) + this._xShift(sizeAdjust);
+  }
+
   _xShift(sizeAdjust) { // eslint-disable-line no-unused-vars
     return 0;
+  }
+
+  _y(barChart, sizeAdjust, ...args) {
+    const v = barChart._barY.bind(barChart)(...args) + this._yShift(sizeAdjust);
+    return v;
   }
 
   _yShift(sizeAdjust) {
@@ -116,7 +155,19 @@ export class HorizontalBarBg extends BarBg {
     return 0;
   }
 
+  _width(barChart, sizeAdjust, d) {
+    const z = barChart.x(0);
+    const w = (z - barChart.x(d.min)) + (barChart.x(d.max) - z);
+    return w + this._widthAdjust(sizeAdjust);
+  }
+
   _heightAdjust(sizeAdjust) {
     return 2 * sizeAdjust;
+  }
+
+  _height(barChart, sizeAdjust, d) {
+    const bh = barChart._barHeight(d);
+    const ha = this._heightAdjust(sizeAdjust);
+    return bh + ha;
   }
 }
