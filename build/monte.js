@@ -1,11 +1,11 @@
-// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha22 Copyright 2016 Yellow Tugboat
+// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha23 Copyright 2016 Yellow Tugboat
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
-    (factory((global.Monte = global.Monte || {})));
+    (factory((global.monte = global.monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha22";
+var version = "0.0.0-alpha23";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -4074,7 +4074,9 @@ var MonteError = function (_Error) {
   createClass(MonteError, null, [{
     key: 'UnimplementedMethod',
     value: function UnimplementedMethod(method, methodName) {
-      return new MonteError(method + ' (`' + methodName + '`) needs to be defined in order for the chart to be useful.');
+      var sourceType = arguments.length <= 2 || arguments[2] === undefined ? 'chart' : arguments[2];
+
+      return new MonteError(method + ' (`' + methodName + '`) needs to be defined in order for the ' + sourceType + ' to be useful.');
     }
   }, {
     key: 'InvalidArgumentType',
@@ -4558,8 +4560,8 @@ var CLIP_PATH_ID = 'drawPath';
 
 var DEFAULTS = {
   css: '',
-  boundingWidth: 800,
-  boundingHeight: 450,
+  boundingWidth: 250,
+  boundingHeight: 250,
   margin: {
     top: 0,
     right: 0,
@@ -4641,7 +4643,7 @@ var Chart = function () {
     this._updateBounds();
 
     // Bind initial extensions to this chart instance.
-    this._bindExt(this.opts.extensions);
+    this._bindExt(this.tryInvoke(this.opts.extensions));
 
     // Do the various setup rendering (Axis, BG, etc...)
     this._initRender();
@@ -4747,6 +4749,9 @@ var Chart = function () {
       this._events = events;
       this.dispatch = (_d = d3).dispatch.apply(_d, events);
     }
+
+    // TODO: Allow enabling/disabling of developerMode from `option`.
+
   }, {
     key: '_initDeveloperMode',
     value: function _initDeveloperMode() {
@@ -4763,7 +4768,10 @@ var Chart = function () {
           a = '\n';
 
           args.forEach(function (v, i) {
-            return a += '\t' + i + ': ' + v + '\n';
+            if (isDefined(v)) {
+              var s = isFunc(v) ? 'func: \'' + (v.name || 'anonymous') + '\'' : v;
+              a += '\t' + i + ': ' + s + '\n';
+            }
           });
         }
 
@@ -5291,13 +5299,39 @@ var Chart = function () {
       }
 
       return function (transition) {
-        var transitionSettings = _this6.tryInvoke(_this6.opts.transition);
-        var duration = getDepthFirst(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
-        var delay = getDepthFirst(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
-        var ease = getDepthFirst(transitionSettings, levels, 'ease', TRANSITION_EASE);
+        var _transitionSettings2 = _this6._transitionSettings.apply(_this6, levels);
+
+        var duration = _transitionSettings2.duration;
+        var delay = _transitionSettings2.delay;
+        var ease = _transitionSettings2.ease;
 
         transition.duration(duration).delay(delay).ease(ease);
       };
+    }
+  }, {
+    key: '_transitionConfigure',
+    value: function _transitionConfigure(transition, transitionSettings, d, i, nodes) {
+      var duration = transitionSettings.duration;
+      var delay = transitionSettings.delay;
+      var ease = transitionSettings.ease;
+
+
+      transition.duration(this.tryInvoke(duration, d, i, nodes)).delay(this.tryInvoke(delay, d, i, nodes)).ease(ease);
+    }
+  }, {
+    key: '_transitionSettings',
+    value: function _transitionSettings() {
+      var transitionSettings = this.tryInvoke(this.opts.transition);
+
+      for (var _len9 = arguments.length, levels = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
+        levels[_key9] = arguments[_key9];
+      }
+
+      var duration = getDepthFirst(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
+      var delay = getDepthFirst(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
+      var ease = getDepthFirst(transitionSettings, levels, 'ease', TRANSITION_EASE);
+
+      return { duration: duration, delay: delay, ease: ease };
     }
 
     /**
@@ -5350,8 +5384,8 @@ var Chart = function () {
   }, {
     key: 'call',
     value: function call(f) {
-      for (var _len9 = arguments.length, args = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
-        args[_key9 - 1] = arguments[_key9];
+      for (var _len10 = arguments.length, args = Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
+        args[_key10 - 1] = arguments[_key10];
       }
 
       f.call.apply(f, [this].concat(args));
@@ -5436,8 +5470,8 @@ var Chart = function () {
   }, {
     key: 'addExt',
     value: function addExt() {
-      for (var _len10 = arguments.length, exts = Array(_len10), _key10 = 0; _key10 < _len10; _key10++) {
-        exts[_key10] = arguments[_key10];
+      for (var _len11 = arguments.length, exts = Array(_len11), _key11 = 0; _key11 < _len11; _key11++) {
+        exts[_key11] = arguments[_key11];
       }
 
       this._bindExt(exts);
@@ -5471,8 +5505,8 @@ var Chart = function () {
   }, {
     key: '__updateExt',
     value: function __updateExt(bindingName) {
-      for (var _len11 = arguments.length, extArgs = Array(_len11 > 1 ? _len11 - 1 : 0), _key11 = 1; _key11 < _len11; _key11++) {
-        extArgs[_key11 - 1] = arguments[_key11];
+      for (var _len12 = arguments.length, extArgs = Array(_len12 > 1 ? _len12 - 1 : 0), _key12 = 1; _key12 < _len12; _key12++) {
+        extArgs[_key12 - 1] = arguments[_key12];
       }
 
       this.extensions.forEach(function (ext) {
@@ -5577,8 +5611,8 @@ var Chart = function () {
     value: function __notify(eventName) {
       var _dispatch;
 
-      for (var _len12 = arguments.length, args = Array(_len12 > 1 ? _len12 - 1 : 0), _key12 = 1; _key12 < _len12; _key12++) {
-        args[_key12 - 1] = arguments[_key12];
+      for (var _len13 = arguments.length, args = Array(_len13 > 1 ? _len13 - 1 : 0), _key13 = 1; _key13 < _len13; _key13++) {
+        args[_key13 - 1] = arguments[_key13];
       }
 
       this.__updateExt.apply(this, [eventName].concat(args));
@@ -5623,7 +5657,7 @@ var Chart = function () {
           var scalePath = 'opts.' + scaleName;
           var v = this.getScaledProp(scalePath, propPrefix, d);
 
-          if (this.developerMode) {
+          if (this.developerMode && v !== UNDEF) {
             console.log(scalePath, v); // eslint-disable-line no-console
           }
 
@@ -5645,8 +5679,8 @@ var Chart = function () {
   }, {
     key: 'createInstanceGroup',
     value: function createInstanceGroup(charts) {
-      for (var _len13 = arguments.length, additionalMethodsToProxy = Array(_len13 > 1 ? _len13 - 1 : 0), _key13 = 1; _key13 < _len13; _key13++) {
-        additionalMethodsToProxy[_key13 - 1] = arguments[_key13];
+      for (var _len14 = arguments.length, additionalMethodsToProxy = Array(_len14 > 1 ? _len14 - 1 : 0), _key14 = 1; _key14 < _len14; _key14++) {
+        additionalMethodsToProxy[_key14 - 1] = arguments[_key14];
       }
 
       return new InstanceGroup(charts, GROUP_PROXY_METHODS, additionalMethodsToProxy);
@@ -5657,9 +5691,10 @@ var Chart = function () {
 
 var GROUP_PROXY_METHODS = ['addExt', 'addLayer', 'boundingRect', 'call', 'checkSize', 'classed', 'clear', 'data', 'emit', 'layerUseClipPath', 'on', 'option', 'replaceScale', 'resetCssDomains', 'update', 'updateData'];
 
-var EVENT_AXIS_RENDERED = 'axisRendered';
+var EVENT_AXIS_PRERENDER = 'axisPrerender';
 var EVENT_AXIS_RENDERING = 'axisRendering';
-var EVENTS = [EVENT_AXIS_RENDERED, EVENT_AXIS_RENDERING];
+var EVENT_AXIS_RENDERED = 'axisRendered';
+var EVENTS = [EVENT_AXIS_PRERENDER, EVENT_AXIS_RENDERING, EVENT_AXIS_RENDERED];
 
 var AXES_CHART_DEFAULTS = {
   // The axes X and Y are generally assumed. In some cases it may be desirable to add an additional
@@ -5802,11 +5837,11 @@ var AxesChart = function (_Chart) {
           (function () {
             var axis = _this3[scaleName + 'Axis'];
             customize.forEach(function (customFunc) {
-              return customFunc(axis);
+              return customFunc.call(_this3, axis);
             });
           })();
         } else if (isFunc(customize)) {
-          customize(_this3[scaleName + 'Axis']);
+          customize.call(_this3, _this3[scaleName + 'Axis']);
         }
       });
     }
@@ -5848,6 +5883,8 @@ var AxesChart = function (_Chart) {
       get(AxesChart.prototype.__proto__ || Object.getPrototypeOf(AxesChart.prototype), 'replaceScale', this).call(this, scaleName, newScaleConstructor);
       this[scaleName + 'Axis'].scale(this[scaleName]);
       this.renderAxes();
+
+      return this;
     }
   }, {
     key: 'updateAxesTransforms',
@@ -5862,6 +5899,8 @@ var AxesChart = function (_Chart) {
           axisGrp.attr('transform', trans(_this5.width, _this5.height));
         }
       });
+
+      return this;
     }
   }, {
     key: 'updateAxesRanges',
@@ -5869,9 +5908,12 @@ var AxesChart = function (_Chart) {
       var _this6 = this;
 
       this.forEachAxisScale(function (scaleName) {
-        var range = _this6.__axisOpt(scaleName, 'Range')(_this6.width, _this6.height);
+        var rangeFunc = _this6.__axisOpt(scaleName, 'Range');
+        var range = rangeFunc.call(_this6, _this6.width, _this6.height);
         _this6[scaleName].range(range);
       });
+
+      return this;
     }
   }, {
     key: 'updateAxesDomains',
@@ -5890,6 +5932,8 @@ var AxesChart = function (_Chart) {
 
         _this7[scaleName].domain(extent);
       });
+
+      return this;
     }
   }, {
     key: 'renderAxes',
@@ -5912,17 +5956,28 @@ var AxesChart = function (_Chart) {
           return;
         }
 
+        var axis = _this8[scaleName + 'Axis'];
+        _this8.emit(EVENT_AXIS_PRERENDER, scaleName, axis);
+
         _this8.support.select('.' + scaleName + '-axis').transition(t).on('start', function () {
-          return _this8.emit(EVENT_AXIS_RENDERING);
-        }).call(_this8[scaleName + 'Axis']).call(_this8._setLabel.bind(_this8, scaleName)).call(function (t) {
-          return _this8.emit(EVENT_AXIS_RENDERED, t);
+          return _this8.emit(EVENT_AXIS_RENDERING, scaleName, axis);
+        }).call(axis).call(_this8._setLabel.bind(_this8, scaleName)).call(function (t) {
+          return _this8.emit(EVENT_AXIS_RENDERED, scaleName, axis, t);
         });
       });
+
+      return this;
     }
   }, {
     key: '_domainExtent',
     value: function _domainExtent(data, scaleName) {
       // eslint-disable-line no-unused-vars
+      if (this.opts.directUse) {
+        // Provide simple default extent that can be overridden by the corresponding
+        // `<scaleName>DomainCustomize` option.
+        return [0, 1];
+      }
+
       throw MonteError.UnimplementedMethod('Domain Extent', '_domainExtent');
     }
 
@@ -5932,6 +5987,8 @@ var AxesChart = function (_Chart) {
     key: 'forEachAxisScale',
     value: function forEachAxisScale(f) {
       this.axes.forEach(f);
+
+      return this;
     }
   }, {
     key: '_setLabel',
@@ -6223,7 +6280,7 @@ var LineChart = function (_AxesChart) {
         return _this4._buildCss(['monte-line', _this4.opts.lineCss, _this4.opts.lineCssScaleAccessor, d.css], d, i);
       }).transition().call(this._transitionSetup('line', UPDATE)).attr('d', function (d) {
         return _this4.line(_this4.getProp('values', d));
-      }).attr('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'));
+      }).style('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'));
 
       // Fade out removed lines.
       lineGrps.exit().transition().call(this._transitionSetup('line', EXIT)).style('opacity', 0).remove();
@@ -6259,7 +6316,7 @@ var LineChart = function (_AxesChart) {
         return _this5._buildCss(['monte-point', lineDatum.css, _this5.opts.lineCssScaleAccessor, _this5.opts.pointCss, _this5.opts.pointCssScaleAccessor, d.css], lineDatum, lineIndex);
       });
 
-      points.transition().call(this._transitionSetup('point', UPDATE)).attr('fill', this.optionReaderFunc('pointFillScaleAccessor')).attr('stroke', this.optionReaderFunc('pointStrokeScaleAccessor')).attr('transform', function (d) {
+      points.transition().call(this._transitionSetup('point', UPDATE)).style('fill', this.optionReaderFunc('pointFillScaleAccessor')).style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor')).attr('transform', function (d) {
         return 'translate(' + _this5.getScaledProp('x', d) + ', ' + _this5.getScaledProp('y', d) + ')';
       }).attr('d', genSym);
 
@@ -6447,7 +6504,7 @@ var AreaChart = function (_LineChart) {
 
       allAreas.transition().call(this._transitionSetup(UPDATE)).attr('d', function (d) {
         return _this4.area(_this4.getProp('values', d));
-      }).attr('fill', this.optionReaderFunc('areaFillScaleAccessor'));
+      }).style('fill', this.optionReaderFunc('areaFillScaleAccessor'));
 
       // Fade out removed points.
       area.exit().transition().call(this._transitionSetup(EXIT)).style('opacity', 0).remove();
@@ -6674,14 +6731,12 @@ var BarChart = function (_AxesChart) {
 
       barGrps.enter().append('g').attr('class', function (d, i) {
         return _this4._buildCss(['monte-bar-grp', _this4.opts.barGrpCss], d, i);
-      }).append('rect').attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight).attr('fill-test', 'red').attr('fill', this.optionReaderFunc('barFillScaleAccessor'))
-      // .attr('fill', (...args) => this.tryInvoke(this.opts.barFillScaleAccessor, ...args))
-      .call(this.__bindCommonEvents('bar')).merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
+      }).append('rect').attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight).style('fill', this.optionReaderFunc('barFillScaleAccessor')).call(this.__bindCommonEvents('bar')).merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
       .attr('class', function (d, i) {
         return _this4._buildCss([_this4.opts.barCss, _this4.opts.barCssScale, d.css], d, i);
       }).transition().call(this._transitionSetup(ENTER));
 
-      barGrps.select('rect').attr('fill', this.optionReaderFunc('barFillScaleAccessor')).transition().call(this._transitionSetup(UPDATE)).attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight);
+      barGrps.select('rect').style('fill', this.optionReaderFunc('barFillScaleAccessor')).transition().call(this._transitionSetup(UPDATE)).attr('x', barX).attr('y', barY).attr('width', barWidth).attr('height', barHeight);
 
       // Fade out removed lines.
       barGrps.exit().transition().call(this._transitionSetup(EXIT)).style('opacity', 0).remove();
@@ -6697,7 +6752,7 @@ var BarChart = function (_AxesChart) {
 
       var lbl = barGrp.selectAll('.monte-bar-label').data([d]);
 
-      lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).attr('fill', function (d1) {
+      lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).style('fill', function (d1) {
         return _this5.tryInvoke(_this5.opts.labelFillScaleAccessor, d1, i, nodes);
       }).attr('x', function (d1) {
         return _this5.tryInvoke(_this5.opts.labelX, d1, i, nodes);
@@ -6865,10 +6920,10 @@ var SIMPLE_BAR_CHART_DEFAULTS = {
   boundingHeight: 100,
 
   margin: {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0
+    top: 1,
+    right: 1,
+    bottom: 1,
+    left: 1
   },
 
   suppressAxes: true,
@@ -6918,6 +6973,38 @@ var SimpleBarChart = function (_BarChart) {
 
       (_babelHelpers$get2 = get(SimpleBarChart.prototype.__proto__ || Object.getPrototypeOf(SimpleBarChart.prototype), '_data', this)).call.apply(_babelHelpers$get2, [this, [datum]].concat(tail));
     }
+  }, {
+    key: '_update',
+    value: function _update() {
+      get(SimpleBarChart.prototype.__proto__ || Object.getPrototypeOf(SimpleBarChart.prototype), '_update', this).call(this);
+
+      this._updateSupport();
+    }
+  }, {
+    key: '_updateSupport',
+    value: function _updateSupport() {
+      var _this2 = this;
+
+      var barSupport = { bottom: this.y.domain()[1], top: this.y.domain()[0] };
+      var bgBar = this.bg.selectAll('.monte-bar-bg').data([barSupport]);
+      var frame = this.draw.selectAll('.monte-frame').data([barSupport]);
+
+      bgBar.enter().append('rect').attr('class', 'monte-simple-bar-bg').merge(bgBar).attr('x', 0).attr('y', function (d) {
+        return _this2.y(d.bottom);
+      }).attr('width', this.x.bandwidth()).attr('height', function (d) {
+        return _this2.y(d.top);
+      });
+
+      bgBar.exit().remove();
+
+      frame.enter().append('rect').attr('class', 'monte-simple-bar-frame').merge(frame).attr('x', 0).attr('y', function (d) {
+        return _this2.y(d.bottom);
+      }).attr('width', this.x.bandwidth()).attr('height', function (d) {
+        return _this2.y(d.top);
+      });
+
+      frame.exit().remove();
+    }
   }]);
   return SimpleBarChart;
 }(BarChart);
@@ -6928,10 +7015,10 @@ var SIMPLE_HORT_BAR_CHART_DEFAULTS = {
   boundingHeight: 10,
 
   margin: {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0
+    top: 1,
+    right: 1,
+    bottom: 1,
+    left: 1
   },
 
   suppressAxes: true,
@@ -6980,6 +7067,38 @@ var HorizontalSimpleBarChart = function (_HorizontalBarChart) {
       }
 
       (_babelHelpers$get2 = get(HorizontalSimpleBarChart.prototype.__proto__ || Object.getPrototypeOf(HorizontalSimpleBarChart.prototype), '_data', this)).call.apply(_babelHelpers$get2, [this, [datum]].concat(tail));
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      get(HorizontalSimpleBarChart.prototype.__proto__ || Object.getPrototypeOf(HorizontalSimpleBarChart.prototype), '_update', this).call(this);
+
+      this._updateSupport();
+    }
+  }, {
+    key: '_updateSupport',
+    value: function _updateSupport() {
+      var _this2 = this;
+
+      var barSupport = { left: this.x.domain()[0], right: this.x.domain()[1] };
+      var bgBar = this.bg.selectAll('.monte-bar-bg').data([barSupport]);
+      var frame = this.draw.selectAll('.monte-frame').data([barSupport]);
+
+      bgBar.enter().append('rect').attr('class', 'monte-simple-bar-bg').merge(bgBar).attr('x', function (d) {
+        return _this2.y(d.left);
+      }).attr('y', 0).attr('width', function (d) {
+        return _this2.x(d.right);
+      }).attr('height', this.y.bandwidth());
+
+      bgBar.exit().remove();
+
+      frame.enter().append('rect').attr('class', 'monte-simple-bar-frame').merge(frame).attr('x', function (d) {
+        return _this2.y(d.left);
+      }).attr('y', 0).attr('width', function (d) {
+        return _this2.x(d.right);
+      }).attr('height', this.y.bandwidth());
+
+      frame.exit().remove();
     }
   }]);
   return HorizontalSimpleBarChart;
@@ -7314,7 +7433,7 @@ var SegmentBarChart = function (_AxesChart) {
 
         innerRects.enter().append('rect').call(_this6.__bindCommonEvents('barseg')).merge(innerRects).attr('class', function (d, i) {
           return _this6._buildCss(['monte-segment-bar-seg', _this6.opts.barSegCss, _this6.opts.barSegCssScaleAccessor, d.css], d, i);
-        }).transition(trans).attr('fill', _this6.optionReaderFunc('barSegFillScaleAccessor')).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
+        }).transition(trans).style('fill', _this6.optionReaderFunc('barSegFillScaleAccessor')).attr('x', barXInner).attr('y', barYInner).attr('width', barWidth).attr('height', barHeight);
       });
 
       barGrps.exit().transition().call(this._transitionSetup(EXIT)).remove();
@@ -7339,6 +7458,9 @@ var SegmentBarChart = function (_AxesChart) {
         _this7._updateBarSegLabel(barGrp, transition, d, i, nodes);
       });
     }
+
+    // TODO: Move labels into segment bar grps (a new nested for the rect and label to live together)?
+
   }, {
     key: '_updateBarSegLabel',
     value: function _updateBarSegLabel(barGrp, transition, barData) {
@@ -7348,7 +7470,7 @@ var SegmentBarChart = function (_AxesChart) {
 
       lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).text(function (d1, i, nodes) {
         return _this8.tryInvoke(_this8.opts.label, d1, i, nodes);
-      }).transition(transition).attr('fill', function (d1, i, nodes) {
+      }).transition(transition).style('fill', function (d1, i, nodes) {
         return _this8.tryInvoke(_this8.opts.labelFillScaleAccessor, d1, i, nodes);
       }).attr('x', function (d1, i, nodes) {
         return _this8.tryInvoke(_this8.opts.labelX, d1, i, nodes);
@@ -7759,8 +7881,8 @@ var ScatterPlot = function (_AxesChart) {
       get(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_resetCssDomains', this).call(this);
 
       resetScaleDomain(this.opts.pointCssScale);
-      resetScaleDomain(this.opts.pointFillScaleAccessor);
-      resetScaleDomain(this.opts.pointStrokeScaleAccessor);
+      resetScaleDomain(this.opts.pointFillScale);
+      resetScaleDomain(this.opts.pointStrokeScale);
     }
 
     // Render the vis.
@@ -7788,7 +7910,7 @@ var ScatterPlot = function (_AxesChart) {
         return symbol(d, i);
       }).attr('class', function (d, i) {
         return _this2._buildCss(['monte-point', _this2.opts.pointCss, _this2.opts.pointCssScaleAccessor, d.css], d, i);
-      }).transition().call(this._transitionSetup('point', UPDATE)).attr('fill', this.optionReaderFunc('pointFillScaleAccessor')).attr('stroke', this.optionReaderFunc('pointStrokeScaleAccessor')).attr('transform', function (d) {
+      }).style('fill', this.optionReaderFunc('pointFillScaleAccessor')).style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor')).transition().call(this._transitionSetup('point', UPDATE)).style('fill', this.optionReaderFunc('pointFillScaleAccessor')).style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor')).attr('transform', function (d) {
         return 'translate(' + _this2.getScaledProp('x', d) + ', ' + _this2.getScaledProp('y', d) + ')';
       });
 
@@ -7807,25 +7929,24 @@ var ICON_MODE = {
   SVG_USE_EXTERNAL: 'svgUseExternal'
 };
 
-var ICON_PLACEMENT = {
-  BottomToTopLeftToRightPlacement: {
-    rowIndex: function rowIndex(d, i) {
-      return Math.floor(i / this.opts.columns);
-    },
-
-    columnIndex: function columnIndex(d, i) {
-      return i % this.opts.columns;
-    }
+// TODO: export icon arrangements on Monte object.
+var iconArrangeBottomTop = {
+  rowIndex: function rowIndex(d, i) {
+    return Math.floor(i / this.opts.columns);
   },
 
-  TopToBottomLeftToRightPlacement: {
-    rowIndex: function rowIndex(d, i) {
-      return this.opts.rows - Math.floor(i / this.opts.columns) - 1;
-    },
+  columnIndex: function columnIndex(d, i) {
+    return i % this.opts.columns;
+  }
+};
 
-    columnIndex: function columnIndex(d, i) {
-      return i % this.opts.columns;
-    }
+var iconArrangeTopBottom = {
+  rowIndex: function rowIndex(d, i) {
+    return this.opts.rows - Math.floor(i / this.opts.columns) - 1;
+  },
+
+  columnIndex: function columnIndex(d, i) {
+    return i % this.opts.columns;
   }
 };
 
@@ -7875,7 +7996,7 @@ var ICON_ARRAY_DEFAULTS = {
   rows: 10,
   columns: 10,
 
-  placement: ICON_PLACEMENT.TopToBottomLeftToRightPlacement,
+  arrangement: iconArrangeTopBottom,
 
   svgVersion: 1 };
 
@@ -8017,7 +8138,7 @@ var IconArray = function (_AxesChart) {
         return transform.call(_this5, d, i, nodes);
       }).attr('class', function (d, i) {
         return _this5._buildCss(['monte-icon', _this5.opts.iconCss, _this5.opts.iconCssScaleAccessor, d.css], d, i);
-      }).transition().call(this._transitionSetup('icon', UPDATE)).attr('fill', this.optionReaderFunc('iconFillScaleAccessor')).attr('stroke', this.optionReaderFunc('iconStrokeScaleAccessor'));
+      }).transition().call(this._transitionSetup('icon', UPDATE)).style('fill', this.optionReaderFunc('iconFillScaleAccessor')).style('stroke', this.optionReaderFunc('iconStrokeScaleAccessor'));
 
       return t;
     }
@@ -8026,8 +8147,8 @@ var IconArray = function (_AxesChart) {
 }(AxesChart);
 
 function iconTransform(d, i, nodes) {
-  var col = this.tryInvoke(this.opts.placement.columnIndex, d, i, nodes);
-  var row = this.tryInvoke(this.opts.placement.rowIndex, d, i, nodes);
+  var col = this.tryInvoke(this.opts.arrangement.columnIndex, d, i, nodes);
+  var row = this.tryInvoke(this.opts.arrangement.rowIndex, d, i, nodes);
   var x = this.getScaledProp('x', col);
   var y = this.getScaledProp('y', row);
 
@@ -8035,8 +8156,8 @@ function iconTransform(d, i, nodes) {
 }
 
 function iconTransformShift(d, i, nodes) {
-  var col = this.tryInvoke(this.opts.placement.columnIndex, d, i, nodes);
-  var row = this.tryInvoke(this.opts.placement.rowIndex, d, i, nodes);
+  var col = this.tryInvoke(this.opts.arrangement.columnIndex, d, i, nodes);
+  var row = this.tryInvoke(this.opts.arrangement.rowIndex, d, i, nodes);
   var x = this.getScaledProp('x', col);
   var y = this.getScaledProp('y', row);
   var xShift = this.opts.iconSvgWidth / 2;
@@ -8056,126 +8177,6 @@ var math = Object.freeze({
 	HALF_PI: HALF_PI,
 	TAU: TAU
 });
-
-var polarLabelCssPrefix = 'monte-polar-label-';
-
-var LABEL_PLACEMENT = {
-  CENTROID: {
-    css: polarLabelCssPrefix + 'centroid',
-    radius: function radius(w, h) {
-      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
-      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
-      return innerRadius + (outerRadius - innerRadius) * 0.5;
-    }
-  },
-
-  INNER: {
-    css: polarLabelCssPrefix + 'inner',
-    radius: function radius(w, h) {
-      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
-      return innerRadius * 0.9;
-    }
-  },
-
-  OUTER: {
-    css: polarLabelCssPrefix + 'outer',
-    radius: function radius(w, h) {
-      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
-      return outerRadius * 1.1;
-    }
-  }
-};
-
-function polarLabelCentroid() {
-  return LABEL_PLACEMENT.CENTROID;
-}
-
-function polarLabelInner() {
-  return LABEL_PLACEMENT.INNER;
-}
-
-function polarLabelOuter() {
-  return LABEL_PLACEMENT.OUTER;
-}
-
-function polarLabelInnerFactor(factor) {
-  return {
-    css: polarLabelCssPrefix + 'inner-' + factor,
-    radius: function radius(w, h) {
-      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
-      return innerRadius * factor;
-    }
-  };
-}
-
-function polarLabelOuterFactor(factor) {
-  return {
-    css: polarLabelCssPrefix + 'outer-' + factor,
-    radius: function radius(w, h) {
-      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
-      return outerRadius * factor;
-    }
-  };
-}
-
-function polarLabelRotateTangentOrigin(d) {
-  var angle = (d.endAngle - d.startAngle) / 2 + d.startAngle;
-
-  return angle;
-}
-
-function polarLabelRotateTangentFlip(d) {
-  var angle = (d.endAngle - d.startAngle) / 2 + d.startAngle;
-
-  var absAngle = Math.abs(angle);
-  if (absAngle > HALF_PI && absAngle <= 3 * HALF_PI) {
-    angle -= PI;
-  }
-
-  return angle;
-}
-
-function polarLabelRotateRay(d) {
-  var angle = (d.endAngle - d.startAngle) / 2 + d.startAngle - HALF_PI;
-
-  return angle;
-}
-
-function polarLabelRotateRayOpposite(d) {
-  var angle = (d.endAngle - d.startAngle) / 2 + d.startAngle - HALF_PI - PI;
-
-  return angle;
-}
-
-function arcSimpleTween(arc, from, to) {
-  var i = d3.interpolate(from, to);
-
-  return function (t) {
-    return arc(i(t));
-  };
-}
-
-function classedPattern(selection, pattern, value) {
-  var node = selection.node();
-  var classAttr = node.getAttribute('class');
-  var classList = classAttr.trim().split(/^|\s+/);
-
-  var re = void 0;
-
-  if (typeof pattern === 'string') {
-    re = new RegExp(pattern);
-  } else if (pattern instanceof RegExp) {
-    re = pattern;
-  } else {
-    throw MonteError.InvalidArgumentType('classedPattern', 'pattern', 'String or RegExp', pattern);
-  }
-
-  classList.forEach(function (c) {
-    if (re.test(c)) {
-      selection.classed(c, value);
-    }
-  });
-}
 
 // https://sites.google.com/site/mymathclassroom/testing-if-two-angles-are-coterminal
 function areCoterminalAngles(a1, a2) {
@@ -8204,12 +8205,305 @@ function radiansToDegrees(rad) {
   return rad * (180 / PI);
 }
 
+// Arc is a `d3.arc()` object.
+// Expects `from` and `to` to be `{ startAngle: <number>, endAngle: <number> }`
+function arcSimpleTween(arc, from, to) {
+  var i = d3.interpolate(from, to);
+
+  return function (t) {
+    return arc(i(t));
+  };
+}
+
+// Expects `from` and `to` to be `{ angle: <number>, radius: <number>, rotate: <number> }`
+function arcLabelTween(from, to) {
+  var defaultRadius = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+
+  if (!from) {
+    from = { angle: 0, radius: defaultRadius, rotate: 0 };
+  }
+  var i = d3.interpolateObject(from, to);
+
+  return function (t) {
+    var v = i(t);
+    var coord = getCoord(v.radius, v.angle);
+    var rotate = v.rotate || 0;
+
+    return 'translate(' + coord + ') rotate(' + rotate + ')';
+  };
+}
+
+var polarLabelCssPrefix = 'monte-polar-label-';
+
+// NOTE: Radius functions exoect to be invoked in the context of an `Extension` or a `Chart`.
+var LABEL_PLACEMENT = {
+  CENTROID: {
+    css: polarLabelCssPrefix + 'centroid',
+    radius: function radius(w, h) {
+      var chart = this.chart || this; // Expecting to be invoked from an `Extension` or a `Chart`
+      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
+      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
+      // return innerRadius + (outerRadius - innerRadius) * 0.5;
+
+      return function (d, i, nodes) {
+        var ir = chart.tryInvoke(innerRadius, d, i, nodes);
+        var or = chart.tryInvoke(outerRadius, d, i, nodes);
+
+        return ir + (or - ir) * 0.5;
+      };
+    }
+  },
+
+  INNER: {
+    css: polarLabelCssPrefix + 'inner',
+    radius: function radius(w, h) {
+      var chart = this.chart || this;
+      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
+
+      return function (d, i, nodes) {
+        var ir = chart.tryInvoke(innerRadius, d, i, nodes);
+        return ir * 0.9;
+      };
+    }
+  },
+
+  INNER_EDGE: {
+    css: polarLabelCssPrefix + 'inner-edge',
+    radius: function radius(w, h) {
+      var chart = this.chart || this;
+      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
+
+      return function (d, i, nodes) {
+        return chart.tryInvoke(innerRadius, d, i, nodes);
+      };
+    }
+  },
+
+  OUTER: {
+    css: polarLabelCssPrefix + 'outer',
+    radius: function radius(w, h) {
+      var chart = this.chart || this;
+      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
+
+      return function (d, i, nodes) {
+        var or = chart.tryInvoke(outerRadius, d, i, nodes);
+        return or * 1.1;
+      };
+    }
+  },
+
+  OUTER_EDGE: {
+    css: polarLabelCssPrefix + 'outer-edge',
+    radius: function radius(w, h) {
+      var chart = this.chart || this;
+      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
+
+      return function (d, i, nodes) {
+        return chart.tryInvoke(outerRadius, d, i, nodes);
+      };
+    }
+  }
+};
+
+function polarLabelCentroid() {
+  return LABEL_PLACEMENT.CENTROID;
+}
+
+function polarLabelInner() {
+  return LABEL_PLACEMENT.INNER;
+}
+
+
+
+function polarLabelOuter() {
+  return LABEL_PLACEMENT.OUTER;
+}
+
+
+
+function polarLabelInnerFactor(factor) {
+  return {
+    css: polarLabelCssPrefix + 'inner-x' + factor,
+    radius: function radius(w, h) {
+      var chart = this.chart || this;
+      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
+
+      return function (d, i, nodes) {
+        var ir = chart.tryInvoke(innerRadius, d, i, nodes);
+        return ir * factor;
+      };
+    }
+  };
+}
+
+function polarLabelInnerAdjust(adjust) {
+  return {
+    css: polarLabelCssPrefix + 'inner-' + adjust,
+    radius: function radius(w, h) {
+      var chart = this.chart || this;
+      var innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
+
+      return function (d, i, nodes) {
+        var ir = chart.tryInvoke(innerRadius, d, i, nodes);
+        return ir + adjust;
+      };
+    }
+  };
+}
+
+function polarLabelOuterFactor(factor) {
+  return {
+    css: polarLabelCssPrefix + 'outer-x' + factor,
+    radius: function radius(w, h) {
+      var chart = this.chart || this;
+      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
+
+      return function (d, i, nodes) {
+        var or = chart.tryInvoke(outerRadius, d, i, nodes);
+        return or * factor;
+      };
+    }
+  };
+}
+
+function polarLabelOuterAdjust(adjust) {
+  return {
+    css: polarLabelCssPrefix + 'outer-' + adjust,
+    radius: function radius(w, h) {
+      var chart = this.chart || this;
+      var outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
+
+      return function (d, i, nodes) {
+        var or = chart.tryInvoke(outerRadius, d, i, nodes);
+        return or + adjust;
+      };
+    }
+  };
+}
+
+// TODO: Add `css` to all rotations
+function polarLabelRotateTangentOrigin(d) {
+  var datum = getDatum(d);
+  var angle = (datum.endAngle - datum.startAngle) / 2 + datum.startAngle;
+
+  return angle;
+}
+
+function polarLabelRotateTangentFlip(d) {
+  var datum = getDatum(d);
+  var angle = (datum.endAngle - datum.startAngle) / 2 + datum.startAngle;
+
+  var absAngle = Math.abs(angle);
+  if (absAngle > HALF_PI && absAngle <= 3 * HALF_PI) {
+    angle -= PI;
+  }
+
+  return angle;
+}
+
+function polarLabelRotateRay(d) {
+  var datum = getDatum(d);
+  var angle = (datum.endAngle - d.startAngle) / 2 + datum.startAngle - HALF_PI;
+
+  return angle;
+}
+
+function polarLabelRotateRayOpposite(d) {
+  var datum = getDatum(d);
+  var angle = (datum.endAngle - d.startAngle) / 2 + datum.startAngle - HALF_PI - PI;
+
+  return angle;
+}
+
+function polarLabelRotateRayFlip(d) {
+  var datum = getDatum(d);
+  var angle = (datum.endAngle - datum.startAngle) / 2 + datum.startAngle;
+
+  if (angle <= 0 && angle >= -PI || angle > PI) {
+    // Right side of circle
+    return angle + HALF_PI;
+  } else if (angle > 0 && angle <= PI || angle < -PI) {
+    // Left side of circle
+    return angle - HALF_PI;
+  }
+
+  return angle;
+}
+
+function getDatum(d) {
+  return isNumeric(+d) ? { startAngle: d, endAngle: d } : d;
+}
+
+function classedPattern(selection, pattern, value) {
+  var node = selection.node();
+  var classAttr = node.getAttribute('class');
+  var classList = classAttr.trim().split(/^|\s+/);
+
+  var re = void 0;
+
+  if (typeof pattern === 'string') {
+    re = new RegExp(pattern);
+  } else if (pattern instanceof RegExp) {
+    re = pattern;
+  } else {
+    throw MonteError.InvalidArgumentType('classedPattern', 'pattern', 'String or RegExp', pattern);
+  }
+
+  classList.forEach(function (c) {
+    if (re.test(c)) {
+      selection.classed(c, value);
+    }
+  });
+}
+
 // Constrain to smallest draw-area dimension
 function radiusContrain(width, height) {
   var wr = width / 2;
   var hr = height / 2;
 
   return wr < hr ? wr : hr;
+}
+
+function readTransforms(t) {
+  var transformSplit = /(.*?\(.*?\))/;
+  var transformRules = t.split(transformSplit).filter(function (v) {
+    return !!v;
+  });
+
+  var transforms = {};
+  var transformPattern = /(.*?)\((.*?)\)\s*/;
+
+  transformRules.forEach(function (rule) {
+    var matches = transformPattern.exec(rule.trim());
+
+    if (matches) {
+      for (var i = 1; i < matches.length; i += 2) {
+        var k = matches[i];
+        var v = matches[i + 1].trim();
+
+        if (v.indexOf(' ') > -1 || v.indexOf(',') > -1) {
+          v = v.split(/,\s*|\s+/);
+        }
+
+        transforms[k] = v;
+      }
+    }
+  });
+
+  return transforms;
+}
+
+function combineTransforms(transformObj) {
+  var transformStr = '';
+
+  for (var t in transformObj) {
+    if (transformObj.hasOwnProperty(t)) {
+      var values = transformObj[t].join(', ');
+      transformStr += t + '(' + values + ')';
+    }
+  }
+
+  return transformStr;
 }
 
 var LABEL_CSS_PATTERN = new RegExp('^' + polarLabelCssPrefix + '*');
@@ -8259,6 +8553,7 @@ var ARC_CHART_DEFAULTS = {
 
   includeLabels: false,
   labelPlacement: polarLabelCentroid,
+  labelRotation: polarLabelRotateTangentFlip,
   labelAngle: function labelAngle(d) {
     return d.startAngle + (d.endAngle - d.startAngle) / 2;
   },
@@ -8300,11 +8595,11 @@ var ArcChart = function (_PolarChart) {
       get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initCore', this).call(this);
 
       // Initialize the arc generator
-      this.arc = d3.arc().cornerRadius(this.opts.cornerRadius);
+      this.arc = d3.arc().cornerRadius(this.tryInvoke(this.opts.cornerRadius));
 
       this.pie = d3.pie().value(function (d) {
-        return d[_this2.opts.itemValueProp];
-      }).sortValues(null).startAngle(this.opts.pieStartAngle).endAngle(this.opts.pieEndAngle).padAngle(this.opts.piePadAngle);
+        return _this2.getProp('itemValue', d);
+      }).sortValues(null).startAngle(this.tryInvoke(this.opts.pieStartAngle)).endAngle(this.tryInvoke(this.opts.pieEndAngle)).padAngle(this.tryInvoke(this.opts.piePadAngle));
     }
   }, {
     key: '_initCustomize',
@@ -8383,7 +8678,7 @@ var ArcChart = function (_PolarChart) {
       }).call(this.__bindCommonEvents('wedge')).transition().call(this._transitionSetup('arc', ENTER)).attrTween('d', function (d) {
         var start = _this3.tryInvoke(_this3.opts.arcWedgeEnter, d);
         return arcSimpleTween(arc, start, d);
-      }).attr('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor')).attr('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
+      }).style('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor')).style('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
 
       arcs.selectAll('.monte-arc-wedge').each(function () {
         // Sync data to containing element since it is not done automatically.
@@ -8398,7 +8693,7 @@ var ArcChart = function (_PolarChart) {
         return _this3._buildCss(['monte-arc-wedge', _this3.opts.arcWedgeCss, _this3.opts.arcWedgeCssScaleAccessor, d.data.css], d, i);
       }).transition().call(this._transitionSetup('arc', UPDATE)).attrTween('d', function (d) {
         return arcSimpleTween(arc, d.prev, d);
-      }).attr('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor')).attr('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
+      }).style('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor')).style('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
 
       arcs.exit().transition().call(this._transitionSetup('arc', EXIT)).style('opacity', 0.01).remove();
 
@@ -8422,7 +8717,7 @@ var ArcChart = function (_PolarChart) {
 
       wedge.enter().append('path').merge(wedge).attr('d', function (d) {
         return d;
-      }).attr('fill', this.optionReaderFunc('arcBgWedgeFillScaleAccessor')).attr('class', function (d, i) {
+      }).style('fill', this.optionReaderFunc('arcBgWedgeFillScaleAccessor')).attr('class', function (d, i) {
         return _this4._buildCss(['monte-arc-bg', _this4.opts.arcBgWedgeCssScaleAccessor], d, i);
       });
     }
@@ -8455,23 +8750,49 @@ var ArcChart = function (_PolarChart) {
       var lbl = arcGrp.selectAll('.monte-arc-label').data([d]);
       var labelPlacement = this.tryInvoke(this.opts.labelPlacement);
       var labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
+      var radius = this.tryInvoke(labelRadius, d, i, nodes);
+      var angle = this.tryInvoke(this.opts.labelAngle, d, i, nodes);
+      var rotate = radiansToDegrees(this.tryInvoke(this.opts.labelRotation, d, i, nodes));
+      var coord = getCoord(radius, angle);
 
-      lbl.enter().append('text').attr('class', 'monte-arc-label').merge(lbl).attr('dx', function (d1) {
+      lbl.enter().append('text').attr('class', 'monte-arc-label').attr('dx', function (d1) {
         return _this6.tryInvoke(_this6.opts.labelXAdjust, d1, i, nodes);
       }).attr('dy', function (d1) {
         return _this6.tryInvoke(_this6.opts.labelYAdjust, d1, i, nodes);
-      }).attr('fill', this.optionReaderFunc('labelFillScaleAccessor')).attr('transform', function (d1) {
-        // TODO: Update to use `attrTween` and follow arc movement instead of direct translation.
-        //       Stop the label drift through the
-        var angle = _this6.tryInvoke(_this6.opts.labelAngle, d1, i, nodes);
-        var coord = getCoord(labelRadius, angle);
+      }).attr('transform', function () {
+        return 'translate(' + coord + ') rotate(' + rotate + ')';
+      }).attr('angle', angle).attr('radius', labelRadius).style('opacity', 0).style('fill', this.optionReaderFunc('labelFillScaleAccessor')).text(function (d1) {
+        return _this6.tryInvoke(_this6.opts.label, d1, i, nodes);
+      }).transition().call(function (t) {
+        var ts = _this6._transitionSettings('label', ENTER);
+        _this6._transitionConfigure(t, ts, d, i, nodes);
+      }).style('opacity', 1);
 
-        return 'translate(' + coord + ')';
-      }).text(function (d1) {
+      lbl.style('fill', this.optionReaderFunc('labelFillScaleAccessor')).style('opacity', 1).attr('dx', function (d1) {
+        return _this6.tryInvoke(_this6.opts.labelXAdjust, d1, i, nodes);
+      }).attr('dy', function (d1) {
+        return _this6.tryInvoke(_this6.opts.labelYAdjust, d1, i, nodes);
+      }).transition().call(function (t) {
+        var ts = _this6._transitionSettings('label', UPDATE);
+        _this6._transitionConfigure(t, ts, d, i, nodes);
+      }).attrTween('transform', function () {
+        var currentTransforms = readTransforms(lbl.attr('transform'));
+        var from = {
+          angle: +lbl.attr('angle'),
+          radius: +lbl.attr('radius'),
+          rotate: currentTransforms.rotate || 0
+        };
+        var to = { angle: angle, radius: radius, rotate: rotate };
+
+        return arcLabelTween(from, to, radius);
+      }).attr('angle', angle).attr('radius', labelRadius).text(function (d1) {
         return _this6.tryInvoke(_this6.opts.label, d1, i, nodes);
       });
 
-      lbl.exit().transition().call(this._transitionSetup('label', EXIT)).remove();
+      lbl.exit().transition().call(function (t) {
+        var ts = _this6._transitionSettings('label', EXIT);
+        _this6._transitionConfigure(t, ts, d, i, nodes);
+      }).attr('opacity', 0).remove();
     }
   }]);
   return ArcChart;
@@ -8748,7 +9069,7 @@ var GaugeChart = function (_ArcChart) {
 
       this.emit(EVENT_UPDATING_BACKGROUND_ARC);
 
-      this.bg.append('path').attr('fill', this.optionReaderFunc('arcBgFillScale')).attr('class', function (d, i) {
+      this.bg.append('path').style('fill', this.optionReaderFunc('arcBgFillScaleAccessor')).attr('class', function (d, i) {
         return _this2._buildCss(['monte-gauge-bg', _this2.opts.arcBgCssScaleAccessor], d, i);
       }).attr('d', this.bgArc());
 
@@ -8806,6 +9127,112 @@ var GaugeChart = function (_ArcChart) {
 GaugeChart.EVENTS = EVENTS$4;
 
 var GROUP_PROXY_METHODS$3 = ['needleValue'];
+
+var POLAR_AREA_CHART_DEFAULTS = {
+  chartCss: 'monte-arc-chart monte-polar-area-chart',
+
+  innerRadius: 30,
+  outerRadiusProp: '',
+  outerRadiusScale: d3.scaleSqrt,
+  outerRadiusRange: function outerRadiusRange(w, h) {
+    var v = d3.min([w, h]); // Constrain to smaller value
+    var maxOuterRadius = v / 2;
+    var ir = this.tryInvoke(this.opts.innerRadius, w, h);
+
+    return [ir, maxOuterRadius];
+  },
+  outerRadiusDomainCustomize: function outerRadiusDomainCustomize(extent) {
+    return [0, extent[1]];
+  },
+
+  outerRadius: function outerRadius() /* w, h */{
+    var chart = this;
+
+    return function (d) {
+      return chart.getScaledProp('outerRadius', 'itemValue', d.data);
+    };
+  }
+};
+
+var PolarAreaChart = function (_ArcChart) {
+  inherits(PolarAreaChart, _ArcChart);
+
+  function PolarAreaChart() {
+    classCallCheck(this, PolarAreaChart);
+    return possibleConstructorReturn(this, (PolarAreaChart.__proto__ || Object.getPrototypeOf(PolarAreaChart)).apply(this, arguments));
+  }
+
+  createClass(PolarAreaChart, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(PolarAreaChart.prototype.__proto__ || Object.getPrototypeOf(PolarAreaChart.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_AREA_CHART_DEFAULTS]));
+    }
+  }, {
+    key: '_initCore',
+    value: function _initCore() {
+      get(PolarAreaChart.prototype.__proto__ || Object.getPrototypeOf(PolarAreaChart.prototype), '_initCore', this).call(this);
+
+      this.outerRadius = this.opts.outerRadiusScale();
+      this.updateRadiusRange();
+
+      // Force all wedges to be equally sized in terms of angle because radius will be sized to show
+      // value.
+      this.pie.value(function () {
+        return 1;
+      });
+    }
+  }, {
+    key: '_updateBounds',
+    value: function _updateBounds() {
+      get(PolarAreaChart.prototype.__proto__ || Object.getPrototypeOf(PolarAreaChart.prototype), '_updateBounds', this).call(this);
+      this.updateRadiusRange();
+    }
+  }, {
+    key: '_data',
+    value: function _data(data) {
+      get(PolarAreaChart.prototype.__proto__ || Object.getPrototypeOf(PolarAreaChart.prototype), '_data', this).call(this, data);
+      this.updateRadiusDomain();
+    }
+  }, {
+    key: 'updateRadiusRange',
+    value: function updateRadiusRange() {
+      var range = this.tryInvoke(this.opts.outerRadiusRange, this.width, this.height);
+
+      if (isDefined(range) && isArray$2(range)) {
+        this.outerRadius.range(range);
+      }
+    }
+  }, {
+    key: 'updateRadiusDomain',
+    value: function updateRadiusDomain() {
+      var data = this.data();
+      var customize = this.opts.outerRadiusDomainCustomize;
+      var extent = data ? this._domainExtent(data) : [];
+
+      if (customize) {
+        extent = this.tryInvoke(customize, extent);
+      }
+
+      this.outerRadius.domain(extent);
+    }
+  }, {
+    key: '_domainExtent',
+    value: function _domainExtent(data) {
+      var _this2 = this;
+
+      return d3.extent(data, function (d) {
+        return _this2.getProp('itemValue', d);
+      });
+    }
+  }]);
+  return PolarAreaChart;
+}(ArcChart);
 
 var WEDGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-wedge-chart',
@@ -9034,7 +9461,7 @@ var DEFAULTS$2 = {
   layer: 'bg',
 
   // The chart events to listen for.
-  binding: [DESTROYING, RENDERED, UPDATED_BOUNDS],
+  binding: [DESTROYING, RENDERED, UPDATED, UPDATED_BOUNDS],
 
   // Flag for global updates for any option change.
   // Subclasses can override `_shouldOptionUpdate` for nuanced behavior.
@@ -9276,11 +9703,11 @@ var Extension = function () {
     key: '_update',
     value: function _update(binding, chart) {
       // eslint-disable-line no-unused-vars
-      throw MonteError.UnimplementedMethod('Update', '_update');
+      throw MonteError.UnimplementedMethod('Update', '_update', 'extension');
     }
 
     /**
-     * Invoke `_render` if defined; otherwise invoke the extension update-cycle.
+     * Invoke `_render` if defined.
      */
 
   }, {
@@ -9290,13 +9717,11 @@ var Extension = function () {
         this.__notify(RENDERING);
         this._render.apply(this, arguments);
         this.__notify(RENDERED);
-      } else {
-        this.update.apply(this, arguments);
       }
     }
 
     /**
-     * Invoke `_updateBounds` if defined; otherwise invoke the extension update-cycle.
+     * Invoke `_updateBounds` if defined.
      */
 
   }, {
@@ -9306,8 +9731,6 @@ var Extension = function () {
         this.__notify(UPDATING_BOUNDS);
         this._updateBounds.apply(this, arguments);
         this.__notify(UPDATED_BOUNDS);
-      } else {
-        this.update.apply(this, arguments);
       }
     }
 
@@ -9513,6 +9936,123 @@ var Arc = function (_Extension) {
   return Arc;
 }(Extension);
 
+function compose() {
+  for (var _len = arguments.length, funcs = Array(_len), _key = 0; _key < _len; _key++) {
+    funcs[_key] = arguments[_key];
+  }
+
+  return function () {
+    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+      args[_key2] = arguments[_key2];
+    }
+
+    funcs.forEach(function (f) {
+      return f.apply(undefined, args);
+    });
+  };
+}
+
+
+
+var index$1 = Object.freeze({
+	isArray: isArray$2,
+	isDefined: isDefined,
+	isFunc: isFunc,
+	isNumeric: isNumeric,
+	isObject: isObject$2,
+	isString: isString,
+	compose: compose,
+	getDepthFirst: getDepthFirst,
+	mergeOptions: mergeOptions,
+	ReplacePreceding: ReplacePreceding,
+	noop: noop,
+	readTransforms: readTransforms,
+	resetScaleDomain: resetScaleDomain
+});
+
+var AXIS_LABEL_DEFAULTS = {
+  binding: new ReplacePreceding(['axisRendered']),
+  layer: 'support',
+  eventPrefix: 'axislabelwrap',
+  axis: 'x',
+  labelCustomize: noop,
+  lineHeightEm: 1.1,
+  maxWidth: Number.POSITIVE_INFINITY
+};
+
+var AxisLabelWrap = function (_Extension) {
+  inherits(AxisLabelWrap, _Extension);
+
+  function AxisLabelWrap() {
+    classCallCheck(this, AxisLabelWrap);
+    return possibleConstructorReturn(this, (AxisLabelWrap.__proto__ || Object.getPrototypeOf(AxisLabelWrap)).apply(this, arguments));
+  }
+
+  createClass(AxisLabelWrap, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(AxisLabelWrap.prototype.__proto__ || Object.getPrototypeOf(AxisLabelWrap.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [AXIS_LABEL_DEFAULTS]));
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var _this2 = this;
+
+      var axis = this.tryInvoke(this.opts.axis);
+      var lineHeightEm = +this.tryInvoke(this.opts.lineHeightEm);
+      var maxWidth = this.tryInvoke(this.opts.maxWidth);
+      var lbls = this.layer.selectAll('.' + axis + '-axis.axis .tick text');
+
+      this.layer.transition().on('end', function () {
+        lbls.call(wrap, maxWidth, lineHeightEm).call(function () {
+          for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+            args[_key2] = arguments[_key2];
+          }
+
+          return _this2.tryInvoke.apply(_this2, [_this2.opts.labelCustomize].concat(args));
+        });
+      });
+    }
+  }]);
+  return AxisLabelWrap;
+}(Extension);
+
+// Based on Mike Bostock's example at: https://bl.ocks.org/mbostock/7555321
+function wrap(text, width, lineHeightEm) {
+  text.each(function () {
+    var text = d3.select(this);
+    var words = text.text().split(/\s+/).reverse();
+    var y = text.attr('y');
+    var dy = parseFloat(text.attr('dy'));
+    var line = [];
+    var tspan = text.text(null).append('tspan').attr('x', 0).attr('y', y).attr('dy', dy + 'em');
+    var lineNumber = 0;
+    var word = words.pop();
+
+    while (word) {
+      line.push(word);
+      tspan.text(line.join(' '));
+
+      if (tspan.node().getComputedTextLength() > width) {
+        line.pop();
+        tspan.text(line.join(' '));
+        line = [word];
+
+        ++lineNumber;
+        tspan = text.append('tspan').attr('x', 0).attr('y', y).attr('dy', lineNumber * lineHeightEm + dy + 'em').text(word);
+      }
+
+      word = words.pop();
+    }
+  });
+}
+
 var FRAME_DEFAULTS = {
   eventPrefix: 'frame',
   frameLineCss: 'monte-ext-frame-line',
@@ -9587,6 +10127,7 @@ var Frame = function (_Extension) {
 var GRID_DEFAULTS = {
   eventPrefix: 'grid',
   scalePrefixes: ['x', 'y'],
+  axisLayer: 'support',
   prefixCssMap: {
     'x': 'v-line',
     'y': 'h-line'
@@ -9621,10 +10162,18 @@ var Grid = function (_Extension) {
     }
   }, {
     key: '_update',
-    value: function _update(binding, axisTransition) {
+    value: function _update(scaleName, axis, axisTransition) {
       var _this2 = this;
 
       var axesChart = this.chart;
+
+      // Set transition defaults if `axisTransition` is undefined or null.
+      if (!isDefined(axisTransition)) {
+        var action = this.chart.hasRendered ? UPDATE : ENTER;
+        var axisLayerName = this.tryInvoke(this.opts.axisLayer);
+        var axisLayer = this.chart[axisLayerName];
+        axisTransition = axisLayer.transition().call(this.chart._transitionSetup('axis', action));
+      }
 
       // Draw all axis
       axesChart.forEachAxisScale(function (scaleName) {
@@ -9741,74 +10290,6 @@ var VerticalLines = function (_Grid2) {
   }]);
   return VerticalLines;
 }(Grid);
-
-function compose() {
-  for (var _len = arguments.length, funcs = Array(_len), _key = 0; _key < _len; _key++) {
-    funcs[_key] = arguments[_key];
-  }
-
-  return function () {
-    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-      args[_key2] = arguments[_key2];
-    }
-
-    funcs.forEach(function (f) {
-      return f.apply(undefined, args);
-    });
-  };
-}
-
-function readTransforms(t) {
-  var transformPattern = /(.*?)\((.*?)\)\s*/g;
-  var matches = transformPattern.exec(t);
-  var transforms = {};
-
-  if (matches) {
-    for (var i = 1; i < matches.length; i += 2) {
-      var k = matches[i];
-      var v = matches[i + 1].trim();
-
-      if (v.indexOf(' ') > -1 || v.indexOf(',') > -1) {
-        v = v.split(/,\s*|\s+/);
-      }
-
-      transforms[k] = v;
-    }
-  }
-
-  return transforms;
-}
-
-function combineTransforms(transformObj) {
-  var transformStr = '';
-
-  for (var t in transformObj) {
-    if (transformObj.hasOwnProperty(t)) {
-      var values = transformObj[t].join(', ');
-      transformStr += t + '(' + values + ')';
-    }
-  }
-
-  return transformStr;
-}
-
-
-
-var index$1 = Object.freeze({
-	isArray: isArray$2,
-	isDefined: isDefined,
-	isFunc: isFunc,
-	isNumeric: isNumeric,
-	isObject: isObject$2,
-	isString: isString,
-	compose: compose,
-	getDepthFirst: getDepthFirst,
-	mergeOptions: mergeOptions,
-	ReplacePreceding: ReplacePreceding,
-	noop: noop,
-	readTransforms: readTransforms,
-	resetScaleDomain: resetScaleDomain
-});
 
 var LABEL_DEFAULTS = {
   eventPrefix: 'label',
@@ -10181,6 +10662,8 @@ var BAR_BG_DEFAULTS = {
   data: null,
   maxValue: null, // Maximum value
   maxValueProp: null, // Maximum value taken from chart data
+  minValue: null, // Minimum value
+  minValueProp: null, // Minimum value taken from chart data
   enlarge: 0.05,
   cornerRadius: 0
 };
@@ -10221,21 +10704,37 @@ var BarBg = function (_Extension) {
 
       var bgs = this._extCreateSelection().data(data);
       var sizeAdjust = this._sizeAdjust(barChart);
+      var css = this.tryInvoke(this.opts.barBgCss);
 
-      bgs.enter().append('rect').call(this._setExtAttrs.bind(this)).merge(bgs).attr('class', this.opts.barBgCss).attr('x', function () {
-        return barChart._barX.bind(barChart).apply(undefined, arguments) + _this2._xShift(sizeAdjust);
+      bgs.enter().append('rect').call(this._setExtAttrs.bind(this)).merge(bgs).attr('class', css).attr('x', function () {
+        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+          args[_key2] = arguments[_key2];
+        }
+
+        return _this2._x.apply(_this2, [barChart, sizeAdjust].concat(args));
       }).attr('y', function () {
-        return barChart._barY.bind(barChart).apply(undefined, arguments) + _this2._yShift(sizeAdjust);
-      }).attr('width', function (d) {
-        var bw = barChart._barWidth(d);
-        var wa = _this2._widthAdjust(sizeAdjust);
-        var v = bw + wa;
-        return v;
+        for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+          args[_key3] = arguments[_key3];
+        }
+
+        return _this2._y.apply(_this2, [barChart, sizeAdjust].concat(args));
+      }).attr('width', function () {
+        for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+          args[_key4] = arguments[_key4];
+        }
+
+        return _this2._width.apply(_this2, [barChart, sizeAdjust].concat(args));
       }).attr('height', function () {
-        return barChart._barHeight.bind(barChart).apply(undefined, arguments) + _this2._heightAdjust(sizeAdjust);
+        for (var _len5 = arguments.length, args = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+          args[_key5] = arguments[_key5];
+        }
+
+        return _this2._height.apply(_this2, [barChart, sizeAdjust].concat(args));
       }).attr('rx', function (d, i) {
         return _this2.tryInvoke(_this2.opts.cornerRadius, d, i);
       });
+
+      bgs.exit().remove();
     }
   }, {
     key: '_buildData',
@@ -10246,9 +10745,12 @@ var BarBg = function (_Extension) {
       for (var i = 0; i < data.length; i++) {
         var _data$i;
 
-        var maxVal = this.opts.maxValue ? chartData[i][this.opts.maxValue] : null;
+        var minValueProp = this.tryInvoke(this.opts.minValueProp);
+        var maxValueProp = this.tryInvoke(this.opts.maxValueProp);
+        var minVal = minValueProp ? chartData[i][minValueProp] : null;
+        var maxVal = maxValueProp ? chartData[i][maxValueProp] : null;
 
-        data[i] = (_data$i = {}, defineProperty(_data$i, barChart.option('xProp'), chartData[i][barChart.option('xProp')]), defineProperty(_data$i, barChart.option('yProp'), maxVal || this.opts.maxValue || domain[1]), _data$i);
+        data[i] = (_data$i = {}, defineProperty(_data$i, barChart.option('xProp'), chartData[i][barChart.option('xProp')]), defineProperty(_data$i, 'min', minVal || this.opts.minValue || domain[0]), defineProperty(_data$i, 'max', maxVal || this.opts.maxValue || domain[1]), _data$i);
       }
 
       return data;
@@ -10256,12 +10758,28 @@ var BarBg = function (_Extension) {
   }, {
     key: '_sizeAdjust',
     value: function _sizeAdjust(barChart) {
-      return barChart.x.bandwidth() * this.opts.enlarge;
+      var enlarge = this.tryInvoke(this.opts.enlarge);
+      return barChart.x.bandwidth() * enlarge;
+    }
+  }, {
+    key: '_x',
+    value: function _x(barChart, sizeAdjust) {
+      for (var _len6 = arguments.length, args = Array(_len6 > 2 ? _len6 - 2 : 0), _key6 = 2; _key6 < _len6; _key6++) {
+        args[_key6 - 2] = arguments[_key6];
+      }
+
+      var v = barChart._barX.bind(barChart).apply(undefined, args) + this._xShift(sizeAdjust);
+      return v;
     }
   }, {
     key: '_xShift',
     value: function _xShift(sizeAdjust) {
       return -sizeAdjust;
+    }
+  }, {
+    key: '_y',
+    value: function _y(barChart, sizeAdjust, d) {
+      return barChart.y(d.max) + this._yShift(sizeAdjust);
     }
   }, {
     key: '_yShift',
@@ -10275,10 +10793,24 @@ var BarBg = function (_Extension) {
       return 2 * sizeAdjust;
     }
   }, {
+    key: '_width',
+    value: function _width(barChart, sizeAdjust, d) {
+      var bw = barChart._barWidth(d);
+      var wa = this._widthAdjust(sizeAdjust);
+      return bw + wa;
+    }
+  }, {
     key: '_heightAdjust',
     value: function _heightAdjust(sizeAdjust) {
       // eslint-disable-line no-unused-vars
       return 0;
+    }
+  }, {
+    key: '_height',
+    value: function _height(barChart, sizeAdjust, d) {
+      var z = barChart.y(0);
+      var h = barChart.y(d.min) - z + (z - barChart.y(d.max));
+      return h + this._heightAdjust(sizeAdjust);
     }
   }]);
   return BarBg;
@@ -10301,9 +10833,12 @@ var HorizontalBarBg = function (_BarBg) {
       for (var i = 0; i < data.length; i++) {
         var _data$i2;
 
-        var maxVal = this.opts.maxValueProp ? chartData[i][this.opts.maxValueProp] : null;
+        var minValueProp = this.tryInvoke(this.opts.minValueProp);
+        var maxValueProp = this.tryInvoke(this.opts.maxValueProp);
+        var minVal = minValueProp ? chartData[i][minValueProp] : null;
+        var maxVal = maxValueProp ? chartData[i][maxValueProp] : null;
 
-        data[i] = (_data$i2 = {}, defineProperty(_data$i2, hBarChart.option('xProp'), maxVal || this.opts.maxValue || domain[1]), defineProperty(_data$i2, hBarChart.option('yProp'), chartData[i][hBarChart.option('yProp')]), _data$i2);
+        data[i] = (_data$i2 = {}, defineProperty(_data$i2, hBarChart.option('yProp'), chartData[i][hBarChart.option('yProp')]), defineProperty(_data$i2, 'min', minVal || this.opts.minValue || domain[0]), defineProperty(_data$i2, 'max', maxVal || this.opts.maxValue || domain[1]), _data$i2);
       }
 
       return data;
@@ -10314,10 +10849,25 @@ var HorizontalBarBg = function (_BarBg) {
       return barChart.y.bandwidth() * this.opts.enlarge;
     }
   }, {
+    key: '_x',
+    value: function _x(barChart, sizeAdjust, d) {
+      return barChart.x(d.min) + this._xShift(sizeAdjust);
+    }
+  }, {
     key: '_xShift',
     value: function _xShift(sizeAdjust) {
       // eslint-disable-line no-unused-vars
       return 0;
+    }
+  }, {
+    key: '_y',
+    value: function _y(barChart, sizeAdjust) {
+      for (var _len7 = arguments.length, args = Array(_len7 > 2 ? _len7 - 2 : 0), _key7 = 2; _key7 < _len7; _key7++) {
+        args[_key7 - 2] = arguments[_key7];
+      }
+
+      var v = barChart._barY.bind(barChart).apply(undefined, args) + this._yShift(sizeAdjust);
+      return v;
     }
   }, {
     key: '_yShift',
@@ -10331,9 +10881,23 @@ var HorizontalBarBg = function (_BarBg) {
       return 0;
     }
   }, {
+    key: '_width',
+    value: function _width(barChart, sizeAdjust, d) {
+      var z = barChart.x(0);
+      var w = z - barChart.x(d.min) + (barChart.x(d.max) - z);
+      return w + this._widthAdjust(sizeAdjust);
+    }
+  }, {
     key: '_heightAdjust',
     value: function _heightAdjust(sizeAdjust) {
       return 2 * sizeAdjust;
+    }
+  }, {
+    key: '_height',
+    value: function _height(barChart, sizeAdjust, d) {
+      var bh = barChart._barHeight(d);
+      var ha = this._heightAdjust(sizeAdjust);
+      return bh + ha;
     }
   }]);
   return HorizontalBarBg;
@@ -10623,8 +11187,11 @@ exports.SegmentBarChart = SegmentBarChart;
 exports.HorizontalSegmentBarChart = HorizontalSegmentBarChart;
 exports.ScatterPlot = ScatterPlot;
 exports.IconArray = IconArray;
+exports.iconArrangeBottomTop = iconArrangeBottomTop;
+exports.iconArrangeTopBottom = iconArrangeTopBottom;
 exports.ArcChart = ArcChart;
 exports.GaugeChart = GaugeChart;
+exports.PolarAreaChart = PolarAreaChart;
 exports.WedgeChart = WedgeChart;
 exports.EventWatcher = EventWatcher;
 exports.InstanceGroup = InstanceGroup;
@@ -10632,6 +11199,7 @@ exports.MonteError = MonteError;
 exports.MonteOptionError = MonteOptionError;
 exports.Extension = Extension;
 exports.ExtArc = Arc;
+exports.ExtAxisLabelWrap = AxisLabelWrap;
 exports.ExtFrame = Frame;
 exports.ExtGrid = Grid;
 exports.ExtHorizontalLines = HorizontalLines;
@@ -10662,12 +11230,15 @@ exports.Resizer = Resizer;
 exports.VerticalResizer = VerticalResizer;
 exports.polarLabelCentroid = polarLabelCentroid;
 exports.polarLabelInner = polarLabelInner;
-exports.polarLabelOuter = polarLabelOuter;
+exports.polarLabelInnerAdjust = polarLabelInnerAdjust;
 exports.polarLabelInnerFactor = polarLabelInnerFactor;
+exports.polarLabelOuter = polarLabelOuter;
+exports.polarLabelOuterAdjust = polarLabelOuterAdjust;
 exports.polarLabelOuterFactor = polarLabelOuterFactor;
 exports.polarLabelRotateTangentOrigin = polarLabelRotateTangentOrigin;
 exports.polarLabelRotateTangentFlip = polarLabelRotateTangentFlip;
 exports.polarLabelRotateRay = polarLabelRotateRay;
+exports.polarLabelRotateRayFlip = polarLabelRotateRayFlip;
 exports.polarLabelRotateRayOpposite = polarLabelRotateRayOpposite;
 
 Object.defineProperty(exports, '__esModule', { value: true });
