@@ -94,8 +94,8 @@ export class IconArray extends AxesChart {
     );
   }
 
-  _resetCssDomains() {
-    super._resetCssDomains();
+  _resetStyleDomains() {
+    super._resetStyleDomains();
 
     resetScaleDomain(this.opts.iconCssScale);
     resetScaleDomain(this.opts.iconFillScale);

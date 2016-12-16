@@ -59,8 +59,8 @@ export class ScatterPlot extends AxesChart {
     return extent;
   }
 
-  _resetCssDomains() {
-    super._resetCssDomains();
+  _resetStyleDomains() {
+    super._resetStyleDomains();
 
     resetScaleDomain(this.opts.pointCssScale);
     resetScaleDomain(this.opts.pointFillScale);

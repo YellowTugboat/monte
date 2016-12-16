@@ -148,8 +148,8 @@ export class SegmentBarChart extends AxesChart {
     return extent;
   }
 
-  _resetCssDomains() {
-    super._resetCssDomains();
+  _resetStyleDomains() {
+    super._resetStyleDomains();
 
     resetScaleDomain(this.opts.barSegCssScale);
     resetScaleDomain(this.opts.barSegFillScale);

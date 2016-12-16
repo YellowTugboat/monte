@@ -70,8 +70,8 @@ export class AreaChart extends LineChart {
     );
   }
 
-  _resetCssDomains() {
-    super._resetCssDomains();
+  _resetStyleDomains() {
+    super._resetStyleDomains();
 
     resetScaleDomain(this.opts.areaCssScale);
     resetScaleDomain(this.opts.areaFillScaleAccessor);

@@ -107,8 +107,8 @@ export class BarChart extends AxesChart {
     return extent;
   }
 
-  _resetCssDomains() {
-    super._resetCssDomains();
+  _resetStyleDomains() {
+    super._resetStyleDomains();
 
     resetScaleDomain(this.opts.barCssScale);
     resetScaleDomain(this.opts.barFillScale);

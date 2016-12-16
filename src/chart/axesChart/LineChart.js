@@ -99,8 +99,8 @@ export class LineChart extends AxesChart {
     return extent;
   }
 
-  _resetCssDomains() {
-    super._resetCssDomains();
+  _resetStyleDomains() {
+    super._resetStyleDomains();
 
     resetScaleDomain(this.opts.lineStrokeScale);
     resetScaleDomain(this.opts.lineCssScale);

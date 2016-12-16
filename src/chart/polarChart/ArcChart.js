@@ -102,8 +102,8 @@ export class ArcChart extends PolarChart {
     );
   }
 
-  _resetCssDomains() {
-    super._resetCssDomains();
+  _resetStyleDomains() {
+    super._resetStyleDomains();
 
     resetScaleDomain(this.opts.arcWedgeCssScale);
     resetScaleDomain(this.opts.arcWedgeFillScale);

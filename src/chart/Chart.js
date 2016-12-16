@@ -43,7 +43,7 @@ const DEFAULTS = {
 
   // When a `clear` occurs (by direct invocation or via `data` (without an update)) the domain is
   // automatically reset.
-  autoResetCssDomains: true,
+  autoResetStyleDomains: true,
 
   // Indicates that the chart base is being used directly in a client script chart (an "on the
   // fly" chart). The assumption is most of the time other classes will extend and implement
@@ -558,7 +558,7 @@ export class Chart {
     this.displayData = null;
     this._clearDataElements();
 
-    if (this.opts.autoResetCssDomains) { this.resetCssDomains(); }
+    if (this.opts.autoResetStyleDomains) { this.resetStyleDomains(); }
 
     this.__notify(EV.CLEARED);
     return this;
@@ -574,18 +574,18 @@ export class Chart {
    *
    * @Chainable
    */
-  resetCssDomains() {
+  resetStyleDomains() {
     this.__notify(EV.CSS_DOMAINS_RESETTING);
-    this._resetCssDomains();
+    this._resetStyleDomains();
     this.__notify(EV.CSS_DOMAINS_RESET);
 
     return this;
   }
 
   /**
-   * Internal implementation of the `resetCssDomains` method.
+   * Internal implementation of the `resetStyleDomains` method.
    */
-  _resetCssDomains() {}
+  _resetStyleDomains() {}
 
   /**
    * Builds a string of class names to insert into a `class` attribute on a DOM element (typically
@@ -905,5 +905,5 @@ export class Chart {
 // The public methods from the base chart available for use in `ChartGroup`.
 export const GROUP_PROXY_METHODS = [
   'addExt', 'addLayer', 'boundingRect', 'call', 'checkSize', 'classed', 'clear', 'data', 'emit',
-  'layerUseClipPath', 'on', 'option', 'replaceScale', 'resetCssDomains', 'update', 'updateData',
+  'layerUseClipPath', 'on', 'option', 'replaceScale', 'resetStyleDomains', 'update', 'updateData',
 ];
