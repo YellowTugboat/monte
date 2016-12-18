@@ -1,6 +1,6 @@
 import { combineTransforms, readTransforms } from '../tools/transform';
 import { Extension } from './Extension';
-import { polarLabelRotateTangentFlip } from '../util/polarLabels';
+import { polarLabelRotateTangentFlip } from '../util/polarLabelRotations';
 import { radiansToDegrees } from '../util/polar';
 
 const POLAR_ROTATE_LABEL_DEFAULTS = {

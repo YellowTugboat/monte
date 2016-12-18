@@ -14,6 +14,7 @@ const POLAR_AREA_CHART_DEFAULTS = {
 
     return [ir, maxOuterRadius];
   },
+
   outerRadiusDomainCustomize: function(extent) {
     return [0, extent[1]];
   },

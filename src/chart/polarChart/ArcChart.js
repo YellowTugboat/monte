@@ -1,12 +1,13 @@
 import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { arcLabelTween, arcSimpleTween } from '../../util/tween';
-import { polarLabelCentroid, polarLabelCssPrefix, polarLabelRotateTangentFlip } from '../../util/polarLabels';
+import { polarLabelCentroid, polarLabelCssPrefix } from '../../util/polarLabels';
 import { PolarChart } from './PolarChart';
 import { TAU } from '../../const/math';
 import { classedPattern } from '../../util/css';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { getCoord } from '../../util/polar';
 import { noop } from '../../tools/noop';
+import { polarLabelRotateTangentFlip } from '../../util/polarLabelRotations';
 import { radiansToDegrees } from '../../util/polar';
 import { radiusContrain } from '../../util/dimension';
 import { readTransforms } from '../../tools/transform';

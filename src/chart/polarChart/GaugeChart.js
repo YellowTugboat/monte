@@ -2,6 +2,7 @@ import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { ArcChart } from './ArcChart';
 import { HALF_PI } from '../../const/math';
 import { UNDEF } from '../../const/undef';
+import { gaugeLabelRotateNone } from '../../util/polarLabelRotations';
 import { isDefined } from '../../tools/is';
 import { needleRoundedEnd } from '../../util/needle';
 import { noop } from '../../tools/noop';
@@ -38,6 +39,7 @@ const GAUGE_CHART_DEFAULTS = {
 
   innerRadius: (w, h) => radiusContrain(w, h) * 0.9,
   labelPlacement: polarLabelInner,
+  labelRotation: gaugeLabelRotateNone,
 
   segmentsProp: 'segments',
   itemValueProp: 'interval',

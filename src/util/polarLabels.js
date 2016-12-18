@@ -1,6 +1,3 @@
-import { HALF_PI, PI } from '../const/math';
-import { isNumeric } from '../tools/is';
-
 export const polarLabelCssPrefix = 'monte-polar-label-';
 
 // NOTE: Radius functions exoect to be invoked in the context of an `Extension` or a `Chart`.
@@ -151,56 +148,4 @@ export function polarLabelOuterAdjust(adjust) {
       };
     },
   };
-}
-
-// TODO: Add `css` to all rotations
-export function polarLabelRotateTangentOrigin(d) {
-  const datum = getDatum(d);
-  const angle = ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  return angle;
-}
-
-export function polarLabelRotateTangentFlip(d) {
-  const datum = getDatum(d);
-  let angle = ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  const absAngle = Math.abs(angle);
-  if (absAngle > HALF_PI && absAngle <= 3 * HALF_PI) {
-    angle -= PI;
-  }
-
-  return angle;
-}
-
-export function polarLabelRotateRay(d) {
-  const datum = getDatum(d);
-  const angle = ((datum.endAngle - d.startAngle) / 2 + datum.startAngle) - HALF_PI;
-
-  return angle;
-}
-
-export function polarLabelRotateRayOpposite(d) {
-  const datum = getDatum(d);
-  const angle = ((datum.endAngle - d.startAngle) / 2 + datum.startAngle) - HALF_PI - PI;
-
-  return angle;
-}
-
-export function polarLabelRotateRayFlip(d) {
-  const datum = getDatum(d);
-  const angle = ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  if ((angle <= 0 && angle >= -PI) || angle > PI) { // Right side of circle
-    return angle + HALF_PI;
-  }
-  else if ((angle > 0 && angle <= PI) || angle < -PI) { // Left side of circle
-    return angle - HALF_PI;
-  }
-
-  return angle;
-}
-
-function getDatum(d) {
-  return (isNumeric(+d)) ? { startAngle: d, endAngle: d } : d;
 }

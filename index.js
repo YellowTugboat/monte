@@ -109,9 +109,19 @@ export {
   polarLabelOuter,
   polarLabelOuterAdjust,
   polarLabelOuterFactor,
+} from './src/util/polarLabels';
+
+export {
+  gaugeLabelRotateTangentOrigin,
+  gaugeLabelRotateTangentFlip,
+  gaugeLabelRotateRay,
+  gaugeLabelRotateRayFlip,
+  gaugeLabelRotateRayOpposite,
+  gaugeLabelRotateNone,
   polarLabelRotateTangentOrigin,
   polarLabelRotateTangentFlip,
   polarLabelRotateRay,
   polarLabelRotateRayFlip,
   polarLabelRotateRayOpposite,
-} from './src/util/polarLabels';
+  polarLabelRotateNone,
+} from './src/util/polarLabelRotations';
