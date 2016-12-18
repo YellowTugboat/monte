@@ -23,7 +23,7 @@ export class BarBg extends Extension {
     let data;
 
     if (this.opts.data) {
-      data = this.opts.data;
+      data = this.tryInvoke(this.opts.data);
     }
     else {
       data = this._buildData(barChart, chartData);

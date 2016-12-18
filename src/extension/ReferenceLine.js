@@ -74,11 +74,13 @@ export class ReferenceLine extends Extension {
     }
 
     const lines = this._extCreateSelection().data(this.lineData);
+    const css = this.tryInvoke(this.opts.css);
+    const anchor = this.tryInvoke(this.opts.textAnchor);
 
     // Enter
     const enter = lines.enter().append('g')
       .call(this._setExtAttrs.bind(this))
-      .attr('class', this.opts.css);
+      .attr('class', css);
     enter.append('text');
     enter.append('line');
 
@@ -91,7 +93,7 @@ export class ReferenceLine extends Extension {
       .attr('y2', (d) => this.getProp('y2', d));
 
     update.select('text')
-      .attr('text-anchor', this.opts.textAnchor)
+      .attr('text-anchor', anchor)
       .text((d) => this.getProp('text', d))
       .each(this._placeLabel.bind(this));
 

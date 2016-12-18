@@ -20,9 +20,10 @@ export class Frame extends Extension {
 
   _update() {
     const chart = this.chart;
-    const css = this.opts.frameLineCss;
-    const edges = this._extCreateSelection().data(this.opts.edges).order();
-    const shift = this.opts.alignmentShift;
+    const css = this.tryInvoke(this.opts.frameLineCss);
+    const edgesToDraw = this.tryInvoke(this.opts.edges);
+    const edges = this._extCreateSelection().data(edgesToDraw).order();
+    const shift = this.tryInvoke(this.opts.alignmentShift);
     const coords = {
       top: [[0 + shift, 0 + shift], [chart.width + shift, 0 + shift]],
       right: [[chart.width + shift, 0 + shift], [chart.width + shift, chart.height + shift]],

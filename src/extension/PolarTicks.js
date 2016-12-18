@@ -17,8 +17,10 @@ export class PolarTicks extends Extension {
   _initOptions(...options) {
     super._initOptions(...options, POLAR_TICKS_DEFAULTS);
 
-    this.innerArc = d3.arc().innerRadius(this.opts.innerRadius).outerRadius(this.opts.innerRadius);
-    this.outerArc = d3.arc().innerRadius(this.opts.outerRadius).outerRadius(this.opts.outerRadius);
+    const innerRadius = this.tryInvoke(this.opts.innerRadius);
+    const outerRadius = this.tryInvoke(this.opts.outerRadius);
+    this.innerArc = d3.arc().innerRadius(innerRadius).outerRadius(innerRadius);
+    this.outerArc = d3.arc().innerRadius(outerRadius).outerRadius(outerRadius);
   }
 
   _update() {
