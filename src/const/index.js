@@ -1,15 +1,15 @@
-import * as D3 from './d3';
-export { D3 };
+import * as d3 from './d3';
+export { d3 };
 
-import * as DIRECTION from './direction';
-export { DIRECTION };
+import * as direction from './direction';
+export { direction };
 
 export * from './events';
 
-import * as MATH from './math';
-export { MATH };
+import * as math from './math';
+export { math };
 
-import * as POLAR from './polar';
-export { POLAR };
+import * as polar from './polar';
+export { polar };
 
 export * from './undef';
