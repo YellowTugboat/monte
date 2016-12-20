@@ -34,6 +34,8 @@ export class Extension {
 
       // Custom events provided by the user
       ...this.opts.customEvents);
+
+    this.lastUpdateEvent = '';
   }
 
   _initOptions(...options) {
@@ -182,6 +184,7 @@ export class Extension {
         break;
 
       default:
+        this.lastUpdateEvent = event;
         this.update(...args);
       }
     }
@@ -324,5 +327,13 @@ export class Extension {
 
   toString() {
     return this.constructor.name;
+  }
+
+  static featureEventName(featurePrefix, eventName) {
+    if (featurePrefix === 'chart') {
+      return eventName;
+    }
+
+    return `${featurePrefix}:${eventName}`;
   }
 }
