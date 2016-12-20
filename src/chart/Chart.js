@@ -643,7 +643,7 @@ export class Chart {
   }
 
   /**
-   * Get / set the attribute of the bounding element.
+   * Get / set an attribute of the bounding element.
    *
    * A convenience method that is roughly equivalent to `<chart>.bound.attr(<name>, <value>)`,
    * but returns the chart instead of the `<chart>.bound` selection.
@@ -652,11 +652,28 @@ export class Chart {
    */
   attr(name, value) {
     if (value === UNDEF) {
-      // return this attib
       return this.bound.attr(name);
     }
 
     this.bound.attr(name, value);
+
+    return this;
+  }
+
+  /**
+   * Get / set a style of the bounding element.
+   *
+   * A convenience method that is roughly equivalent to `<chart>.bound.style(<name>, <value>)`,
+   * but returns the chart instead of the `<chart>.bound` selection.
+   *
+   * @Chainable
+   */
+  style(name, value) {
+    if (value === UNDEF) {
+      return this.bound.style(name);
+    }
+
+    this.bound.style(name, value);
 
     return this;
   }
