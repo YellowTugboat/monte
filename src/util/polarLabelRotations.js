@@ -1,6 +1,9 @@
 import { HALF_PI, PI } from '../const/math';
 import { isNumeric } from '../tools/is';
+import { wedgeBisect } from '../tools/polar';
 
+// Return the datum if it is an object, but if the value is a number (or coercible to a number) than
+// create a new object with the expected `startAngle` and `endAngle` properties.
 function getDatum(d) {
   return (isNumeric(+d)) ? { startAngle: d, endAngle: d } : d;
 }
@@ -11,18 +14,11 @@ function getDatum(d) {
 // Base Rotations
 //
 //
-function baseLabelRotateTangentOrigin(angle) {
-  // const datum = getDatum(d);
-  // const angle = datum.endAngle; // ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  return angle;
-}
+function baseLabelRotateTangentOrigin(angle) { return angle; }
 
 function baseLabelRotateTangentFlip(angle) {
-  // const datum = getDatum(d);
-  // let angle = datum.endAngle; // ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
   const absAngle = Math.abs(angle);
+
   if (absAngle > HALF_PI && absAngle <= 3 * HALF_PI) {
     angle -= PI;
   }
@@ -30,24 +26,10 @@ function baseLabelRotateTangentFlip(angle) {
   return angle;
 }
 
-function baseLabelRotateRay(angle) {
-  // const datum = getDatum(d);
-  // const angle = datum.endAngle; // ((datum.endAngle - d.startAngle) / 2 + datum.startAngle) - HALF_PI;
-
-  return angle;
-}
-
-function baseLabelRotateRayOpposite(angle) {
-  // const datum = getDatum(d);
-  // const angle = datum.endAngle; // ((datum.endAngle - d.startAngle) / 2 + datum.startAngle) - HALF_PI - PI;
-
-  return angle;
-}
+function baseLabelRotateRay(angle) { return angle - HALF_PI; }
+function baseLabelRotateRayOpposite(angle) { return angle - HALF_PI - PI; }
 
 function baseLabelRotateRayFlip(angle) {
-  // const datum = getDatum(d);
-  // const angle = datum.endAngle; // ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
   if ((angle <= 0 && angle >= -PI) || angle > PI) { // Right side of circle
     return angle + HALF_PI;
   }
@@ -58,61 +40,32 @@ function baseLabelRotateRayFlip(angle) {
   return angle;
 }
 
-function baseLabelRotateNone() {
-  return 0;
-}
+function baseLabelRotateNone() { return 0; }
 
 //
 //
-// Gauge Chart Rotations
+// Polar Chart Rotations
 //
 //
 // TODO: Add `css` to all rotations
 export function polarLabelRotateTangentOrigin(d) {
-  const datum = getDatum(d);
-  const angle = ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  return baseLabelRotateTangentOrigin(angle);
+  return baseLabelRotateTangentOrigin(wedgeBisect(getDatum(d)));
 }
 
 export function polarLabelRotateTangentFlip(d) {
-  const datum = getDatum(d);
-  let angle = ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  // const absAngle = Math.abs(angle);
-  // if (absAngle > HALF_PI && absAngle <= 3 * HALF_PI) {
-  //   angle -= PI;
-  // }
-
-  return baseLabelRotateTangentFlip(angle);
+  return baseLabelRotateTangentFlip(wedgeBisect(getDatum(d)));
 }
 
 export function polarLabelRotateRay(d) {
-  const datum = getDatum(d);
-  const angle = ((datum.endAngle - d.startAngle) / 2 + datum.startAngle) - HALF_PI;
-
-  return baseLabelRotateRay(angle);
+  return baseLabelRotateRay(wedgeBisect(getDatum(d)));
 }
 
 export function polarLabelRotateRayOpposite(d) {
-  const datum = getDatum(d);
-  const angle = ((datum.endAngle - d.startAngle) / 2 + datum.startAngle) - HALF_PI - PI;
-
-  return baseLabelRotateRayOpposite(angle);
+  return baseLabelRotateRayOpposite(wedgeBisect(getDatum(d)));
 }
 
 export function polarLabelRotateRayFlip(d) {
-  const datum = getDatum(d);
-  const angle = ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  // if ((angle <= 0 && angle >= -PI) || angle > PI) { // Right side of circle
-  //   return angle + HALF_PI;
-  // }
-  // else if ((angle > 0 && angle <= PI) || angle < -PI) { // Left side of circle
-  //   return angle - HALF_PI;
-  // }
-
-  return baseLabelRotateRayFlip(angle);
+  return baseLabelRotateRayFlip(wedgeBisect(getDatum(d)));
 }
 
 export function polarLabelRotateNone() {
@@ -126,50 +79,23 @@ export function polarLabelRotateNone() {
 //
 //
 export function gaugeLabelRotateTangentOrigin(d) {
-  const datum = getDatum(d);
-  const angle = datum.endAngle; // ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  return baseLabelRotateTangentOrigin(angle);
+  return baseLabelRotateTangentOrigin(getDatum(d).endAngle);
 }
 
 export function gaugeLabelRotateTangentFlip(d) {
-  const datum = getDatum(d);
-  let angle = datum.endAngle; // ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  // const absAngle = Math.abs(angle);
-  // if (absAngle > HALF_PI && absAngle <= 3 * HALF_PI) {
-  //   angle -= PI;
-  // }
-
-  return baseLabelRotateTangentFlip(angle);
+  return baseLabelRotateTangentFlip(getDatum(d).endAngle);
 }
 
 export function gaugeLabelRotateRay(d) {
-  const datum = getDatum(d);
-  const angle = datum.endAngle; // ((datum.endAngle - d.startAngle) / 2 + datum.startAngle) - HALF_PI;
-
-  return baseLabelRotateRay(angle);
+  return baseLabelRotateRay(getDatum(d).endAngle);
 }
 
 export function gaugeLabelRotateRayOpposite(d) {
-  const datum = getDatum(d);
-  const angle = datum.endAngle; // ((datum.endAngle - d.startAngle) / 2 + datum.startAngle) - HALF_PI - PI;
-
-  return baseLabelRotateRayOpposite(angle);
+  return baseLabelRotateRayOpposite(getDatum(d).endAngle);
 }
 
 export function gaugeLabelRotateRayFlip(d) {
-  const datum = getDatum(d);
-  const angle = datum.endAngle; // ((datum.endAngle - datum.startAngle) / 2 + datum.startAngle);
-
-  // if ((angle <= 0 && angle >= -PI) || angle > PI) { // Right side of circle
-  //   return angle + HALF_PI;
-  // }
-  // else if ((angle > 0 && angle <= PI) || angle < -PI) { // Left side of circle
-  //   return angle - HALF_PI;
-  // }
-
-  return baseLabelRotateRayFlip(angle);
+  return baseLabelRotateRayFlip(getDatum(d).endAngle);
 }
 
 export function gaugeLabelRotateNone() {

@@ -5,10 +5,10 @@ import { PolarChart } from './PolarChart';
 import { TAU } from '../../const/math';
 import { classedPattern } from '../../util/css';
 import { commonEventNames } from '../../tools/commonEventNames';
-import { getCoord } from '../../util/polar';
+import { getPolarCoord } from '../../tools/polar';
 import { noop } from '../../tools/noop';
 import { polarLabelRotateTangentFlip } from '../../util/polarLabelRotations';
-import { radiansToDegrees } from '../../util/polar';
+import { radiansToDegrees } from '../../tools/polar';
 import { radiusContrain } from '../../util/dimension';
 import { readTransforms } from '../../tools/transform';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
@@ -242,7 +242,7 @@ export class ArcChart extends PolarChart {
     const radius = this.tryInvoke(labelRadius, d, i, nodes);
     const angle = this.tryInvoke(this.opts.labelAngle, d, i, nodes);
     const rotate = radiansToDegrees(this.tryInvoke(this.opts.labelRotation, d, i, nodes));
-    const coord = getCoord(radius, angle);
+    const coord = getPolarCoord(radius, angle);
 
     lbl.enter().append('text')
       .attr('class', 'monte-arc-label')

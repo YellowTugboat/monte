@@ -1,6 +1,6 @@
 import { Extension } from './Extension';
 import { TAU } from '../const/math';
-import { areCoterminalAngles } from '../util/polar';
+import { areCoterminalAngles } from '../tools/polar';
 
 const POLAR_TICKS_DEFAULTS = {
   eventPrefix: 'polarticks',

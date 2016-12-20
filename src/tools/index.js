@@ -7,3 +7,4 @@ export { noop } from './noop';
 export { readTransforms } from './transform';
 export { resetScaleDomain } from './resetScaleDomain';
 export { camelCase, kebabCase, snakeCase, pascalCase, upperFirst } from './string';
+export { areCoterminalAngles, getPolarCoord, degreesToRadians, radiansToDegrees, arcBisect, wedgeBisect } from './polar';

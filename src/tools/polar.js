@@ -9,7 +9,7 @@ export function areCoterminalAngles(a1, a2) {
 }
 
 // Placement on an arc given an radius and angle, (cos(a) * r, sin(a) * r)
-export function getCoord(radius, angle) {
+export function getPolarCoord(radius, angle) {
   // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment to account for the starting
   // angle differences between SVG (top) vs traditional polar coordinates (right). The adjustment
   // is repeated here for coordinate consistency.
@@ -28,4 +28,12 @@ export function degreesToRadians(deg) {
 export function radiansToDegrees(rad) {
   // degrees = radians * (180/pi)
   return rad * (180 / PI);
+}
+
+export function arcBisect(startAngle, endAngle) {
+  return ((endAngle - startAngle) / 2 + startAngle);
+}
+
+export function wedgeBisect(d) {
+  return arcBisect(d.startAngle, d.endAngle);
 }

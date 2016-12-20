@@ -1,4 +1,4 @@
-import { getCoord } from './polar';
+import { getPolarCoord } from '../tools/polar';
 
 // Arc is a `d3.arc()` object.
 // Expects `from` and `to` to be `{ startAngle: <number>, endAngle: <number> }`
@@ -17,7 +17,7 @@ export function arcLabelTween(from, to, defaultRadius = 0) {
 
   return function(t) {
     const v = i(t);
-    const coord = getCoord(v.radius, v.angle);
+    const coord = getPolarCoord(v.radius, v.angle);
     const rotate = v.rotate || 0;
 
     return `translate(${coord}) rotate(${rotate})`;
