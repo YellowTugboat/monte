@@ -1,6 +1,6 @@
 {
   "name": "monte",
-  "version": "0.0.0-alpha23",
+  "version": "0.0.0-alpha24",
   "author": {
     "name": "Yellow Tugboat",
     "url": "http://www.yellowtugboat.com"
@@ -45,7 +45,7 @@
   "devDependencies": {
     "babel-cli": "6",
     "babel-plugin-lodash": "3.2",
-    "babel-preset-es2015-rollup": "1",
+    "babel-preset-es2015-rollup": "3",
     "browser-run": "^3.2.0",
     "browserify": "^13.1.0",
     "d3": "4",
@@ -56,7 +56,7 @@
     "lodash": "4",
     "lodash-es": "4",
     "nodemon": "^1.9",
-    "rollup": "^0.36",
+    "rollup": "^0.37",
     "rollup-plugin-babel": "2",
     "rollup-plugin-node-resolve": "2",
     "rollup-plugin-uglify": "1",

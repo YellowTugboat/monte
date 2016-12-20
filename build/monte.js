@@ -1,11 +1,11 @@
-// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha23 Copyright 2016 Yellow Tugboat
+// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha24 Copyright 2016 Yellow Tugboat
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
     (factory((global.monte = global.monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha23";
+var version = "0.0.0-alpha24";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -198,6 +198,8 @@ var CSS_DOMAINS_RESETTING = 'cssDomainsResetting';
 var CSS_DOMAINS_RESET = 'cssDomainsReset';
 
 var INTERACTION_EVENTS = [CLICK, TOUCHSTART, TOUCHEND, MOUSEOVER, MOUSEOUT];
+var INTERACTION_SHOW_EVENTS = [TOUCHSTART, MOUSEOVER];
+var INTERACTION_HIDE_EVENTS = [TOUCHEND, MOUSEOUT];
 
 // Support events
 var CHART_SUPPORT_EVENTS = [SUPPRESSED_ERROR, EXTENSION];
@@ -943,6 +945,56 @@ function createCompounder(callback) {
     return arrayReduce(words(deburr(string).replace(reApos, '')), callback, '');
   };
 }
+
+/**
+ * Converts `string` to
+ * [snake case](https://en.wikipedia.org/wiki/Snake_case).
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category String
+ * @param {string} [string=''] The string to convert.
+ * @returns {string} Returns the snake cased string.
+ * @example
+ *
+ * _.snakeCase('Foo Bar');
+ * // => 'foo_bar'
+ *
+ * _.snakeCase('fooBar');
+ * // => 'foo_bar'
+ *
+ * _.snakeCase('--FOO-BAR--');
+ * // => 'foo_bar'
+ */
+var snakeCase$1 = createCompounder(function (result, word, index) {
+  return result + (index ? '_' : '') + word.toLowerCase();
+});
+
+/**
+ * Converts `string` to
+ * [kebab case](https://en.wikipedia.org/wiki/Letter_case#Special_case_styles).
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category String
+ * @param {string} [string=''] The string to convert.
+ * @returns {string} Returns the kebab cased string.
+ * @example
+ *
+ * _.kebabCase('Foo Bar');
+ * // => 'foo-bar'
+ *
+ * _.kebabCase('fooBar');
+ * // => 'foo-bar'
+ *
+ * _.kebabCase('__FOO_BAR__');
+ * // => 'foo-bar'
+ */
+var kebabCase$1 = createCompounder(function (result, word, index) {
+  return result + (index ? '-' : '') + word.toLowerCase();
+});
 
 /**
  * Converts the first character of `string` to upper case and the remaining
@@ -4019,8 +4071,8 @@ var isEqual = isEqual$1;
 // String manipulation
 // Used for CSS and class method names
 var camelCase = camelCase$1;
-
-
+var kebabCase = kebabCase$1;
+var snakeCase = snakeCase$1;
 var upperFirst = upperFirst$1;
 
 var undef = void 0;
@@ -4058,10 +4110,16 @@ var MonteError = function (_Error) {
   function MonteError(message) {
     classCallCheck(this, MonteError);
 
-    var _this = possibleConstructorReturn(this, (MonteError.__proto__ || Object.getPrototypeOf(MonteError)).call(this, message));
+    for (var _len = arguments.length, msgs = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+      msgs[_key - 1] = arguments[_key];
+    }
+
+    var msg = [message].concat(msgs).join(' ');
+
+    var _this = possibleConstructorReturn(this, (MonteError.__proto__ || Object.getPrototypeOf(MonteError)).call(this, msg));
 
     _this.name = _this.constructor.name;
-    _this.message = message;
+    _this.message = msg;
 
     if (typeof Error.captureStackTrace === 'function') {
       Error.captureStackTrace(_this, _this.constructor);
@@ -4074,14 +4132,22 @@ var MonteError = function (_Error) {
   createClass(MonteError, null, [{
     key: 'UnimplementedMethod',
     value: function UnimplementedMethod(method, methodName) {
-      var sourceType = arguments.length <= 2 || arguments[2] === undefined ? 'chart' : arguments[2];
+      var sourceType = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'chart';
 
-      return new MonteError(method + ' (`' + methodName + '`) needs to be defined in order for the ' + sourceType + ' to be useful.');
+      for (var _len2 = arguments.length, msgs = Array(_len2 > 3 ? _len2 - 3 : 0), _key2 = 3; _key2 < _len2; _key2++) {
+        msgs[_key2 - 3] = arguments[_key2];
+      }
+
+      return new (Function.prototype.bind.apply(MonteError, [null].concat([method + ' (`' + methodName + '`) needs to be defined in order for the ' + sourceType + ' to be useful.'], msgs)))();
     }
   }, {
     key: 'InvalidArgumentType',
     value: function InvalidArgumentType(methodName, argumentName, expectedType, received) {
-      return new MonteError('Method (' + methodName + ') argument "' + argumentName + '" of unexpected type. Expected ' + expectedType + ', but was given ' + received + '.');
+      for (var _len3 = arguments.length, msgs = Array(_len3 > 4 ? _len3 - 4 : 0), _key3 = 4; _key3 < _len3; _key3++) {
+        msgs[_key3 - 4] = arguments[_key3];
+      }
+
+      return new (Function.prototype.bind.apply(MonteError, [null].concat(['Method (' + methodName + ') argument "' + argumentName + '" of unexpected type. Expected ' + expectedType + ', but was given ' + received + '.'], msgs)))();
     }
   }]);
   return MonteError;
@@ -4191,12 +4257,20 @@ var MonteOptionError = function (_MonteError) {
   createClass(MonteOptionError, null, [{
     key: 'RequiredOption',
     value: function RequiredOption(optionName) {
-      return new MonteError('Option "' + optionName + '" is required.');
+      for (var _len = arguments.length, msgs = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        msgs[_key - 1] = arguments[_key];
+      }
+
+      return new (Function.prototype.bind.apply(MonteError, [null].concat(['Option "' + optionName + '" is required.'], msgs)))();
     }
   }, {
     key: 'InvalidEnumOption',
     value: function InvalidEnumOption(optionName, badValue) {
-      return new MonteError('Option "' + optionName + '" must be set to a valid option. The value "' + badValue + '" is not valid.');
+      for (var _len2 = arguments.length, msgs = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
+        msgs[_key2 - 2] = arguments[_key2];
+      }
+
+      return new (Function.prototype.bind.apply(MonteError, [null].concat(['Option "' + optionName + '" must be set to a valid option. The value "' + badValue + '" is not valid.'], msgs)))();
     }
   }]);
   return MonteOptionError;
@@ -4476,7 +4550,7 @@ var EventWatcher = function () {
   }, {
     key: 'timeoutDelay',
     value: function timeoutDelay() {
-      var timeoutDelayMs = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+      var timeoutDelayMs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
 
       if (timeoutDelayMs === null) {
         return this.opts.timeoutDelayMs;
@@ -4588,7 +4662,7 @@ var DEFAULTS = {
 
   // When a `clear` occurs (by direct invocation or via `data` (without an update)) the domain is
   // automatically reset.
-  autoResetCssDomains: true,
+  autoResetStyleDomains: true,
 
   // Indicates that the chart base is being used directly in a client script chart (an "on the
   // fly" chart). The assumption is most of the time other classes will extend and implement
@@ -4800,8 +4874,8 @@ var Chart = function () {
     value: function _updateBounds() {
       var _this3 = this;
 
-      var suppressNotify = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
-      var suppressUpdate = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+      var suppressNotify = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      var suppressUpdate = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
       this.__notify(UPDATING_BOUNDS);
 
@@ -4910,7 +4984,7 @@ var Chart = function () {
   }, {
     key: 'layerUseClipPath',
     value: function layerUseClipPath(layerName) {
-      var pathId = arguments.length <= 1 || arguments[1] === undefined ? CLIP_PATH_ID : arguments[1];
+      var pathId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : CLIP_PATH_ID;
 
       this[layerName].attr('clip-path', 'url(#' + pathId + ')');
 
@@ -5141,7 +5215,7 @@ var Chart = function () {
   }, {
     key: 'getProp',
     value: function getProp(propShortName, d) {
-      var defaultValue = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
+      var defaultValue = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
 
       var propFullName = propShortName + 'Prop';
       var dataPropName = this.opts[propFullName];
@@ -5212,8 +5286,8 @@ var Chart = function () {
       this.displayData = null;
       this._clearDataElements();
 
-      if (this.opts.autoResetCssDomains) {
-        this.resetCssDomains();
+      if (this.opts.autoResetStyleDomains) {
+        this.resetStyleDomains();
       }
 
       this.__notify(CLEARED);
@@ -5235,22 +5309,22 @@ var Chart = function () {
      */
 
   }, {
-    key: 'resetCssDomains',
-    value: function resetCssDomains() {
+    key: 'resetStyleDomains',
+    value: function resetStyleDomains() {
       this.__notify(CSS_DOMAINS_RESETTING);
-      this._resetCssDomains();
+      this._resetStyleDomains();
       this.__notify(CSS_DOMAINS_RESET);
 
       return this;
     }
 
     /**
-     * Internal implementation of the `resetCssDomains` method.
+     * Internal implementation of the `resetStyleDomains` method.
      */
 
   }, {
-    key: '_resetCssDomains',
-    value: function _resetCssDomains() {}
+    key: '_resetStyleDomains',
+    value: function _resetStyleDomains() {}
 
     /**
      * Builds a string of class names to insert into a `class` attribute on a DOM element (typically
@@ -5299,11 +5373,10 @@ var Chart = function () {
       }
 
       return function (transition) {
-        var _transitionSettings2 = _this6._transitionSettings.apply(_this6, levels);
-
-        var duration = _transitionSettings2.duration;
-        var delay = _transitionSettings2.delay;
-        var ease = _transitionSettings2.ease;
+        var _transitionSettings2 = _this6._transitionSettings.apply(_this6, levels),
+            duration = _transitionSettings2.duration,
+            delay = _transitionSettings2.delay,
+            ease = _transitionSettings2.ease;
 
         transition.duration(duration).delay(delay).ease(ease);
       };
@@ -5311,9 +5384,9 @@ var Chart = function () {
   }, {
     key: '_transitionConfigure',
     value: function _transitionConfigure(transition, transitionSettings, d, i, nodes) {
-      var duration = transitionSettings.duration;
-      var delay = transitionSettings.delay;
-      var ease = transitionSettings.ease;
+      var duration = transitionSettings.duration,
+          delay = transitionSettings.delay,
+          ease = transitionSettings.ease;
 
 
       transition.duration(this.tryInvoke(duration, d, i, nodes)).delay(this.tryInvoke(delay, d, i, nodes)).ease(ease);
@@ -5335,7 +5408,7 @@ var Chart = function () {
     }
 
     /**
-     * Get / set the attribute of the bounding element.
+     * Get / set an attribute of the bounding element.
      *
      * A convenience method that is roughly equivalent to `<chart>.bound.attr(<name>, <value>)`,
      * but returns the chart instead of the `<chart>.bound` selection.
@@ -5347,11 +5420,31 @@ var Chart = function () {
     key: 'attr',
     value: function attr(name, value) {
       if (value === UNDEF) {
-        // return this attib
         return this.bound.attr(name);
       }
 
       this.bound.attr(name, value);
+
+      return this;
+    }
+
+    /**
+     * Get / set a style of the bounding element.
+     *
+     * A convenience method that is roughly equivalent to `<chart>.bound.style(<name>, <value>)`,
+     * but returns the chart instead of the `<chart>.bound` selection.
+     *
+     * @Chainable
+     */
+
+  }, {
+    key: 'style',
+    value: function style(name, value) {
+      if (value === UNDEF) {
+        return this.bound.style(name);
+      }
+
+      this.bound.style(name, value);
 
       return this;
     }
@@ -5416,8 +5509,8 @@ var Chart = function () {
   }, {
     key: 'data',
     value: function data(_data) {
-      var isUpdate = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
-      var suppressUpdate = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+      var isUpdate = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      var suppressUpdate = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
       if (_data === UNDEF) {
         // No data to assign return the current data.
@@ -5689,7 +5782,7 @@ var Chart = function () {
   return Chart;
 }();
 
-var GROUP_PROXY_METHODS = ['addExt', 'addLayer', 'boundingRect', 'call', 'checkSize', 'classed', 'clear', 'data', 'emit', 'layerUseClipPath', 'on', 'option', 'replaceScale', 'resetCssDomains', 'update', 'updateData'];
+var GROUP_PROXY_METHODS = ['addExt', 'addLayer', 'boundingRect', 'call', 'checkSize', 'classed', 'clear', 'data', 'emit', 'layerUseClipPath', 'on', 'option', 'replaceScale', 'resetStyleDomains', 'update', 'updateData'];
 
 var EVENT_AXIS_PRERENDER = 'axisPrerender';
 var EVENT_AXIS_RENDERING = 'axisRendering';
@@ -6236,9 +6329,9 @@ var LineChart = function (_AxesChart) {
       return extent;
     }
   }, {
-    key: '_resetCssDomains',
-    value: function _resetCssDomains() {
-      get(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_resetCssDomains', this).call(this);
+    key: '_resetStyleDomains',
+    value: function _resetStyleDomains() {
+      get(LineChart.prototype.__proto__ || Object.getPrototypeOf(LineChart.prototype), '_resetStyleDomains', this).call(this);
 
       resetScaleDomain(this.opts.lineStrokeScale);
       resetScaleDomain(this.opts.lineCssScale);
@@ -6466,9 +6559,9 @@ var AreaChart = function (_LineChart) {
       (_babelHelpers$get2 = get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('area'))));
     }
   }, {
-    key: '_resetCssDomains',
-    value: function _resetCssDomains() {
-      get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_resetCssDomains', this).call(this);
+    key: '_resetStyleDomains',
+    value: function _resetStyleDomains() {
+      get(AreaChart.prototype.__proto__ || Object.getPrototypeOf(AreaChart.prototype), '_resetStyleDomains', this).call(this);
 
       resetScaleDomain(this.opts.areaCssScale);
       resetScaleDomain(this.opts.areaFillScaleAccessor);
@@ -6686,9 +6779,9 @@ var BarChart = function (_AxesChart) {
       return extent;
     }
   }, {
-    key: '_resetCssDomains',
-    value: function _resetCssDomains() {
-      get(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_resetCssDomains', this).call(this);
+    key: '_resetStyleDomains',
+    value: function _resetStyleDomains() {
+      get(BarChart.prototype.__proto__ || Object.getPrototypeOf(BarChart.prototype), '_resetStyleDomains', this).call(this);
 
       resetScaleDomain(this.opts.barCssScale);
       resetScaleDomain(this.opts.barFillScale);
@@ -7280,9 +7373,9 @@ var SegmentBarChart = function (_AxesChart) {
       return extent;
     }
   }, {
-    key: '_resetCssDomains',
-    value: function _resetCssDomains() {
-      get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_resetCssDomains', this).call(this);
+    key: '_resetStyleDomains',
+    value: function _resetStyleDomains() {
+      get(SegmentBarChart.prototype.__proto__ || Object.getPrototypeOf(SegmentBarChart.prototype), '_resetStyleDomains', this).call(this);
 
       resetScaleDomain(this.opts.barSegCssScale);
       resetScaleDomain(this.opts.barSegFillScale);
@@ -7876,9 +7969,9 @@ var ScatterPlot = function (_AxesChart) {
       return extent;
     }
   }, {
-    key: '_resetCssDomains',
-    value: function _resetCssDomains() {
-      get(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_resetCssDomains', this).call(this);
+    key: '_resetStyleDomains',
+    value: function _resetStyleDomains() {
+      get(ScatterPlot.prototype.__proto__ || Object.getPrototypeOf(ScatterPlot.prototype), '_resetStyleDomains', this).call(this);
 
       resetScaleDomain(this.opts.pointCssScale);
       resetScaleDomain(this.opts.pointFillScale);
@@ -8031,9 +8124,9 @@ var IconArray = function (_AxesChart) {
       (_babelHelpers$get2 = get(IconArray.prototype.__proto__ || Object.getPrototypeOf(IconArray.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('icon'))));
     }
   }, {
-    key: '_resetCssDomains',
-    value: function _resetCssDomains() {
-      get(IconArray.prototype.__proto__ || Object.getPrototypeOf(IconArray.prototype), '_resetCssDomains', this).call(this);
+    key: '_resetStyleDomains',
+    value: function _resetStyleDomains() {
+      get(IconArray.prototype.__proto__ || Object.getPrototypeOf(IconArray.prototype), '_resetStyleDomains', this).call(this);
 
       resetScaleDomain(this.opts.iconCssScale);
       resetScaleDomain(this.opts.iconFillScale);
@@ -8132,7 +8225,7 @@ var IconArray = function (_AxesChart) {
     value: function _updateCommon(type, icons, transform) {
       var _this5 = this;
 
-      var merge = arguments.length <= 3 || arguments[3] === undefined ? noop : arguments[3];
+      var merge = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : noop;
 
       var t = icons.enter().append(type).call(this.__bindCommonEvents('icon')).merge(icons).each(merge).attr('transform', function (d, i, nodes) {
         return transform.call(_this5, d, i, nodes);
@@ -8187,7 +8280,7 @@ function areCoterminalAngles(a1, a2) {
 }
 
 // Placement on an arc given an radius and angle, (cos(a) * r, sin(a) * r)
-function getCoord(radius, angle) {
+function getPolarCoord(radius, angle) {
   // In d3-shape the arc `centroid` function uses a 1/2 PI adjustment to account for the starting
   // angle differences between SVG (top) vs traditional polar coordinates (right). The adjustment
   // is repeated here for coordinate consistency.
@@ -8198,11 +8291,22 @@ function getCoord(radius, angle) {
 // * conversion between Radians (rad) and Degrees (deg)
 //    -- Also add support for CSS values like `turn` and `grad` (gradians)???
 
-
+function degreesToRadians(deg) {
+  // radians = degrees * (pi/180)
+  return deg * (PI / 180);
+}
 
 function radiansToDegrees(rad) {
   // degrees = radians * (180/pi)
   return rad * (180 / PI);
+}
+
+function arcBisect(startAngle, endAngle) {
+  return (endAngle - startAngle) / 2 + startAngle;
+}
+
+function wedgeBisect(d) {
+  return arcBisect(d.startAngle, d.endAngle);
 }
 
 // Arc is a `d3.arc()` object.
@@ -8217,7 +8321,7 @@ function arcSimpleTween(arc, from, to) {
 
 // Expects `from` and `to` to be `{ angle: <number>, radius: <number>, rotate: <number> }`
 function arcLabelTween(from, to) {
-  var defaultRadius = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+  var defaultRadius = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
 
   if (!from) {
     from = { angle: 0, radius: defaultRadius, rotate: 0 };
@@ -8226,7 +8330,7 @@ function arcLabelTween(from, to) {
 
   return function (t) {
     var v = i(t);
-    var coord = getCoord(v.radius, v.angle);
+    var coord = getPolarCoord(v.radius, v.angle);
     var rotate = v.rotate || 0;
 
     return 'translate(' + coord + ') rotate(' + rotate + ')';
@@ -8381,59 +8485,6 @@ function polarLabelOuterAdjust(adjust) {
   };
 }
 
-// TODO: Add `css` to all rotations
-function polarLabelRotateTangentOrigin(d) {
-  var datum = getDatum(d);
-  var angle = (datum.endAngle - datum.startAngle) / 2 + datum.startAngle;
-
-  return angle;
-}
-
-function polarLabelRotateTangentFlip(d) {
-  var datum = getDatum(d);
-  var angle = (datum.endAngle - datum.startAngle) / 2 + datum.startAngle;
-
-  var absAngle = Math.abs(angle);
-  if (absAngle > HALF_PI && absAngle <= 3 * HALF_PI) {
-    angle -= PI;
-  }
-
-  return angle;
-}
-
-function polarLabelRotateRay(d) {
-  var datum = getDatum(d);
-  var angle = (datum.endAngle - d.startAngle) / 2 + datum.startAngle - HALF_PI;
-
-  return angle;
-}
-
-function polarLabelRotateRayOpposite(d) {
-  var datum = getDatum(d);
-  var angle = (datum.endAngle - d.startAngle) / 2 + datum.startAngle - HALF_PI - PI;
-
-  return angle;
-}
-
-function polarLabelRotateRayFlip(d) {
-  var datum = getDatum(d);
-  var angle = (datum.endAngle - datum.startAngle) / 2 + datum.startAngle;
-
-  if (angle <= 0 && angle >= -PI || angle > PI) {
-    // Right side of circle
-    return angle + HALF_PI;
-  } else if (angle > 0 && angle <= PI || angle < -PI) {
-    // Left side of circle
-    return angle - HALF_PI;
-  }
-
-  return angle;
-}
-
-function getDatum(d) {
-  return isNumeric(+d) ? { startAngle: d, endAngle: d } : d;
-}
-
 function classedPattern(selection, pattern, value) {
   var node = selection.node();
   var classAttr = node.getAttribute('class');
@@ -8454,6 +8505,113 @@ function classedPattern(selection, pattern, value) {
       selection.classed(c, value);
     }
   });
+}
+
+// Return the datum if it is an object, but if the value is a number (or coercible to a number) than
+// create a new object with the expected `startAngle` and `endAngle` properties.
+function getDatum(d) {
+  return isNumeric(+d) ? { startAngle: d, endAngle: d } : d;
+}
+
+//
+//
+// Base Rotations
+//
+//
+function baseLabelRotateTangentOrigin(angle) {
+  return angle;
+}
+
+function baseLabelRotateTangentFlip(angle) {
+  var absAngle = Math.abs(angle);
+
+  if (absAngle > HALF_PI && absAngle <= 3 * HALF_PI) {
+    angle -= PI;
+  }
+
+  return angle;
+}
+
+function baseLabelRotateRay(angle) {
+  return angle - HALF_PI;
+}
+function baseLabelRotateRayOpposite(angle) {
+  return angle - HALF_PI - PI;
+}
+
+function baseLabelRotateRayFlip(angle) {
+  if (angle <= 0 && angle >= -PI || angle > PI) {
+    // Right side of circle
+    return angle + HALF_PI;
+  } else if (angle > 0 && angle <= PI || angle < -PI) {
+    // Left side of circle
+    return angle - HALF_PI;
+  }
+
+  return angle;
+}
+
+function baseLabelRotateNone() {
+  return 0;
+}
+
+//
+//
+// Polar Chart Rotations
+//
+//
+// TODO: Add `css` to all rotations
+function polarLabelRotateTangentOrigin(d) {
+  return baseLabelRotateTangentOrigin(wedgeBisect(getDatum(d)));
+}
+
+function polarLabelRotateTangentFlip(d) {
+  return baseLabelRotateTangentFlip(wedgeBisect(getDatum(d)));
+}
+
+function polarLabelRotateRay(d) {
+  return baseLabelRotateRay(wedgeBisect(getDatum(d)));
+}
+
+function polarLabelRotateRayOpposite(d) {
+  return baseLabelRotateRayOpposite(wedgeBisect(getDatum(d)));
+}
+
+function polarLabelRotateRayFlip(d) {
+  return baseLabelRotateRayFlip(wedgeBisect(getDatum(d)));
+}
+
+function polarLabelRotateNone() {
+  return baseLabelRotateNone();
+}
+
+//
+//
+// Gauge Chart Rotations
+//
+//
+function gaugeLabelRotateTangentOrigin(d) {
+  return baseLabelRotateTangentOrigin(getDatum(d).endAngle);
+}
+
+function gaugeLabelRotateTangentFlip(d) {
+  return baseLabelRotateTangentFlip(getDatum(d).endAngle);
+}
+
+function gaugeLabelRotateRay(d) {
+  return baseLabelRotateRay(getDatum(d).endAngle);
+}
+
+function gaugeLabelRotateRayOpposite(d) {
+  return baseLabelRotateRayOpposite(getDatum(d).endAngle);
+}
+
+function gaugeLabelRotateRayFlip(d) {
+  return baseLabelRotateRayFlip(getDatum(d).endAngle);
+}
+
+function gaugeLabelRotateNone() {
+  return baseLabelRotateNone();
 }
 
 // Constrain to smallest draw-area dimension
@@ -8624,9 +8782,9 @@ var ArcChart = function (_PolarChart) {
       (_babelHelpers$get2 = get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_initPublicEvents', this)).call.apply(_babelHelpers$get2, [this].concat(events, toConsumableArray(commonEventNames('wedge')), EVENTS$3));
     }
   }, {
-    key: '_resetCssDomains',
-    value: function _resetCssDomains() {
-      get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_resetCssDomains', this).call(this);
+    key: '_resetStyleDomains',
+    value: function _resetStyleDomains() {
+      get(ArcChart.prototype.__proto__ || Object.getPrototypeOf(ArcChart.prototype), '_resetStyleDomains', this).call(this);
 
       resetScaleDomain(this.opts.arcWedgeCssScale);
       resetScaleDomain(this.opts.arcWedgeFillScale);
@@ -8753,7 +8911,7 @@ var ArcChart = function (_PolarChart) {
       var radius = this.tryInvoke(labelRadius, d, i, nodes);
       var angle = this.tryInvoke(this.opts.labelAngle, d, i, nodes);
       var rotate = radiansToDegrees(this.tryInvoke(this.opts.labelRotation, d, i, nodes));
-      var coord = getCoord(radius, angle);
+      var coord = getPolarCoord(radius, angle);
 
       lbl.enter().append('text').attr('class', 'monte-arc-label').attr('dx', function (d1) {
         return _this6.tryInvoke(_this6.opts.labelXAdjust, d1, i, nodes);
@@ -8910,6 +9068,7 @@ var GAUGE_CHART_DEFAULTS = {
     return radiusContrain(w, h) * 0.9;
   },
   labelPlacement: polarLabelInner,
+  labelRotation: gaugeLabelRotateNone,
 
   segmentsProp: 'segments',
   itemValueProp: 'interval',
@@ -8983,9 +9142,9 @@ var GaugeChart = function (_ArcChart) {
       return 'translate(' + l + ', ' + t + ')';
     }
   }, {
-    key: '_resetCssDomains',
-    value: function _resetCssDomains() {
-      get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_resetCssDomains', this).call(this);
+    key: '_resetStyleDomains',
+    value: function _resetStyleDomains() {
+      get(GaugeChart.prototype.__proto__ || Object.getPrototypeOf(GaugeChart.prototype), '_resetStyleDomains', this).call(this);
 
       resetScaleDomain(this.opts.arcBgCssScaleAccessor);
       resetScaleDomain(this.opts.arcBgFillScaleAccessor);
@@ -9021,7 +9180,7 @@ var GaugeChart = function (_ArcChart) {
   }, {
     key: 'needleValue',
     value: function needleValue(value) {
-      var suppressUpdate = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+      var suppressUpdate = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
       if (value === UNDEF) {
         return this.needleValueData;
@@ -9141,6 +9300,7 @@ var POLAR_AREA_CHART_DEFAULTS = {
 
     return [ir, maxOuterRadius];
   },
+
   outerRadiusDomainCustomize: function outerRadiusDomainCustomize(extent) {
     return [0, extent[1]];
   },
@@ -9415,10 +9575,10 @@ var polar = Object.freeze({
 
 
 var index = Object.freeze({
-	D3: d3$1,
-	DIRECTION: direction,
-	MATH: math,
-	POLAR: polar,
+	d3: d3$1,
+	direction: direction,
+	math: math,
+	polar: polar,
 	CLICK: CLICK,
 	TOUCHSTART: TOUCHSTART,
 	TOUCHEND: TOUCHEND,
@@ -9441,6 +9601,8 @@ var index = Object.freeze({
 	CSS_DOMAINS_RESETTING: CSS_DOMAINS_RESETTING,
 	CSS_DOMAINS_RESET: CSS_DOMAINS_RESET,
 	INTERACTION_EVENTS: INTERACTION_EVENTS,
+	INTERACTION_SHOW_EVENTS: INTERACTION_SHOW_EVENTS,
+	INTERACTION_HIDE_EVENTS: INTERACTION_HIDE_EVENTS,
 	CHART_SUPPORT_EVENTS: CHART_SUPPORT_EVENTS,
 	CHART_LIFECYCLE_EVENTS: CHART_LIFECYCLE_EVENTS,
 	EXTENSION_LIFECYCLE_EVENTS: EXTENSION_LIFECYCLE_EVENTS,
@@ -9481,6 +9643,8 @@ var Extension = function () {
     this._initOptions(options);
 
     this._initPublicEvents.apply(this, toConsumableArray(EXTENSION_LIFECYCLE_EVENTS).concat(toConsumableArray(this.opts.customEvents)));
+
+    this.lastUpdateEvent = '';
   }
 
   createClass(Extension, [{
@@ -9678,6 +9842,7 @@ var Extension = function () {
             break;
 
           default:
+            this.lastUpdateEvent = event;
             this.update.apply(this, args);
         }
       } catch (e) {
@@ -9783,7 +9948,7 @@ var Extension = function () {
   }, {
     key: 'getProp',
     value: function getProp(propShortName, d) {
-      var defaultValue = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
+      var defaultValue = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
 
       var propFullName = propShortName + 'Prop';
       var dataPropName = this.opts[propFullName];
@@ -9865,6 +10030,15 @@ var Extension = function () {
     key: 'toString',
     value: function toString() {
       return this.constructor.name;
+    }
+  }], [{
+    key: 'featureEventName',
+    value: function featureEventName(featurePrefix, eventName) {
+      if (featurePrefix === 'chart') {
+        return eventName;
+      }
+
+      return featurePrefix + ':' + eventName;
     }
   }]);
   return Extension;
@@ -9961,13 +10135,25 @@ var index$1 = Object.freeze({
 	isNumeric: isNumeric,
 	isObject: isObject$2,
 	isString: isString,
+	commonEventNames: commonEventNames,
 	compose: compose,
 	getDepthFirst: getDepthFirst,
 	mergeOptions: mergeOptions,
 	ReplacePreceding: ReplacePreceding,
 	noop: noop,
 	readTransforms: readTransforms,
-	resetScaleDomain: resetScaleDomain
+	resetScaleDomain: resetScaleDomain,
+	camelCase: camelCase,
+	kebabCase: kebabCase,
+	snakeCase: snakeCase,
+	pascalCase: pascalCase,
+	upperFirst: upperFirst,
+	areCoterminalAngles: areCoterminalAngles,
+	getPolarCoord: getPolarCoord,
+	degreesToRadians: degreesToRadians,
+	radiansToDegrees: radiansToDegrees,
+	arcBisect: arcBisect,
+	wedgeBisect: wedgeBisect
 });
 
 var AXIS_LABEL_DEFAULTS = {
@@ -10053,6 +10239,179 @@ function wrap(text, width, lineHeightEm) {
   });
 }
 
+var CROSSHAIR_DEFAULTS = {
+  featurePrefix: 'point',
+  eventPrefix: 'crosshair',
+  crosshairCss: 'monte-ext-crosshair',
+  lines: ['bottom', 'left'],
+  alignmentShift: AXIS_SHIFT, // Use a slight shift to match default d3-axis drawing.
+  showBindings: INTERACTION_SHOW_EVENTS,
+  hideBindings: INTERACTION_HIDE_EVENTS,
+  topCustomize: noop,
+  leftCustomize: noop,
+  rightCustomize: noop,
+  bottomCustomize: noop
+};
+
+// Draws lines connecting a chart feature to axes and/or chart edges.
+var Crosshair = function (_Extension) {
+  inherits(Crosshair, _Extension);
+
+  function Crosshair() {
+    classCallCheck(this, Crosshair);
+    return possibleConstructorReturn(this, (Crosshair.__proto__ || Object.getPrototypeOf(Crosshair)).apply(this, arguments));
+  }
+
+  createClass(Crosshair, [{
+    key: '_initOptions',
+    value: function _initOptions() {
+      var _babelHelpers$get,
+          _this2 = this;
+
+      for (var _len = arguments.length, options = Array(_len), _key = 0; _key < _len; _key++) {
+        options[_key] = arguments[_key];
+      }
+
+      (_babelHelpers$get = get(Crosshair.prototype.__proto__ || Object.getPrototypeOf(Crosshair.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [CROSSHAIR_DEFAULTS]));
+
+      var showBindings = this.tryInvoke(this.opts.showBindings);
+      var hideBindings = this.tryInvoke(this.opts.hideBindings);
+      var featurePrefix = this.tryInvoke(this.opts.featurePrefix);
+      if (!isArray$2(featurePrefix)) {
+        featurePrefix = [featurePrefix];
+      }
+
+      this.showEvents = [];
+      this.hideEvents = [];
+
+      featurePrefix.forEach(function (fp) {
+        showBindings.forEach(function (ev) {
+          var fev = Extension.featureEventName(fp, ev);
+          _this2.opts.binding.push(fev);
+          _this2.showEvents.push(fev);
+        });
+
+        hideBindings.forEach(function (ev) {
+          var fev = Extension.featureEventName(fp, ev);
+          _this2.opts.binding.push(fev);
+          _this2.hideEvents.push(fev);
+        });
+      });
+    }
+  }, {
+    key: '_update',
+    value: function _update() {
+      var _this3 = this;
+
+      var ext = this;
+      var css = this.tryInvoke(this.opts.crosshairCss);
+      var linesToDraw = this.tryInvoke(this.opts.lines);
+      var lines = this._extCreateSelection().data(linesToDraw).order();
+      var shift = this.tryInvoke(this.opts.alignmentShift);
+      var coords = {
+        top: {
+          x1: function x1(d) {
+            return _this3.chart.getScaledProp('x', d) + shift;
+          },
+          y1: 0,
+          x2: function x2(d) {
+            return _this3.chart.getScaledProp('x', d) + shift;
+          },
+          y2: function y2(d) {
+            return _this3.chart.getScaledProp('y', d);
+          }
+        },
+
+        left: {
+          x1: 0,
+          y1: function y1(d) {
+            return _this3.chart.getScaledProp('y', d) + shift;
+          },
+          x2: function x2(d) {
+            return _this3.chart.getScaledProp('x', d);
+          },
+          y2: function y2(d) {
+            return _this3.chart.getScaledProp('y', d) + shift;
+          }
+        },
+
+        right: {
+          x1: function x1(d) {
+            return _this3.chart.getScaledProp('x', d);
+          },
+          y1: function y1(d) {
+            return _this3.chart.getScaledProp('y', d) + shift;
+          },
+          x2: this.chart.width,
+          y2: function y2(d) {
+            return _this3.chart.getScaledProp('y', d) + shift;
+          }
+        },
+
+        bottom: {
+          x1: function x1(d) {
+            return _this3.chart.getScaledProp('x', d) + shift;
+          },
+          y1: this.chart.height,
+          x2: function x2(d) {
+            return _this3.chart.getScaledProp('x', d) + shift;
+          },
+          y2: function y2(d) {
+            return _this3.chart.getScaledProp('y', d);
+          }
+        }
+      };
+
+      if (this.lastUpdateEvent === 'updated') {
+        lines.enter().append('line').call(this._setExtAttrs.bind(this)).attr('opacity', 0).attr('class', css);
+
+        if (this.activeFeatureDatum) {
+          lines.transition().call(this.chart._transitionSetup('extCrosshair', UPDATE)).each(setLinePoints);
+        }
+
+        lines.exit().transition().call(this.chart._transitionSetup('extCrosshair', EXIT)).attr('opacity', 0).remove();
+      } else if (this.isShowEvent(this.lastUpdateEvent)) {
+        var featureDatum = arguments.length <= 0 ? undefined : arguments[0];
+        this.activeFeatureDatum = featureDatum;
+
+        lines.interrupt().attr('opacity', 1).each(setLinePoints);
+      } else if (this.isHideEvent(this.lastUpdateEvent)) {
+        this.activeFeatureDatum = null;
+        lines.interrupt().attr('opacity', 0);
+      }
+
+      // Function is invoked in the `d3.each` context (i.e. `this` is the current element)
+      function setLinePoints(d) {
+        var node = d3.select(this);
+        var customize = ext.opts[d + 'Customize'];
+        var points = {
+          x1: ext.tryInvoke(coords[d].x1, ext.activeFeatureDatum),
+          y1: ext.tryInvoke(coords[d].y1, ext.activeFeatureDatum),
+          x2: ext.tryInvoke(coords[d].x2, ext.activeFeatureDatum),
+          y2: ext.tryInvoke(coords[d].y2, ext.activeFeatureDatum)
+        };
+
+        if (isDefined(customize) && isFunc(customize) && customize !== noop) {
+          points = ext.tryInvoke(customize, points);
+        }
+
+        node.attr('x1', points.x1).attr('y1', points.y1).attr('x2', points.x2).attr('y2', points.y2);
+      }
+    }
+  }, {
+    key: 'isShowEvent',
+    value: function isShowEvent(event) {
+      return this.showEvents.indexOf(event) > -1;
+    }
+  }, {
+    key: 'isHideEvent',
+    value: function isHideEvent(event) {
+      return this.hideEvents.indexOf(event) > -1;
+    }
+  }]);
+  return Crosshair;
+}(Extension);
+
 var FRAME_DEFAULTS = {
   eventPrefix: 'frame',
   frameLineCss: 'monte-ext-frame-line',
@@ -10088,9 +10447,10 @@ var Frame = function (_Extension) {
     key: '_update',
     value: function _update() {
       var chart = this.chart;
-      var css = this.opts.frameLineCss;
-      var edges = this._extCreateSelection().data(this.opts.edges).order();
-      var shift = this.opts.alignmentShift;
+      var css = this.tryInvoke(this.opts.frameLineCss);
+      var edgesToDraw = this.tryInvoke(this.opts.edges);
+      var edges = this._extCreateSelection().data(edgesToDraw).order();
+      var shift = this.tryInvoke(this.opts.alignmentShift);
       var coords = {
         top: [[0 + shift, 0 + shift], [chart.width + shift, 0 + shift]],
         right: [[chart.width + shift, 0 + shift], [chart.width + shift, chart.height + shift]],
@@ -10494,8 +10854,10 @@ var PolarLine = function (_Extension) {
 
       (_babelHelpers$get = get(PolarLine.prototype.__proto__ || Object.getPrototypeOf(PolarLine.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_LINE_DEFAULTS]));
 
-      this.innerArc = d3.arc().innerRadius(this.opts.innerRadius).outerRadius(this.opts.innerRadius);
-      this.outerArc = d3.arc().innerRadius(this.opts.outerRadius).outerRadius(this.opts.outerRadius);
+      var innerRadius = this.tryInvoke(this.opts.innerRadius);
+      var outerRadius = this.tryInvoke(this.opts.outerRadius);
+      this.innerArc = d3.arc().innerRadius(innerRadius).outerRadius(innerRadius);
+      this.outerArc = d3.arc().innerRadius(outerRadius).outerRadius(outerRadius);
     }
   }, {
     key: '_update',
@@ -10604,8 +10966,10 @@ var PolarTicks = function (_Extension) {
 
       (_babelHelpers$get = get(PolarTicks.prototype.__proto__ || Object.getPrototypeOf(PolarTicks.prototype), '_initOptions', this)).call.apply(_babelHelpers$get, [this].concat(options, [POLAR_TICKS_DEFAULTS]));
 
-      this.innerArc = d3.arc().innerRadius(this.opts.innerRadius).outerRadius(this.opts.innerRadius);
-      this.outerArc = d3.arc().innerRadius(this.opts.outerRadius).outerRadius(this.opts.outerRadius);
+      var innerRadius = this.tryInvoke(this.opts.innerRadius);
+      var outerRadius = this.tryInvoke(this.opts.outerRadius);
+      this.innerArc = d3.arc().innerRadius(innerRadius).outerRadius(innerRadius);
+      this.outerArc = d3.arc().innerRadius(outerRadius).outerRadius(outerRadius);
     }
   }, {
     key: '_update',
@@ -10697,7 +11061,7 @@ var BarBg = function (_Extension) {
       var data = void 0;
 
       if (this.opts.data) {
-        data = this.opts.data;
+        data = this.tryInvoke(this.opts.data);
       } else {
         data = this._buildData(barChart, chartData);
       }
@@ -10990,9 +11354,11 @@ var ReferenceLine = function (_Extension) {
       }
 
       var lines = this._extCreateSelection().data(this.lineData);
+      var css = this.tryInvoke(this.opts.css);
+      var anchor = this.tryInvoke(this.opts.textAnchor);
 
       // Enter
-      var enter = lines.enter().append('g').call(this._setExtAttrs.bind(this)).attr('class', this.opts.css);
+      var enter = lines.enter().append('g').call(this._setExtAttrs.bind(this)).attr('class', css);
       enter.append('text');
       enter.append('line');
 
@@ -11008,7 +11374,7 @@ var ReferenceLine = function (_Extension) {
         return _this2.getProp('y2', d);
       });
 
-      update.select('text').attr('text-anchor', this.opts.textAnchor).text(function (d) {
+      update.select('text').attr('text-anchor', anchor).text(function (d) {
         return _this2.getProp('text', d);
       }).each(this._placeLabel.bind(this));
 
@@ -11200,6 +11566,7 @@ exports.MonteOptionError = MonteOptionError;
 exports.Extension = Extension;
 exports.ExtArc = Arc;
 exports.ExtAxisLabelWrap = AxisLabelWrap;
+exports.ExtCrosshair = Crosshair;
 exports.ExtFrame = Frame;
 exports.ExtGrid = Grid;
 exports.ExtHorizontalLines = HorizontalLines;
@@ -11235,11 +11602,18 @@ exports.polarLabelInnerFactor = polarLabelInnerFactor;
 exports.polarLabelOuter = polarLabelOuter;
 exports.polarLabelOuterAdjust = polarLabelOuterAdjust;
 exports.polarLabelOuterFactor = polarLabelOuterFactor;
+exports.gaugeLabelRotateTangentOrigin = gaugeLabelRotateTangentOrigin;
+exports.gaugeLabelRotateTangentFlip = gaugeLabelRotateTangentFlip;
+exports.gaugeLabelRotateRay = gaugeLabelRotateRay;
+exports.gaugeLabelRotateRayFlip = gaugeLabelRotateRayFlip;
+exports.gaugeLabelRotateRayOpposite = gaugeLabelRotateRayOpposite;
+exports.gaugeLabelRotateNone = gaugeLabelRotateNone;
 exports.polarLabelRotateTangentOrigin = polarLabelRotateTangentOrigin;
 exports.polarLabelRotateTangentFlip = polarLabelRotateTangentFlip;
 exports.polarLabelRotateRay = polarLabelRotateRay;
 exports.polarLabelRotateRayFlip = polarLabelRotateRayFlip;
 exports.polarLabelRotateRayOpposite = polarLabelRotateRayOpposite;
+exports.polarLabelRotateNone = polarLabelRotateNone;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
