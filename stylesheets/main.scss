@@ -244,6 +244,12 @@ code {
   .monte-ext-grid-line {
     stroke: $monteGreyLightest;
   }
+
+  .monte-ext-crosshair {
+    stroke: $monteGreyDark;
+    stroke-dasharray: 5 1;
+    pointer-events: none;
+  }
 }
 
 .monte-bar-chart {
@@ -279,10 +285,17 @@ code {
 
 .monte-simple-bar-chart,
 .monte-simple-horizontal-bar-chart {
-  border: 1px solid $monteAlt;
+  .monte-simple-bar-frame {
+    stroke: $monteAlt;
+    fill: transparent;
+  }
 
-  rect {
+  .monte-bar-grp rect {
     fill: $monteAccent;
+  }
+
+  .monte-simple-bar-bg {
+    fill: $codeGrey;
   }
 }
 
@@ -454,6 +467,14 @@ code {
 
   .monte-arc {
     &:nth-child(9) .monte-arc-label { fill: $monteGreyDark; }
+  }
+}
+
+#polarAreaChart {
+  .monte-arc-label {
+    // stroke: $white;
+    // stroke-width: 1px;
+    fill: #000;
   }
 }
 

@@ -95,14 +95,17 @@ var lineOpts = {
     return [extent[0], (extent[1].setDate(extent[1].getDate() + 1))];
   },
   // boundingWidthAttr: '100%',
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
   margin: {
     right: 20,
   },
   pointSymbol: function(symbol) { return symbol.type(d3.symbolCircle);},
   pointSize: 16,
+  extensions: [new monte.ExtCrosshair({
+    layer: 'overlay',
+  })],
 };
-var lineChart = new Monte.LineChart('#lineChart', lineOpts).data(lineData);
+var lineChart = new monte.LineChart('#lineChart', lineOpts).data(lineData);
 
 function xAxisCustom(axis) {
   axis.tickValues([new Date('2010-01-01'), new Date('2011-01-01'), new Date('2012-01-01'),
@@ -119,19 +122,19 @@ function xAxisCustom(axis) {
 var areaOpts = {
   boundingWidth: 300,
   boundingHeight: 200,
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
   includePoints: false,
   xScale: d3.scaleTime,
   // xAxisCustomize: xAxisCustom,
-  yAxisCustomize: Monte.axisNoTicks,
+  yAxisCustomize: monte.axisNoTicks,
 
   margin: {
     right: 16,
   },
-  extensions: [new Monte.ExtFrame(), new Monte.ExtGrid()],
+  extensions: [new monte.ExtFrame(), new monte.ExtGrid()],
 };
 
-var areaChart = new Monte.AreaChart('#areaChart', areaOpts).data(lineData.slice(0, 3));
+var areaChart = new monte.AreaChart('#areaChart', areaOpts).data(lineData.slice(0, 3));
 
 
 //**************************************************************************************************
@@ -144,8 +147,8 @@ var sparklineOpts = {
   margin: 4,
   includePoints: false
 };
-var sparklineChart1 = new Monte.SparklineChart('#sparklineChart1', sparklineOpts, lineData[0]);
-var sparklineChart2 = new Monte.SparklineChart('#sparklineChart2', sparklineOpts, lineData[1]);
-var sparklineChart3 = new Monte.SparklineChart('#sparklineChart3', sparklineOpts, lineData[2]);
-var sparklineChart4 = new Monte.SparklineChart('#sparklineChart4', sparklineOpts, lineData[3]);
-var sparklineChart4 = new Monte.SparklineChart('#sparklineChart5', sparklineOpts, lineData[4]);
+var sparklineChart1 = new monte.SparklineChart('#sparklineChart1', sparklineOpts, lineData[0]);
+var sparklineChart2 = new monte.SparklineChart('#sparklineChart2', sparklineOpts, lineData[1]);
+var sparklineChart3 = new monte.SparklineChart('#sparklineChart3', sparklineOpts, lineData[2]);
+var sparklineChart4 = new monte.SparklineChart('#sparklineChart4', sparklineOpts, lineData[3]);
+var sparklineChart4 = new monte.SparklineChart('#sparklineChart5', sparklineOpts, lineData[4]);

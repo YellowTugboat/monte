@@ -97,7 +97,7 @@ var d3IconOpts = {
   },
 };
 
-var d3IconArray = new Monte.IconArray('#d3IconArray', d3IconOpts, SHOTS_DATA);
+var d3IconArray = new monte.IconArray('#d3IconArray', d3IconOpts, SHOTS_DATA);
 
 
 //**************************************************************************************************
@@ -129,7 +129,7 @@ var defIconOpts = {
   }
 };
 
-var svgUseDefIconArray = new Monte.IconArray('#svgUseDefIconArray', defIconOpts, PEOPLE_DATA);
+var svgUseDefIconArray = new monte.IconArray('#svgUseDefIconArray', defIconOpts, PEOPLE_DATA);
 
 
 //**************************************************************************************************
@@ -158,4 +158,4 @@ var extIconOpts = {
   iconMode: 'svgUseExternal',
 };
 
-var svgUseExtIconArray = new Monte.IconArray('#svgUseExtIconArray', extIconOpts, BIKES_DATA);
+var svgUseExtIconArray = new monte.IconArray('#svgUseExtIconArray', extIconOpts, BIKES_DATA);

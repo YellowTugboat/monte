@@ -25,9 +25,9 @@ var opts = {
   },
   suppressAxes: true,
 
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
 };
-var headerChart = new Monte.BarChart('#headerChart', opts)
+var headerChart = new monte.BarChart('#headerChart', opts)
   .on('updated', function() {
     var chart = this;
     var data = this.data();

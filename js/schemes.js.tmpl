@@ -1,16 +1,16 @@
 var colorSet = <<colorSet>>;
 
-window.MonteSchemes = {};
+window.monteSchemes = {};
 
 for (var key in colorSet) {
-  if (colorSet.hasOwnProperty(key) && Monte.tools.isArray(colorSet[key])) {
-    MonteSchemes[key] = [];
+  if (colorSet.hasOwnProperty(key) && monte.tools.isArray(colorSet[key])) {
+    monteSchemes[key] = [];
 
     colorSet[key].forEach(function(c) {
       var matches = c.match(/^\$(.+)/);
 
       if (matches && matches[1]) {
-         MonteSchemes[key].push(colorSet[matches[1]]);
+         monteSchemes[key].push(colorSet[matches[1]]);
       }
     });
   }

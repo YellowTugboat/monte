@@ -60,17 +60,17 @@ var scatterOpts = {
     }
   },
 
-  pointFillScale: d3.scaleOrdinal(MonteSchemes.schemeMonte),
+  pointFillScale: d3.scaleOrdinal(monteSchemes.schemeMonte),
   pointProp: 'value',
   pointSize: function(d, i) {
     return pointScale(d.value);
   },
   extensions: [
-    new Monte.ExtVerticalLines({
+    new monte.ExtVerticalLines({
       y1Adjust: 10,
       y2Adjust: -10,
     }),
-    // new Monte.ExtD3Tip({
+    // new monte.ExtD3Tip({
     //   featurePrefix: 'point',
     //   offset: { y: -10 },
     //   html: function(d) {
@@ -82,10 +82,10 @@ var scatterOpts = {
     // })
   ],
   boundingWidthAttr: '100%',
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
 };
 
-var scatterPlot = new Monte.ScatterPlot('#scatterPlot', scatterOpts)
+var scatterPlot = new monte.ScatterPlot('#scatterPlot', scatterOpts)
   .classed('monte-axis-no-ticks', true)
   .data(SCATTER_DATA);
 
@@ -116,12 +116,12 @@ var scatterPowOpts = {
   },
   yExtentCustomize: function(extent) { return [0.5, extent[1]]; },
   xExtentCustomize: function(extent) { return [0.001, extent[1]]; },
-  extensions: [new Monte.ExtGrid()],
-  resize: new Monte.HorizontalResizer(),
+  extensions: [new monte.ExtGrid(), new monte.ExtCrosshair()],
+  resize: new monte.HorizontalResizer(),
 
   transition: {
     duration: 3000,
-    ease: d3.easeQuad,
+    ease: d3.easeSin,
 
     enter: {
       duration: 0,
@@ -136,7 +136,7 @@ var scatterPowOpts = {
 };
 
 var i = 0;
-var scatterPlotLinear = new Monte.ScatterPlot('#scatterPow2', scatterPowOpts);
+var scatterPlotLinear = new monte.ScatterPlot('#scatterPow2', scatterPowOpts);
 scatterPlotLinear.isLinear = false;
 
 function updateTrend(i) {
@@ -153,7 +153,7 @@ scatterPlotLinear.on('rendered', function() {
       .attr('class', 'trend-line')
       .attr('d', logLine2);
   })
-  .on('axisRendered', function(t) {
+  .on('axisRendered', function(scaleName, axis, t) {
     this.support.selectAll('.trend-line').data([linePoints])
       .transition(t)
         .attr('d', function(d) { return logLine2(d) });

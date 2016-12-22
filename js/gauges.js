@@ -27,13 +27,14 @@ var speedOpts = {
   pieStartAngle: Math.PI * -0.7,
   pieEndAngle: Math.PI * 0.7,
   piePadAngle: 0.0,
+  labelRotation: monte.gaugeLabelRotateTangentOrigin,
   margin: {
     top: 10,
     left: 0,
     right: 0,
   },
   extensions: [
-      new Monte.ExtPolarTicks({
+      new monte.ExtPolarTicks({
         // tick interval: (angle distance between start and end angle) * PI / (ticks - 1)
         //                (endAngle-startAngle) * PI / ()
         tickInterval: 1.4 * Math.PI / 8,
@@ -42,7 +43,7 @@ var speedOpts = {
         innerRadius: 30,
         outerRadius: 75,
       }),
-    new Monte.ExtLabel({
+    new monte.ExtLabel({
       binding: ['updated'],
       labelCss: 'monte-gauge-value-label',
       text: function() {
@@ -53,7 +54,7 @@ var speedOpts = {
   ],
 };
 
-var speedometer = new Monte.GaugeChart('#gaugeSpeedometer', speedOpts)
+var speedometer = new monte.GaugeChart('#gaugeSpeedometer', speedOpts)
   .on('rendered', function() {
     this.bg.append('circle')
       .attr('class', 'monte-gauge-frame')
@@ -87,10 +88,11 @@ var gaugePercentOpts = {
   outerRadius: 140,
   innerRadius: 140,
   labelRadius: 134,
+  // labelRotation: monte.tools.noop,
   needleBase: 5,
-  needlePath: Monte.needleRect(),
+  needlePath: monte.needleRect(),
   extensions: [
-    new Monte.ExtArc({
+    new monte.ExtArc({
       binding: ['updated'],
       arcCss: 'monte-gauge-arc-fill',
       innerRadius: 145,
@@ -99,21 +101,21 @@ var gaugePercentOpts = {
       cornerRadius: 0,
       endAngle: function() { return this.chart.needleValueAngle(); },
     }),
-    new Monte.ExtPolarTicks({
+    new monte.ExtPolarTicks({
       tickInterval: Math.PI / 10,
       startAngle: Math.PI * -0.5,
       endAngle: Math.PI * 0.5,
       innerRadius: 140,
       outerRadius: 150,
     }),
-    new Monte.ExtPolarTicks({
+    new monte.ExtPolarTicks({
       tickInterval: Math.PI / 20,
       startAngle: Math.PI * -0.5,
       endAngle: Math.PI * -0.30,
       innerRadius: 145,
       outerRadius: 150,
     }),
-    new Monte.ExtLabel({
+    new monte.ExtLabel({
       binding: ['updated'],
       labelCss: 'monte-gauge-value-label',
       text: function() {
@@ -123,7 +125,7 @@ var gaugePercentOpts = {
     })
   ],
 };
-var gauge = new Monte.GaugeChart('#gaugePercent', gaugePercentOpts)
+var gauge = new monte.GaugeChart('#gaugePercent', gaugePercentOpts)
   .on('rendered', function() {
     this.overlay.append('circle').attr('r', 10).lower();
   })
@@ -168,10 +170,11 @@ var gaugeRangeOpts = {
   innerRadius:  80,
   outerRadius: 100,
   cornerRadius: 3,
-  labelPlacement: Monte.polarLabelOuter,
+  labelPlacement: monte.polarLabelOuter,
+  labelRotation: monte.gaugeLabelRotateRayFlip,
 
   needleBase: 15,
-  needlePath: Monte.needleExtraPointer({ smallNeedleHeight: 5 }),
+  needlePath: monte.needleExtraPointer({ smallNeedleHeight: 5 }),
   needleHeight: 75,
 
   transition: {
@@ -180,7 +183,7 @@ var gaugeRangeOpts = {
   },
 
   extensions: [
-    new Monte.ExtArc({
+    new monte.ExtArc({
       binding: ['updated'],
       arcCss: 'monte-arc-neg',
       innerRadius:  80,
@@ -195,7 +198,7 @@ var gaugeRangeOpts = {
         return null;
       },
     }),
-    new Monte.ExtArc({
+    new monte.ExtArc({
       binding: ['updated'],
       arcCss: 'monte-arc-pos',
       innerRadius:  80,
@@ -210,7 +213,7 @@ var gaugeRangeOpts = {
       },
       cornerRadius: 3,
     }),
-    new Monte.ExtLabel({
+    new monte.ExtLabel({
       binding: ['updated'],
       anchor: 'middle',
       text: function() {
@@ -221,7 +224,7 @@ var gaugeRangeOpts = {
   ],
 };
 
-var rangeGauge = new Monte.GaugeChart('#gaugeRange', gaugeRangeOpts)
+var rangeGauge = new monte.GaugeChart('#gaugeRange', gaugeRangeOpts)
   .on('updated', function() {
     if (this.needleValue() === 0) {
       this.classed('has-pos', false);

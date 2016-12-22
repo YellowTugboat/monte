@@ -87,9 +87,10 @@ var pieOpts = {
 
   includeLabels: true,
   labelProp: 'value',
-  // labelPlacement: Monte.polarLabelOuter,
+  // labelPlacement: monte.polarLabelOuter,
+  labelRotation: monte.polarLabelRotateRayFlip,
 };
-var pie = new Monte.ArcChart('#pieChart', pieOpts, pieData.set0);
+var pie = new monte.ArcChart('#pieChart', pieOpts, pieData.set0);
 
 
 //**************************************************************************************************
@@ -121,16 +122,16 @@ var donutOpts = {
 
   includeLabels: true,
   labelProp: 'label',
-  labelPlacement: Monte.polarLabelOuter,
+  labelPlacement: monte.polarLabelOuter,
 
   extensions: [
-    new Monte.ExtLabel({
+    new monte.ExtLabel({
       anchor: 'middle',
       labelCss: 'donut-small-lg',
       text: 'segments',
       y: 34,
     }),
-    new Monte.ExtLabel({
+    new monte.ExtLabel({
       binding: ['updated'],
       anchor: 'middle',
       labelCss: 'donut-label-lg',
@@ -139,14 +140,10 @@ var donutOpts = {
       },
       y: -10,
     }),
-    new Monte.ExtPolarRotateLabel({
-      binding: ['updated'],
-      rotation: Monte.polarLabelRotateRayFlip,
-    }),
   ],
 };
 
-var donut = new Monte.ArcChart('#donutChart', donutOpts)
+var donut = new monte.ArcChart('#donutChart', donutOpts)
   .on('rendered', function() {
     var arc = d3.arc()
       .innerRadius(58)
@@ -161,6 +158,46 @@ var donut = new Monte.ArcChart('#donutChart', donutOpts)
   })
   .data(pieData.set0);
 
+
+//**************************************************************************************************
+//
+// POLAR AREA CHART
+//
+//**************************************************************************************************
+var polarAreaOpts = {
+  boundingWidth: 300,
+  boundingHeight: 200,
+  innerRadius: 20,
+  pieStartAngle: Math.PI,
+  pieEndAngle: 3 * Math.PI,
+
+  margin: 20,
+
+  transition: {
+    duration: 750,
+
+    enter: {
+      duration: function(d, i) { return 500 + i * 250; },
+      delay: function(d, i) { return i * 100; }
+    },
+
+    exit: {
+      duration: 100,
+    },
+  },
+
+  includeLabels: true,
+  labelProp: 'label',
+  labelPlacement: monte.polarLabelOuterFactor(1.1),
+  labelRotation: monte.polarLabelRotateTangentOrigin,
+
+  extensions: [
+  ],
+};
+
+var polarArea = new monte.PolarAreaChart('#polarAreaChart', polarAreaOpts)
+  .data(pieData.set0);
+
 var i = 1;
 var wedges = d3.randomUniform(0, 8);
 d3.interval(function() {
@@ -168,8 +205,8 @@ d3.interval(function() {
 
   pie.updateData(pieData['set' + i]);
   donut.updateData(pieData['set' + i]);
+  polarArea.updateData(pieData['set' + i]);
 }, 3000);
-
 
 //**************************************************************************************************
 //
@@ -182,7 +219,7 @@ var wedgeOpts = {
   margin: { top: 10 },
 }
 
-var wedge1 = new Monte.WedgeChart('#wedge1', wedgeOpts, 15);
-var wedge2 = new Monte.WedgeChart('#wedge2', wedgeOpts, 25);
-var wedge3 = new Monte.WedgeChart('#wedge3', wedgeOpts, 50);
-var wedge4 = new Monte.WedgeChart('#wedge4', wedgeOpts, 75);
+var wedge1 = new monte.WedgeChart('#wedge1', wedgeOpts, 15);
+var wedge2 = new monte.WedgeChart('#wedge2', wedgeOpts, 25);
+var wedge3 = new monte.WedgeChart('#wedge3', wedgeOpts, 50);
+var wedge4 = new monte.WedgeChart('#wedge4', wedgeOpts, 75);

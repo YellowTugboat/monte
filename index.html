@@ -3,9 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Monte</title>
+    <title>Monte - Home</title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Monte: leverage your D3 knowledge to build customized SVG charts for the modern web.">
+
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css?family=Lato:300|Open+Sans:400" rel="stylesheet">
@@ -48,7 +50,7 @@
     <div class="container">
       <div class="row">
         <div class="col-xs-12">
-          <h1>Preview Releases Available</h2>
+          <h1>Preview Releases Available</h1>
           <p>
             Preview releases are currently available for the <i>brave</i>. Fair warning: the
             API is subject to change and documentation is still pending.
@@ -88,7 +90,7 @@
             </p>
 
             <p>
-              More details are available about motivation, leverging D3 knowledge, chart basics,
+              More details are available about motivation, leveraging D3 knowledge, chart basics,
               customization / modification, and road map.
             </p>
 
@@ -181,16 +183,35 @@
                 <ul>
                   <li>accessibility using ARIA for built-in charts;</li>
                   <li>
-                    additional chart types, such as Chord, Choropleth, Heat Map, Polar Area, Matrix
-                    Diagram, Radar, and others;
+                    additional chart types, such as Chord, Choropleth, Heat Map, <s>Polar Area</s>
+                    (recently added), Matrix Diagram, Radar, and others;
                   </li>
                   <li>
-                    extensions for interactivity (cross hair reference lines, hover reference line,
-                    brushing, lasso selection, Voronoi); and
+                    extensions for interactivity (<s>cross hair reference lines</s>, hover reference
+                    line, brushing, lasso selection, <s>tooltips</s>
+                    (see <a href="https://www.npmjs.com/package/monte-ext-d3-tip">monte-ext-d3-tip</a>)
+                     Voronoi); and
                   </li>
                   <li>
-                    extensions for rendering (error bars, error bands, OHLC and Candlestick bars).
+                    extensions for rendering (error bars, error bands, legends, OHLC and Candlestick bars).
                   </li>
+                </ul>
+              </p>
+
+              <p>
+                Other practical considerations are being made:
+                <ul>
+                  <li>
+                    all demos below will be converted into GitHub Gists that will be accessible from
+                    jsFiddle/plunkr and bl.ocks.org;
+                  </li>
+                  <li>
+                    more involved demos will be created illustrating communication between chart,
+                    broader customization, custom chart types, and more;
+                  </li>
+                  <li>reusable SCSS/CSS themes will be added;</li>
+                  <li>thorough unit test coverage; and</li>
+                  <li>documentation, tutorials, and other materials for using Monte.</li>
                 </ul>
               </p>
             </div>
@@ -229,7 +250,10 @@
                 </tr>
                 <tr>
                   <td>Extensions</td>
-                  <td><div><small><code>ExtHorizontalLines</code></small></div></td>
+                  <td>
+                    <div><small><code>ExtAxisLabelWrap</code></small></div>
+                    <div><small><code>ExtHorizontalLines</code></small></div>
+                  </td>
                 </tr>
                 <!-- <tr>
                   <td>Notable Options</td>
@@ -256,8 +280,9 @@
                 <tr>
                   <td>Extensions</td>
                   <td>
-                    <div><small><code>ExtVerticalLines</code></small></div>
+                    <div><small><code>ExtAxisLabelWrap</code></small></div>
                     <div><small><code>ExtHorizontalBarBg</code></small></div>
+                    <div><small><code>ExtVerticalLines</code></small></div>
                   </td>
                 </tr>
                 <!-- <tr>
@@ -457,7 +482,7 @@
                 </tr>
                 <tr>
                   <td>Extensions</td>
-                  <td><span class="none">(None)</span></td>
+                  <td><div><small><code>ExtCrosshair</code></small></div></td>
                 </tr>
                 <!-- <tr>
                   <td>Notable Options</td>
@@ -589,7 +614,6 @@
                   <td>Extensions</td>
                   <td>
                     <div><small><code>ExtLabel</code></small></div>
-                    <div><small><code>ExtPolarRotateLabel</code></small></div>
                   </td>
                 </tr>
                 <!-- <tr>
@@ -603,19 +627,46 @@
               </table>
             </div>
 
-            <div class="row col-xs-12">
+            <div class="row col-xs-12 col-sm-5">
+              <h3>Polar Area</h3>
+              <div id="polarAreaChart"></div>
+              <table class="table table-bordered">
+                <tr>
+                  <td>Class</td>
+                  <td><small><code>PolarAreaChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Base Class</td>
+                  <td><small><code class="extends">ArcChart</code></small></td>
+                </tr>
+                <tr>
+                  <td>Extensions</td>
+                  <td><span class="none">(None)</span></td>
+                </tr>
+                <!-- <tr>
+                  <td>Notable Options</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>More</td>
+                  <td></td>
+                </tr> -->
+              </table>
+            </div>
+
+            <div class="row col-xs-12 col-sm-5 offset-sm-2">
               <h3>Single Wedges</h3>
               <div>
                 <small class="subtitle">(A set of individual wedge instances)</small>
               </div>
-              <div class="col-sm-5">
+              <div>
                 <div id="wedge1" class="wedge-multiple"></div>
                 <div id="wedge2" class="wedge-multiple"></div>
                 <div id="wedge3" class="wedge-multiple"></div>
                 <div id="wedge4" class="wedge-multiple"></div>
               </div>
 
-              <div class="col-sm-6 offset-sm-1">
+              <div>
                 <table class="table table-bordered">
                   <tr>
                     <td>Class</td>
@@ -701,8 +752,8 @@
                     <td>Extensions</td>
                     <td>
                       <div><small><code>ExtArc</code></small></div>
-                      <div><small><code>ExtPolarTicks</code> x2</small></div>
                       <div><small><code>ExtLabel</code></small></div>
+                      <div><small><code>ExtPolarTicks</code> x2</small></div>
                     </td>
                   </tr>
                   <!-- <tr>
@@ -774,7 +825,10 @@
                 </tr>
                 <tr>
                   <td>Extensions</td>
-                  <td><div><small><code>ExtVerticalLines</code></small></div></td>
+                  <td>
+                    <div><small><code>ExtCrosshair</code></small></div>
+                    <div><small><code>ExtVerticalLines</code></small></div>
+                  </td>
                 </tr>
                 <!-- <tr>
                   <td>Notable Options</td>
@@ -922,7 +976,7 @@
       <div class="container">
         <div class="row grp">
           <div class="col-xs-12">
-            <h1>License</h2>
+            <h1>License</h1>
             <p>
               Preview releases are licensed under GPL-3.0 <em class="subtle">(to encourage contributing back to the project)</em>.
               Formal releases will be more permissively licensed under MIT or similar.
@@ -941,7 +995,7 @@
   </footer>
 
   <script src="https://d3js.org/d3.v4.js"></script>
-  <script src="https://unpkg.com/monte@0.0.0-alpha22/build/monte.min.js"></script>
+  <script src="https://unpkg.com/monte@0.0.0-alpha24/build/monte.min.js"></script>
   <!-- <script src="monte.js"></script> -->
   <script src="build/index.min.js"></script>
 

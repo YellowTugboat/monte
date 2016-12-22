@@ -1,5 +1,5 @@
 var BAR_DATA = [{
-  "id": "First",
+  "id": "First with a long name",
   "value": 770,
   "goal": 1000,
   "css": "first-bar"
@@ -135,20 +135,24 @@ var barOpts = {
   boundingHeight: 200,
   css: 'monte-no-domain-lines',
   extensions: [
-    new Monte.ExtHorizontalLines(),
-    // new Monte.ExtBarBg(),
+    new monte.ExtHorizontalLines(),
+    new monte.ExtAxisLabelWrap({
+      maxWidth: function() {
+        return this.chart.x.bandwidth();
+      }
+    }),
   ],
 
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
   includeLabels: true,
 
   margin: {
     top: 20,
   },
 
-  barFillScale: d3.scaleOrdinal(MonteSchemes.schemeMonte),
+  barFillScale: d3.scaleOrdinal(monteSchemes.schemeMonte),
 };
-var barChart = new Monte.BarChart('#barChart', barOpts).data(BAR_DATA);
+var barChart = new monte.BarChart('#barChart', barOpts).data(BAR_DATA);
 
 
 var hortBarOpts = {
@@ -156,25 +160,30 @@ var hortBarOpts = {
   boundingHeight: 200,
   css: 'monte-no-domain-lines',
   extensions: [
-    new Monte.ExtVerticalLines(),
-    new Monte.ExtHorizontalBarBg({
+    new monte.ExtVerticalLines(),
+    new monte.ExtHorizontalBarBg({
       maxValue: 1650,
       enlarge: 0.1,
       goalProp: 'goal',
       cornerRadius: 1,
     }),
+    new monte.ExtAxisLabelWrap({
+      maxWidth: 50,
+      axis: 'y',
+    }),
   ],
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
   margin: {
     left: 50,
     right: 30,
   },
+  yAxisCustomize: monte.axisNoTicks,
   yScale: function() {
     return d3.scaleBand().paddingInner(0.5).paddingOuter(0.1).round(true);
   },
   includeLabels: true,
 };
-var hortBarChart = new Monte.HorizontalBarChart('#hbarChart', hortBarOpts, BAR_DATA);
+var hortBarChart = new monte.HorizontalBarChart('#hbarChart', hortBarOpts, BAR_DATA);
 
 
 //**************************************************************************************************
@@ -182,8 +191,8 @@ var hortBarChart = new Monte.HorizontalBarChart('#hbarChart', hortBarOpts, BAR_D
 // SIMPLE BAR CHARTS
 //
 //**************************************************************************************************
-var simpleBarChart = new Monte.SimpleBarChart('#simpleBarChart', {}, { id: 'Item', value: 85 });
-var simpleHortBarChart = new Monte.HorizontalSimpleBarChart('#simpleHBarChart', {}, { value: 85, css: 'hort-bar' });
+var simpleBarChart = new monte.SimpleBarChart('#simpleBarChart', {}, { id: 'Item', value: 85 });
+var simpleHortBarChart = new monte.HorizontalSimpleBarChart('#simpleHBarChart', {}, { value: 85, css: 'hort-bar' });
 
 
 //**************************************************************************************************
@@ -194,19 +203,19 @@ var simpleHortBarChart = new Monte.HorizontalSimpleBarChart('#simpleHBarChart', 
 var opts = {
   boundingWidth: 300,
   boundingHeight: 200,
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
   segmentBarMode: 'stacked',
   transition: {
     duration: 500
   },
 };
-var segBarChart = new Monte.SegmentBarChart('#segBarChart', opts);
+var segBarChart = new monte.SegmentBarChart('#segBarChart', opts);
 
 
 var hopts = {
   boundingWidth: 300,
   boundingHeight: 200,
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
 
   transition: {
     duration: 1500,
@@ -233,8 +242,8 @@ var hopts = {
     left: 50,
   },
 };
-var segHBarChart = new Monte.HorizontalSegmentBarChart('#segHBarChart', hopts);
-var segBarGroup = Monte.HorizontalSegmentBarChart.createInstanceGroup([segBarChart, segHBarChart]);
+var segHBarChart = new monte.HorizontalSegmentBarChart('#segHBarChart', hopts);
+var segBarGroup = monte.HorizontalSegmentBarChart.createInstanceGroup([segBarChart, segHBarChart]);
 
 segBarGroup.data(GROUPED_BAR_DATA);
 
@@ -260,11 +269,11 @@ var tornadoBarOpts = {
   boundingHeight: 200,
   css: 'monte-no-domain-lines monte-tornado-chart monte-grid-ticks',
   extensions: [
-    new Monte.ExtHorizontalLines(),
-    // new Monte.ExtBarBg(),
+    new monte.ExtHorizontalLines(),
+    // new monte.ExtBarBg(),
   ],
 
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
   includeLabels: true,
 
   margin: {
@@ -278,11 +287,11 @@ var tornadoHBarOpts = {
   boundingHeight: 200,
   css: 'monte-no-domain-lines monte-tornado-chart monte-grid-ticks',
   extensions: [
-    new Monte.ExtVerticalLines(),
-    // new Monte.ExtBarBg(),
+    new monte.ExtVerticalLines(),
+    // new monte.ExtBarBg(),
   ],
 
-  resize: new Monte.HorizontalResizer(),
+  resize: new monte.HorizontalResizer(),
   includeLabels: true,
 
   margin: {
@@ -292,5 +301,5 @@ var tornadoHBarOpts = {
   },
 };
 
-var negBarChart = new Monte.BarChart('#tornadoBarChart', tornadoBarOpts).data(TORNADO_DATA);
-var negHbarChart = new Monte.HorizontalBarChart('#tornadoHBarChart', tornadoHBarOpts).data(TORNADO_DATA);
+var negBarChart = new monte.BarChart('#tornadoBarChart', tornadoBarOpts).data(TORNADO_DATA);
+var negHbarChart = new monte.HorizontalBarChart('#tornadoHBarChart', tornadoHBarOpts).data(TORNADO_DATA);
