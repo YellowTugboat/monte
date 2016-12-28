@@ -133,45 +133,53 @@ export class BarChart extends AxesChart {
 
   _updateBars() {
     const barGrps = this.draw.selectAll('.monte-bar-grp')
-      .data(this.displayData, (d, i) => d.id || i);
+      .data(this.displayData, (d, i) => d.id || i); // TODO: Add custom key function support.
 
     const barX = this._barX.bind(this);
     const barY = this._barY.bind(this);
     const barWidth = this._barWidth.bind(this);
     const barHeight = this._barHeight.bind(this);
 
+    // Create new bar groups
     barGrps.enter().append('g')
       .attr('class', (d, i) => this._buildCss([
         'monte-bar-grp',
         this.opts.barGrpCss], d, i))
       .append('rect')
+        .style('opacity', 0)
         .attr('x', barX)
         .attr('y', barY)
         .attr('width', barWidth)
         .attr('height', barHeight)
         .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
         .call(this.__bindCommonEvents('bar'))
-      .merge(barGrps.select('rect')) // Update existing lines and set values on new lines.
         .attr('class', (d, i) => this._buildCss([
           this.opts.barCss,
           this.opts.barCssScale,
           d.css], d, i))
-      .transition()
-        .call(this._transitionSetup(ENTER));
+        .transition()
+          .call(this._transitionSetup('bar', ENTER))
+          .style('opacity', 1);
 
+    // Update existing bar groups
     barGrps.select('rect')
       .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
+      .attr('class', (d, i) => this._buildCss([
+        this.opts.barCss,
+        this.opts.barCssScale,
+        d.css], d, i))
       .transition()
-        .call(this._transitionSetup(UPDATE))
+        .call(this._transitionSetup('bar', UPDATE))
         .attr('x', barX)
         .attr('y', barY)
         .attr('width', barWidth)
-        .attr('height', barHeight);
+        .attr('height', barHeight)
+        .style('opacity', 1);
 
     // Fade out removed lines.
     barGrps.exit()
       .transition()
-        .call(this._transitionSetup(EXIT))
+        .call(this._transitionSetup('bar', EXIT))
         .style('opacity', 0)
       .remove();
 
@@ -193,7 +201,10 @@ export class BarChart extends AxesChart {
         .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
         .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes));
 
-    lbl.exit().remove();
+    lbl.exit()
+      .transition()
+      .call(this._transitionSetup('bar', EXIT))
+      .remove();
   }
 
   _barX(d) { return this.getScaledProp('x', d); }

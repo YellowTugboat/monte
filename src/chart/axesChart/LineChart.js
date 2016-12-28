@@ -1,4 +1,4 @@
-import { EXIT, UPDATE } from '../../const/d3';
+import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
@@ -123,24 +123,18 @@ export class LineChart extends AxesChart {
   _updateLines() {
     // Data join for the lines
     const lineGrps = this.draw.selectAll('.monte-line-grp')
-      .data(this.displayData,
-        (d, i) => d.id || i);
+      .data(this.displayData, (d, i) => d.id || i);
 
-    // Create new lines
-    lineGrps.enter().append('g')
+    const enterLines = lineGrps.enter().append('g')
       .attr('class', 'monte-line-grp')
       .append('path')
-        .call(this.__bindCommonEvents('line'))
-      .merge(lineGrps.select('.monte-line')) // Update existing lines and set values on new lines.
-        .attr('class', (d, i) => this._buildCss(
-          ['monte-line',
-            this.opts.lineCss,
-            this.opts.lineCssScaleAccessor,
-            d.css], d, i))
-        .transition()
-          .call(this._transitionSetup('line', UPDATE))
-          .attr('d', (d) => this.line(this.getProp('values', d)))
-          .style('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'));
+        .call(this.__bindCommonEvents('line'));
+
+    this._updateLineSelection(enterLines, ENTER);
+
+    // Update existing lines and set values on new lines.
+    const updateLines = lineGrps.select('.monte-line');
+    this._updateLineSelection(updateLines, UPDATE);
 
     // Fade out removed lines.
     lineGrps.exit()
@@ -152,6 +146,18 @@ export class LineChart extends AxesChart {
     // Here the order is important. Merging the line groups when only an update occurs results in an
     // empty selection if the command was lineGrps.enter().selectAll('.grp-line').merge(lineGrps);
     return lineGrps.merge(lineGrps.enter().selectAll('.monte-line-grp'));
+  }
+
+  _updateLineSelection(sel, stage) {
+    sel.attr('class', (d, i) => this._buildCss(
+      ['monte-line',
+        this.opts.lineCss,
+        this.opts.lineCssScaleAccessor,
+        d.css], d, i))
+      .transition()
+        .call(this._transitionSetup('line', stage))
+        .attr('d', (d) => this.line(this.getProp('values', d)))
+        .style('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'));
   }
 
   _updateLinePoints(node, lineDatum, lineIndex) {

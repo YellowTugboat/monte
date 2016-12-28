@@ -1,4 +1,4 @@
-import { EXIT, UPDATE } from '../../const/d3';
+import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { LineChart } from './LineChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { extentFromZero } from '../../util/extents';
@@ -91,28 +91,31 @@ export class AreaChart extends LineChart {
     // Data join for the points
     const area = lineGrp.selectAll('.monte-area').data((d) => [d]);
 
-    // Create new area
-    const allAreas = area.enter().insert('path', ':first-child')
-        .call(this.__bindCommonEvents('area'))
-      .merge(area) // Update existing points and set values on new points.
-        .attr('class', (d) => this._buildCss(
-          ['monte-area',
-            lineDatum.css,
-            this.opts.lineCssScaleAccessor,
-            this.opts.areaCss,
-            this.opts.areaCssScaleAccessor,
-            d.css], lineDatum, lineIndex));
-
-    allAreas.transition()
-        .call(this._transitionSetup(UPDATE))
-        .attr('d', (d) => this.area(this.getProp('values', d)))
-        .style('fill', this.optionReaderFunc('areaFillScaleAccessor'));
+    // Create new area and update existing
+    const enterAreas = area.enter().insert('path', ':first-child')
+        .call(this.__bindCommonEvents('area'));
+    this._updateLineAreaSelections(enterAreas, ENTER, lineDatum, lineIndex);
+    this._updateLineAreaSelections(area, UPDATE, lineDatum, lineIndex);
 
     // Fade out removed points.
     area.exit()
       .transition()
-        .call(this._transitionSetup(EXIT))
+        .call(this._transitionSetup('area', EXIT))
         .style('opacity', 0)
         .remove();
+  }
+
+  _updateLineAreaSelections(sel, stage, lineDatum, lineIndex) {
+    sel.attr('class', (d) => this._buildCss(
+      ['monte-area',
+        lineDatum.css,
+        this.opts.lineCssScaleAccessor,
+        this.opts.areaCss,
+        this.opts.areaCssScaleAccessor,
+        d.css], lineDatum, lineIndex))
+    .transition()
+        .call(this._transitionSetup('area', stage))
+        .attr('d', (d) => this.area(this.getProp('values', d)))
+        .style('fill', this.optionReaderFunc('areaFillScaleAccessor'));
   }
 }

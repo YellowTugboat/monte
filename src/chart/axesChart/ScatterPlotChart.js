@@ -1,4 +1,4 @@
-import { EXIT, UPDATE } from '../../const/d3';
+import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
@@ -78,27 +78,11 @@ export class ScatterPlot extends AxesChart {
     // Data join for the points
     const points = this.draw.selectAll('.monte-point').data(this.displayData);
 
-    // Create new points
-    points.enter().append('path')
-        .call(this.__bindCommonEvents('point'))
-      .merge(points) // Update existing points and set values on new points.
-        .attr('d', (d, i) => {
-          const symbase = d3.symbol().size(this.opts.pointSize);
-          const symbol = this.opts.pointSymbol(symbase, d, i);
-          return symbol(d, i);
-        })
-        .attr('class', (d, i) => this._buildCss(
-          ['monte-point',
-            this.opts.pointCss,
-            this.opts.pointCssScaleAccessor,
-            d.css], d, i))
-        .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
-        .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
-      .transition()
-        .call(this._transitionSetup('point', UPDATE))
-        .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
-        .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
-        .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`);
+    // Create new points and update existing
+    const pointsEnter = points.enter().append('path')
+        .call(this.__bindCommonEvents('point'));
+    this._updatePointsSelection(pointsEnter, ENTER);
+    this._updatePointsSelection(points, UPDATE);
 
     // Fade out removed points.
     points.exit()
@@ -108,5 +92,25 @@ export class ScatterPlot extends AxesChart {
       .remove();
 
     return points.merge(points.enter().selectAll('.point'));
+  }
+
+  _updatePointsSelection(sel, stage) {
+    sel.attr('d', (d, i) => {
+      const symbase = d3.symbol().size(this.opts.pointSize);
+      const symbol = this.opts.pointSymbol(symbase, d, i);
+      return symbol(d, i);
+    })
+    .attr('class', (d, i) => this._buildCss(
+      ['monte-point',
+        this.opts.pointCss,
+        this.opts.pointCssScaleAccessor,
+        d.css], d, i))
+    .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
+    .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
+  .transition()
+    .call(this._transitionSetup('point', stage))
+    .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
+    .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
+    .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`);
   }
 }

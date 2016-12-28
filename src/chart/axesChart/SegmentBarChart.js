@@ -1,4 +1,4 @@
-import { EXIT, UPDATE } from '../../const/d3';
+import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { MonteOptionError } from '../../support/MonteOptionError';
 import { commonEventNames } from '../../tools/commonEventNames';
@@ -208,15 +208,15 @@ export class SegmentBarChart extends AxesChart {
     const mode = this.tryInvoke(this.opts.segmentBarMode);
     const classesToRemove = nonMatchingMapValues(SEGMENT_BAR_MODE_CSS_MAP, mode);
     const classToAdd = SEGMENT_BAR_MODE_CSS_MAP[mode];
-    let barGrps, transition;
+    let barGrps, enterTransition, updateTransition;
 
     this.classed(classToAdd, true);
 
     if (mode === SEGMENT_BAR_MODE.STACKED) {
-      ({ barGrps, transition } = this._updateStackedBars());
+      ({ barGrps, enterTransition, updateTransition } = this._updateStackedBars());
     }
     else if (mode === SEGMENT_BAR_MODE.GROUPED) {
-      ({ barGrps, transition } = this._updateGroupedBars());
+      ({ barGrps, enterTransition, updateTransition } = this._updateGroupedBars());
     }
     else {
       throw MonteOptionError.InvalidEnumOption('segmentBarMode', mode);
@@ -224,17 +224,29 @@ export class SegmentBarChart extends AxesChart {
 
     if (this.opts.includeLabels && barGrps) {
       if (barGrps.size()) {
-        this._updateLabels(barGrps, transition);
+        this._updateLabels(barGrps, enterTransition, updateTransition);
       }
       else {
-        transition.on('end.labels', () => {
-          this._updateLabels(this.draw.selectAll('.monte-segment-bar-grp'), transition);
+        enterTransition.on('end.labels', () => {
+          const g = this.draw.selectAll('.monte-segment-bar-grp');
+          this._updateLabels(g, enterTransition);
+        });
+
+        updateTransition.on('end.labels', () => {
+          const g = this.draw.selectAll('.monte-segment-bar-grp');
+          this._updateLabels(g, updateTransition);
         });
       }
     }
 
-    if (transition) {
-      transition.on('end.classes', () => {
+    if (enterTransition) {
+      enterTransition.on('end.classes', () => {
+        classesToRemove.forEach((classToRemove) => this.classed(classToRemove, false));
+      });
+    }
+
+    if (updateTransition) {
+      updateTransition.on('end.classes', () => {
         classesToRemove.forEach((classToRemove) => this.classed(classToRemove, false));
       });
     }
@@ -259,49 +271,61 @@ export class SegmentBarChart extends AxesChart {
   }
 
   _updateBars(barXInner, barYInner, barWidth, barHeight) {
-    const translate = this._barGroupTranslate.bind(this);
     const barGrps = this.draw.selectAll('.monte-segment-bar-grp')
       .data(this.displayData);
 
-    // TODO: Change to distinct transitions for ENTER, UPDATE
-    const trans = this.draw.transition()
-      .call(this._transitionSetup('bars', UPDATE));
-
-    barGrps.enter().append('g')
+    const fns = {barXInner, barYInner, barWidth, barHeight};
+    const barGrpsEnter = barGrps.enter().append('g')
       .attr('class', 'monte-segment-bar-grp')
-      .call(this.__bindCommonEvents('bargrp'))
-      .merge(barGrps)
-        .attr('transform', (d) => `translate(${translate(d)})`)
-        .each((d, i, nodes) => {
-          const prop = this._barProp();
-          const nestedData = d[prop];
-          const innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
-
-          innerRects.enter().append('rect')
-            .call(this.__bindCommonEvents('barseg'))
-            .merge(innerRects)
-              .attr('class', (d, i) => this._buildCss(
-                ['monte-segment-bar-seg',
-                  this.opts.barSegCss,
-                  this.opts.barSegCssScaleAccessor,
-                  d.css], d, i))
-              .transition(trans)
-                .style('fill', this.optionReaderFunc('barSegFillScaleAccessor'))
-                .attr('x', barXInner)
-                .attr('y', barYInner)
-                .attr('width', barWidth)
-                .attr('height', barHeight);
-        });
+      .call(this.__bindCommonEvents('bargrp'));
+    const enterTrans = this._updateBarSelection(barGrpsEnter, ENTER, fns);
+    const updateTrans = this._updateBarSelection(barGrps, UPDATE, fns);
 
     barGrps.exit()
       .transition()
-      .call(this._transitionSetup(EXIT))
+      .call(this._transitionSetup('bar', EXIT))
       .remove();
 
     return {
       barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp')),
-      transition: trans,
+      enterTransition: enterTrans,
+      updateTransition: updateTrans,
     };
+  }
+
+  _updateBarSelection(sel, stage, fns) {
+    const translate = this._barGroupTranslate.bind(this);
+    const trans = this.draw.transition()
+      .call(this._transitionSetup('bar', stage));
+
+    const transitionSettings = this._transitionSettings('bar', stage);
+
+    sel.attr('transform', (d) => `translate(${translate(d)})`)
+      .each((d, i, nodes) => {
+        const prop = this._barProp();
+        const nestedData = d[prop];
+        const innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
+
+        innerRects.enter().append('rect')
+          .call(this.__bindCommonEvents('barseg'))
+          .style('opacity', 0)
+          .merge(innerRects)
+            .attr('class', (d, i) => this._buildCss(
+              ['monte-segment-bar-seg',
+                this.opts.barSegCss,
+                this.opts.barSegCssScaleAccessor,
+                d.css], d, i))
+            .transition()
+              .call((t) => this._transitionConfigure(t, transitionSettings, d, i, nodes))
+              .style('fill', this.optionReaderFunc('barSegFillScaleAccessor'))
+              .attr('x', fns.barXInner)
+              .attr('y', fns.barYInner)
+              .attr('width', fns.barWidth)
+              .attr('height', fns.barHeight)
+              .style('opacity', 1);
+      });
+
+    return trans;
   }
 
   _segLabels(d) {
@@ -315,6 +339,7 @@ export class SegmentBarChart extends AxesChart {
     });
   }
 
+  // TODO: Move labels into segment bar grps (a new nested for the rect and label to live together)?
   _updateBarSegLabel(barGrp, transition, barData) {
     const lbl = barGrp.selectAll('.monte-bar-label').data(this._segLabels(barData));
 
@@ -331,7 +356,8 @@ export class SegmentBarChart extends AxesChart {
 
     lbl.exit()
       .transition()
-      .call(this._transitionSetup(EXIT))
+      .call(this._transitionSetup('bar', EXIT))
+      .style('opacity', 0)
       .remove();
   }
 
