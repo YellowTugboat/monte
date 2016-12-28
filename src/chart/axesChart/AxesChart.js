@@ -2,6 +2,7 @@ import { ENTER, UPDATE } from '../../const/d3';
 import { isArray, isDefined, isFunc } from '../../tools/is';
 import { Chart } from '../Chart';
 import { MonteError } from '../../support/MonteError';
+import { MonteOptionError } from '../../support/MonteOptionError';
 import { noop } from '../../tools/noop';
 
 const EVENT_AXIS_PRERENDER = 'axisPrerender';
@@ -200,8 +201,8 @@ export class AxesChart extends Chart {
     if (suppressAxes === true) { return; }
 
     const isSuppressArray = isArray(suppressAxes);
-    const action = this.hasRendered ? UPDATE : ENTER;
-    const t = this.bound.transition().call(this._transitionSetup('axis', action));
+    const stage = this.hasRendered ? UPDATE : ENTER;
+    const t = this.bound.transition().call(this._transitionSetup('axis', stage));
 
     // (Re)render axes
     this.forEachAxisScale((scaleName) => {
@@ -239,7 +240,8 @@ export class AxesChart extends Chart {
   }
 
   _setLabel(scaleName, transition) { // eslint-disable-line no-unused-vars
-    const label = this.tryInvoke(this.opts[`${scaleName}Label`]);
+    const optLabel = this.opts[`${scaleName}Label`];
+    const label = isDefined(optLabel) ? this.tryInvoke(this.opts[`${scaleName}Label`]) : null;
     const data = label === null ? [] : [label];
     const lbl = this.support.select(`.${scaleName}-axis`).selectAll('.monte-axis-label').data(data);
 
@@ -247,7 +249,19 @@ export class AxesChart extends Chart {
       .merge(lbl)
         .attr('class', 'monte-axis-label')
         .text((d) => d)
-        .call(() => this.tryInvoke(this.opts[`${scaleName}LabelCustomize`], lbl));
+        .call(() => {
+          const opt =`${scaleName}LabelCustomize`;
+          const lblCustomize = this.opts[opt];
+
+          if (lblCustomize) {
+            if (isFunc(lblCustomize)) {
+              this.tryInvoke(lblCustomize, lbl);
+            }
+            else {
+              throw MonteOptionError.OptionMustBeFunction(opt, `(${opt} is optional)`);
+            }
+          }
+        });
 
     lbl.exit().remove();
   }
