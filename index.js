@@ -77,6 +77,16 @@ export { tools };
 export {
   axisNoTicks,
   axisWholeNumberFormat,
+  axisXLabelStart,
+  axisXLabelCenter,
+  axisXLabelGenerator,
+  axisXLabelMiddle,
+  axisXLabelEnd,
+  axisYLabelStart,
+  axisYLabelCenter,
+  axisYLabelGenerator,
+  axisYLabelMiddle,
+  axisYLabelEnd,
 } from './src/util/axis';
 
 export {
