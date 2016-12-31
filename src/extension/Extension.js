@@ -133,6 +133,10 @@ export class Extension {
     this.chart.emit('extension', `${this.opts.eventPrefix}:${eventName}`, this, ...args);
   }
 
+  emit(eventName, ...args) {
+    this.__notify(eventName, ...args);
+  }
+
   /**
    * Remove the data elements.
    *
@@ -216,6 +220,8 @@ export class Extension {
       this._render(...args);
       this.__notify(EV.RENDERED);
     }
+
+    this.rendered = true;
   }
 
   /**

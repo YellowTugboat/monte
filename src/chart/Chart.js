@@ -153,10 +153,13 @@ export class Chart {
     // Create the support area.
     this.addLayer('support');
 
+    // Create the selection area.
+    this.addLayer('selection');
+
     // Create the primary drawing area.
     this.addLayer('draw');
 
-    // Top layer
+    // Create the overlay area.
     this.addLayer('overlay');
 
     const chart = this;
@@ -287,8 +290,8 @@ export class Chart {
    *
    * @Chainable
    */
-  addLayer(layerName) {
-    const layer = this.bound.append('g').attr('class', `monte-${layerName}`);
+  addLayer(layerName, elementType = 'g') {
+    const layer = this.bound.append(elementType).attr('class', `monte-${layerName}`);
 
     this[layerName] = layer;
     this.layers.push(layer);
@@ -337,16 +340,48 @@ export class Chart {
 
   /**
    * Binds an event to a given `callback`. If no `callback` is provided it returns the callback.
+   * Passing null removes the callback.
+   *
+   * See https://github.com/d3/d3-dispatch#dispatch_on
    *
    * @Chainable <setter>
    */
   on(typenames, callback) {
-    if (callback) {
-      this.dispatch.on(typenames, callback);
-      return this;
+    if (arguments.length < 2) {
+      return this.dispatch.on(typenames);
     }
 
-    return this.dispatch.on(typenames);
+    this.dispatch.on(typenames, callback);
+    return this;
+  }
+
+  /**
+   * Binds an extension event (filtered by `eventLead`) to a given `callback`. The `eventLead` is a
+   * string that matches the *beginning* of the extention specific event name including prefix.
+   *
+   * For example, to match all SelectionRect events (including updated, rendered, etc...) use
+   * 'selectionrect:'; to match all selection events to match only selection events (including
+   * selectionStart, selectionMove, etc...) use 'selectionrect:selection'; to match the changed
+   * event use 'selectionrect:selectionChanged'.
+   */
+  onExt(eventLead, callback) {
+    if (arguments.length < 2) {
+      return this.on(eventLead);
+    }
+
+    const typename = `extension.${eventLead}`;
+    if (callback === null) {
+      this.on(typename, null);
+    }
+    else {
+      this.on(typename, function(ev, ...args) {
+        if (ev.indexOf(eventLead) === 0) {
+          callback.call(this, ev, ...args);
+        }
+      });
+    }
+
+    return this;
   }
 
   /**

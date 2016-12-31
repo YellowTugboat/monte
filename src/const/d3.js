@@ -12,3 +12,5 @@ export const UPDATE = 'update';
 export const EXIT = 'exit';
 
 export const UPDATE_PATTERN = { ENTER: ENTER, UPDATE: UPDATE, EXIT: EXIT };
+
+export const BRUSH_HANDLE_SIZE = 6;

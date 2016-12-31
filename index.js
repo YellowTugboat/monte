@@ -68,6 +68,8 @@ export {
 } from './src/extension/BarBg';
 
 export { ReferenceLine as ExtReferenceLine } from './src/extension/ReferenceLine';
+export { SelectionRect as ExtSelectionRect } from './src/extension/SelectionRect';
+
 
 // Tools
 import * as tools from './src/tools/';
