@@ -32,8 +32,8 @@ const GAUGE_CHART_DEFAULTS = {
   arcBgFillScaleAccessor: ArcChart.generateScaleAccessor('arcBgFillScale', 'itemValue'),
 
   needleBase: 20,
-  needleHeight: function(outerRadius, innerRadius) {
-    return (outerRadius - innerRadius) / 2 + innerRadius;
+  needleHeight: function(innerRadius, outerRadius) {
+    return (innerRadius + outerRadius) / 2;
   },
   needlePath: needleRoundedEnd(),
 
@@ -176,7 +176,7 @@ export class GaugeChart extends ArcChart {
     const baseWidth = this.tryInvoke(this.opts.needleBase);
     const or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
     const ir = this.tryInvoke(this.opts.innerRadius, this.width, this.height);
-    const height = this.tryInvoke(this.opts.needleHeight, or, ir);
+    const height = this.tryInvoke(this.opts.needleHeight, ir, or);
     const path = this.tryInvoke(this.opts.needlePath, height, baseWidth);
 
     const needle = this.overlay.selectAll('.monte-gauge-needle').data([this.needleValueAngleData || 0]);

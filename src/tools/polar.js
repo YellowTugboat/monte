@@ -31,7 +31,7 @@ export function radiansToDegrees(rad) {
 }
 
 export function arcBisect(startAngle, endAngle) {
-  return ((endAngle - startAngle) / 2 + startAngle);
+  return (startAngle + endAngle) / 2;
 }
 
 export function wedgeBisect(d) {

@@ -23,7 +23,7 @@ export class AxisLabelWrap extends Extension {
     const maxWidth = this.tryInvoke(this.opts.maxWidth);
     const lbls = this.layer.selectAll(`.${axis}-axis.axis .tick text`);
 
-    this.layer.transition()
+    this.layer.select(`.${axis}-axis`).transition()
       .on('end', () => {
         lbls.call(wrap, maxWidth, lineHeightEm)
           .call((...args) => this.tryInvoke(this.opts.labelCustomize, ...args));

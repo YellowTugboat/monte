@@ -66,6 +66,6 @@ export class VerticalResizer extends Resizer {
     const el = chart.bound.node().parentElement;
     const s = getStyle(el);
 
-    chart.boundingRect(chart.opts.boundingHeight, s.rect.height - s.pt - s.pb);
+    chart.boundingRect(chart.opts.boundingWidth, s.rect.height - s.pt - s.pb);
   }
 }

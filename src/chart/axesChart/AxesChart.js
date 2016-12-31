@@ -213,7 +213,7 @@ export class AxesChart extends Chart {
 
       this.support.select(`.${scaleName}-axis`)
         .transition(t)
-          .on('start', () => this.emit(EVENT_AXIS_RENDERING, scaleName, axis))
+          .call((t) => this.emit(EVENT_AXIS_RENDERING, scaleName, axis, t))
           .call(axis)
           .call(this._setLabel.bind(this, scaleName))
           .call((t) => this.emit(EVENT_AXIS_RENDERED, scaleName, axis, t));
