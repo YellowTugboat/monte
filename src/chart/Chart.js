@@ -6,7 +6,7 @@ import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
 import { UNDEF } from '../const/undef';
-import { getDepthFirst } from '../tools/getDepthFirst';
+import { getTreeSetting } from '../tools/getTreeSetting';
 import { global } from '../support/MonteGlobal';
 import { mergeOptions } from '../tools/mergeOptions';
 import { noop } from '../tools/noop';
@@ -670,9 +670,14 @@ export class Chart {
 
   _transitionSettings(...levels) {
     const transitionSettings = this.tryInvoke(this.opts.transition);
-    const duration = getDepthFirst(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
-    const delay = getDepthFirst(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
-    const ease = getDepthFirst(transitionSettings, levels, 'ease', TRANSITION_EASE);
+    const duration = getTreeSetting(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
+    const delay = getTreeSetting(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
+    const ease = getTreeSetting(transitionSettings, levels, 'ease', TRANSITION_EASE);
+
+    if (this.developerMode && this.opts.developerOptions.transitions) {
+      console.log('Transition: ' + levels.join('.')); // eslint-disable-line no-console
+      console.log({ levels: levels, duration, delay, ease }); // eslint-disable-line no-console
+    }
 
     return { duration, delay, ease };
   }
