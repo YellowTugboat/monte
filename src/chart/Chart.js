@@ -49,6 +49,12 @@ const DEFAULTS = {
   // fly" chart). The assumption is most of the time other classes will extend and implement
   // required features (such as '_update') and the checks for those features should be enforced.
   directUse: false,
+
+  developerOptions: {
+    scales: false,  // Log generated scale accessor details
+    transitions: false, // Log transition configuration details
+    listeners: false, // Log which event listeners are setup during developer mode
+  },
 };
 
 /*
@@ -210,7 +216,10 @@ export class Chart {
       this._events;
 
     events.forEach((eventName) => {
-      console.log(`[${this}] Adding listener for "${eventName}"`); // eslint-disable-line no-console
+      if (this.opts.developerOptions.listeners) {
+        console.log(`[${this}] Adding listener for "${eventName}"`); // eslint-disable-line no-console
+      }
+
       this.on(`${eventName}.developerMode`, echo.bind(this, eventName));
     });
   }
@@ -934,7 +943,7 @@ export class Chart {
         const scalePath = `opts.${scaleName}`;
         const v = this.getScaledProp(scalePath, propPrefix, d);
 
-        if (this.developerMode && v !== UNDEF) {
+        if (this.developerMode && this.opts.developerOptions.scales && v !== UNDEF) {
           console.log(scalePath, v); // eslint-disable-line no-console
         }
 
