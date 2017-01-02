@@ -12,6 +12,9 @@ const EVENTS = [
   EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS,
 ];
 
+const BAR = 'bar';
+const LABEL = 'label';
+
 const BAR_CHART_DEFAULTS = {
   chartCss: 'monte-bar-chart',
 
@@ -89,7 +92,7 @@ export class BarChart extends AxesChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('bar'),   // Bar events
+      ...commonEventNames(BAR),   // Bar events
       ...EVENTS
     );
   }
@@ -146,20 +149,26 @@ export class BarChart extends AxesChart {
         'monte-bar-grp',
         this.opts.barGrpCss], d, i))
       .append('rect')
+        .call(this.__bindCommonEvents(BAR))
         .style('opacity', 0)
         .attr('x', barX)
         .attr('y', barY)
         .attr('width', barWidth)
         .attr('height', barHeight)
         .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
-        .call(this.__bindCommonEvents('bar'))
         .attr('class', (d, i) => this._buildCss([
           this.opts.barCss,
           this.opts.barCssScale,
           d.css], d, i))
+        .call((sel) => this.fnInvoke(this.opts.barEnterSelectionCustomize, sel))
         .transition()
-          .call(this._transitionSetup('bar', ENTER))
-          .style('opacity', 1);
+          .call(this._transitionSetup(BAR, ENTER))
+          .style('opacity', 1)
+          .attr('x', barX)
+          .attr('y', barY)
+          .attr('width', barWidth)
+          .attr('height', barHeight)
+          .call((t) => this.fnInvoke(this.opts.barEnterTransitionCustomize, t));
 
     // Update existing bar groups
     barGrps.select('rect')
@@ -168,19 +177,23 @@ export class BarChart extends AxesChart {
         this.opts.barCss,
         this.opts.barCssScale,
         d.css], d, i))
+      .call((sel) => this.fnInvoke(this.opts.barUpdateSelectionCustomize, sel))
       .transition()
-        .call(this._transitionSetup('bar', UPDATE))
+        .call(this._transitionSetup(BAR, UPDATE))
         .attr('x', barX)
         .attr('y', barY)
         .attr('width', barWidth)
         .attr('height', barHeight)
-        .style('opacity', 1);
+        .style('opacity', 1)
+        .call((t) => this.fnInvoke(this.opts.barUpdateTransitionCustomize, t));
 
     // Fade out removed lines.
     barGrps.exit()
+      .call((sel) => this.fnInvoke(this.opts.barExitSelectionCustomize, sel))
       .transition()
-        .call(this._transitionSetup('bar', EXIT))
+        .call(this._transitionSetup(BAR, EXIT))
         .style('opacity', 0)
+        .call((t) => this.fnInvoke(this.opts.barExitTransitionCustomize, t))
       .remove();
 
     // Here the order is important. Merging the line groups when only an update occurs results in an
@@ -193,17 +206,42 @@ export class BarChart extends AxesChart {
 
     lbl.enter().append('text')
       .attr('class', 'monte-bar-label')
-      .merge(lbl)
-        .style('fill', (d1) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
-        .attr('x', (d1) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
-        .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
-        .attr('y', (d1) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
-        .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
-        .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes));
+      .style('opacity', 0)
+      .style('fill', (d1) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
+      .attr('x', (d1) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
+      .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
+      .attr('y', (d1) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
+      .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
+      .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes))
+      .call((sel) => this.fnInvoke(this.opts.labelEnterSelectionCustomize, sel))
+      .transition()
+        .call((t) => {
+          const ts = this._transitionSettings(LABEL, ENTER);
+          this._transitionConfigure(t, ts, d, i, nodes);
+        })
+        .style('opacity', 1)
+        .call((t) => this.fnInvoke(this.opts.labelEnterTransitionCustomize, t));
+
+    lbl.style('fill', (d1) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
+      .attr('x', (d1) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
+      .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
+      .attr('y', (d1) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
+      .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
+      .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes))
+      .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
+      .transition()
+        .call((t) => {
+          const ts = this._transitionSettings(LABEL, UPDATE);
+          this._transitionConfigure(t, ts, d, i, nodes);
+        })
+        .style('opacity', 1)
+        .call((t) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, t));
 
     lbl.exit()
+      .call((sel) => this.fnInvoke(this.opts.labelExitSelectionCustomize, sel))
       .transition()
-      .call(this._transitionSetup('bar', EXIT))
+        .call(this._transitionSetup(LABEL, EXIT))
+        .call((t) => this.fnInvoke(this.opts.labelExitTransitionCustomize, t))
       .remove();
   }
 

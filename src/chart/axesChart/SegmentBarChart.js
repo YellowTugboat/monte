@@ -5,6 +5,7 @@ import { commonEventNames } from '../../tools/commonEventNames';
 import { extentBalanced } from '../../util/extents';
 import { noop } from '../../tools/noop';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
+import { upperFirst } from '../../tools/string';
 
 export const SEGMENT_BAR_MODE = {
   GROUPED: 'grouped',
@@ -19,6 +20,10 @@ export const SEGMENT_BAR_MODE_CSS_MAP = {
 const EVENT_MODE_CHANGING = 'modeChanging';
 const EVENT_MODE_CHANGED = 'modeChanged';
 const EVENTS = [EVENT_MODE_CHANGING, EVENT_MODE_CHANGED];
+
+const BARSEG = 'barseg';
+const BARGRP = 'bargrp';
+const LABEL = 'label';
 
 const SEGMENT_BAR_CHART_DEFAULTS = {
   chartCss: 'monte-segment-bar-chart',
@@ -92,8 +97,8 @@ export class SegmentBarChart extends AxesChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('bargrp'),  // Bar group events
-      ...commonEventNames('barseg'),  // Bar segment events
+      ...commonEventNames(BARGRP),  // Bar group events
+      ...commonEventNames(BARSEG),  // Bar segment events
       ...EVENTS
     );
   }
@@ -163,6 +168,14 @@ export class SegmentBarChart extends AxesChart {
     this.renderAxes();
     this.update();
     this.emit(EVENT_MODE_CHANGED);
+  }
+
+  mode(mode) {
+    if (mode) {
+      this.setMode();
+    }
+
+    return this.tryInvoke(this.opts.segmentBarMode);
   }
 
   updateAxesRanges() {
@@ -277,13 +290,16 @@ export class SegmentBarChart extends AxesChart {
     const fns = {barXInner, barYInner, barWidth, barHeight};
     const barGrpsEnter = barGrps.enter().append('g')
       .attr('class', 'monte-segment-bar-grp')
-      .call(this.__bindCommonEvents('bargrp'));
+      .call(this.__bindCommonEvents(BARGRP));
     const enterTrans = this._updateBarSelection(barGrpsEnter, ENTER, fns);
     const updateTrans = this._updateBarSelection(barGrps, UPDATE, fns);
 
+    // TODO: Should this have transitions? Only have a delay?
     barGrps.exit()
+      .call((sel) => this.fnInvoke(this.opts.bargrpExitSelectionCustomize, sel))
       .transition()
-      .call(this._transitionSetup('bar', EXIT))
+        .call(this._transitionSetup(BARGRP, EXIT))
+        .call((t) => this.fnInvoke(this.opts.bargrpExitTransitionCustomize, t))
       .remove();
 
     return {
@@ -296,9 +312,10 @@ export class SegmentBarChart extends AxesChart {
   _updateBarSelection(sel, stage, fns) {
     const translate = this._barGroupTranslate.bind(this);
     const trans = this.draw.transition()
-      .call(this._transitionSetup('bar', stage));
+      .call(this._transitionSetup('bargrp', stage));
 
-    const transitionSettings = this._transitionSettings('bar', stage);
+    const selectionFnName = BARSEG + upperFirst(stage) + 'SelectionCustomize';
+    const transitionFnName = BARSEG + upperFirst(stage) + 'TransitionCustomize';
 
     sel.attr('transform', (d) => `translate(${translate(d)})`)
       .each((d, i, nodes) => {
@@ -307,7 +324,7 @@ export class SegmentBarChart extends AxesChart {
         const innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
 
         innerRects.enter().append('rect')
-          .call(this.__bindCommonEvents('barseg'))
+          .call(this.__bindCommonEvents(BARSEG))
           .style('opacity', 0)
           .merge(innerRects)
             .attr('class', (d, i) => this._buildCss(
@@ -315,14 +332,23 @@ export class SegmentBarChart extends AxesChart {
                 this.opts.barSegCss,
                 this.opts.barSegCssScaleAccessor,
                 d.css], d, i))
+            .call((sel) => this.fnInvoke(this.opts[selectionFnName], sel))
             .transition()
-              .call((t) => this._transitionConfigure(t, transitionSettings, d, i, nodes))
+              .call(this._transitionSetup(BARSEG, stage), d, i, nodes)
               .style('fill', this.optionReaderFunc('barSegFillScaleAccessor'))
               .attr('x', fns.barXInner)
               .attr('y', fns.barYInner)
               .attr('width', fns.barWidth)
               .attr('height', fns.barHeight)
-              .style('opacity', 1);
+              .style('opacity', 1)
+              .call((t) => this.fnInvoke(this.opts[transitionFnName], t));
+
+        innerRects.exit()
+          .call((sel) => this.fnInvoke(this.opts.barsegExitSelectionCustomize, sel))
+          .transition()
+            .call(this._transitionSetup(BARSEG, EXIT))
+            .call((t) => this.fnInvoke(this.opts.barsegExitTransitionCustomize, t))
+          .remove();
       });
 
     return trans;
@@ -340,24 +366,30 @@ export class SegmentBarChart extends AxesChart {
   }
 
   // TODO: Move labels into segment bar grps (a new nested for the rect and label to live together)?
-  _updateBarSegLabel(barGrp, transition, barData) {
+  _updateBarSegLabel(barGrp, transition, barData, barIndex, barNodes) {
     const lbl = barGrp.selectAll('.monte-bar-label').data(this._segLabels(barData));
 
+    // TODO: Split enter and merge?
     lbl.enter().append('text')
       .attr('class', 'monte-bar-label')
       .merge(lbl)
         .text((d1, i, nodes) => this.tryInvoke(this.opts.label, d1, i, nodes))
+        .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
         .transition(transition)
+          .call(this._transitionSetup(LABEL, UPDATE), barData, barIndex, barNodes)
           .style('fill', (d1, i, nodes) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
           .attr('x', (d1, i, nodes) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
           .attr('dx', (d1, i, nodes) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
           .attr('y', (d1, i, nodes) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
-          .attr('dy', (d1, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes));
+          .attr('dy', (d1, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
+          .call((t) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, t));
 
     lbl.exit()
+      .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
       .transition()
-      .call(this._transitionSetup('bar', EXIT))
-      .style('opacity', 0)
+        .call(this._transitionSetup(LABEL, EXIT), barData, barIndex, barNodes)
+        .style('opacity', 0)
+        .call((t) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, t))
       .remove();
   }
 

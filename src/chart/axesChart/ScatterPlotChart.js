@@ -3,6 +3,9 @@ import { AxesChart } from './AxesChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
+import { upperFirst } from '../../tools/string';
+
+const POINT = 'point';
 
 const SCATTER_PLOT_DEFAULTS = {
   chartCss: 'monte-scatter-plot',
@@ -48,7 +51,7 @@ export class ScatterPlot extends AxesChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('point') // Point events
+      ...commonEventNames(POINT) // Point events
     );
   }
 
@@ -80,21 +83,26 @@ export class ScatterPlot extends AxesChart {
 
     // Create new points and update existing
     const pointsEnter = points.enter().append('path')
-        .call(this.__bindCommonEvents('point'));
+        .call(this.__bindCommonEvents(POINT));
     this._updatePointsSelection(pointsEnter, ENTER);
     this._updatePointsSelection(points, UPDATE);
 
     // Fade out removed points.
     points.exit()
+      .call((sel) => this.fnInvoke(this.opts.pointExitSelectionCustomize, sel))
       .transition()
-      .call(this._transitionSetup('point', EXIT))
-      .style('opacity', 0)
+        .call(this._transitionSetup(POINT, EXIT))
+        .style('opacity', 0)
+        .call((t) => this.fnInvoke(this.opts.pointExitTransitionCustomize, t))
       .remove();
 
     return points.merge(points.enter().selectAll('.point'));
   }
 
   _updatePointsSelection(sel, stage) {
+    const selectionFnName = POINT + upperFirst(stage) + 'SelectionCustomize';
+    const transitionFnName = POINT + upperFirst(stage) + 'TransitionCustomize';
+
     sel.attr('d', (d, i) => {
       const symbase = d3.symbol().size(this.opts.pointSize);
       const symbol = this.opts.pointSymbol(symbase, d, i);
@@ -107,10 +115,12 @@ export class ScatterPlot extends AxesChart {
         d.css], d, i))
     .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
     .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
-  .transition()
-    .call(this._transitionSetup('point', stage))
-    .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
-    .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
-    .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`);
+    .call((sel) => this.fnInvoke(this.opts[selectionFnName], sel))
+    .transition()
+      .call(this._transitionSetup(POINT, stage))
+      .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
+      .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
+      .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
+      .call((t) => this.fnInvoke(this.opts[transitionFnName], t));
   }
 }

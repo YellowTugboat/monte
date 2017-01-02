@@ -3,7 +3,10 @@ import { AxesChart } from './AxesChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
+import { upperFirst } from '../../tools/string';
 
+const LINE = 'line';
+const POINT = 'point';
 const LINE_CHART_DEFAULTS = {
   chartCss: 'monte-line-chart',
 
@@ -85,8 +88,8 @@ export class LineChart extends AxesChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('line'), // Line events
-      ...commonEventNames('point') // Point events
+      ...commonEventNames(LINE), // Line events
+      ...commonEventNames(POINT) // Point events
     );
   }
 
@@ -128,7 +131,7 @@ export class LineChart extends AxesChart {
     const enterLines = lineGrps.enter().append('g')
       .attr('class', 'monte-line-grp')
       .append('path')
-        .call(this.__bindCommonEvents('line'));
+        .call(this.__bindCommonEvents(LINE));
 
     this._updateLineSelection(enterLines, ENTER);
 
@@ -139,7 +142,7 @@ export class LineChart extends AxesChart {
     // Fade out removed lines.
     lineGrps.exit()
       .transition()
-        .call(this._transitionSetup('line', EXIT))
+        .call(this._transitionSetup(LINE, EXIT))
         .style('opacity', 0)
       .remove();
 
@@ -149,15 +152,20 @@ export class LineChart extends AxesChart {
   }
 
   _updateLineSelection(sel, stage) {
+    const selectionFnName = LINE + upperFirst(stage) + 'SelectionCustomize';
+    const transitionFnName = LINE + upperFirst(stage) + 'TransitionCustomize';
+
     sel.attr('class', (d, i) => this._buildCss(
       ['monte-line',
         this.opts.lineCss,
         this.opts.lineCssScaleAccessor,
         d.css], d, i))
+        .call((sel) => this.fnInvoke(this.opts[selectionFnName], sel))
       .transition()
-        .call(this._transitionSetup('line', stage))
+        .call(this._transitionSetup(LINE, stage))
         .attr('d', (d) => this.line(this.getProp('values', d)))
-        .style('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'));
+        .style('stroke', this.optionReaderFunc('lineStrokeScaleAccessor'))
+        .call((t) => this.fnInvoke(this.opts[transitionFnName], t));
   }
 
   _updateLinePoints(node, lineDatum, lineIndex) {
@@ -175,30 +183,50 @@ export class LineChart extends AxesChart {
 
     // Create new points
     points.enter().append('path')
+        .call(this.__bindCommonEvents(POINT))
         .attr('d', genSym)
-        .call(this.__bindCommonEvents('point'))
-      .merge(points) // Update existing points and set values on new points.
-        .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
+        .attr('transform', (d) => this._translatePoint(d))
         .attr('class', (d) => this._buildCss(
           ['monte-point',
             lineDatum.css,
             this.opts.lineCssScaleAccessor,
             this.opts.pointCss,
             this.opts.pointCssScaleAccessor,
-            d.css], lineDatum, lineIndex));
+            d.css], lineDatum, lineIndex))
+        .call((sel) => this.fnInvoke(this.opts.pointEnterSelectionCustomize, sel))
+        .transition()
+          .call(this._transitionSetup(POINT, ENTER))
+          .attr('transform', (d) => this._translatePoint(d))
+          .call((sel) => this.fnInvoke(this.opts.pointEnterTransitionCustomize, sel));
 
-    points.transition()
-        .call(this._transitionSetup('point', UPDATE))
+    // Update existing points
+    points.attr('class', (d) => this._buildCss(
+      ['monte-point',
+        lineDatum.css,
+        this.opts.lineCssScaleAccessor,
+        this.opts.pointCss,
+        this.opts.pointCssScaleAccessor,
+        d.css], lineDatum, lineIndex))
+      .call((sel) => this.fnInvoke(this.opts.pointUpdateSelectionCustomize, sel))
+      .transition()
+        .call(this._transitionSetup(POINT, UPDATE))
         .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
         .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
-        .attr('transform', (d) => `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`)
-        .attr('d', genSym);
+        .attr('transform', (d) => this._translatePoint(d))
+        .attr('d', genSym)
+        .call((sel) => this.fnInvoke(this.opts.pointUpdateTransitionCustomize, sel));
 
     // Fade out removed points.
     points.exit()
+    .call((sel) => this.fnInvoke(this.opts.pointExitSelectionCustomize, sel))
       .transition()
-        .call(this._transitionSetup('point', EXIT))
+        .call(this._transitionSetup(POINT, EXIT))
         .style('opacity', 0)
+        .call((sel) => this.fnInvoke(this.opts.pointExitTransitionCustomize, sel))
         .remove();
+  }
+
+  _translatePoint(d) {
+    return `translate(${this.getScaledProp('x', d)}, ${this.getScaledProp('y', d)})`;
   }
 }

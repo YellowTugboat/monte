@@ -530,6 +530,24 @@ export class Chart {
   }
 
   /**
+   * Invoke a function (`fn`) (generally from the chart options) with the given arguments. If the
+   * `fn` is a non-function value (static values including undefined and null) then null is returned.
+   */
+  fnInvoke(fn, ...args) {
+    if (fn == null || !isFunc(fn)) {
+      return null;
+    }
+
+    try {
+      return fn.call(this, ...args);
+    }
+    catch (e) {
+      this.__notify(EV.SUPPRESSED_ERROR, e);
+      return null;
+    }
+  }
+
+  /**
    * Reads a property from a datum and returns the raw (unscaled) value.
    */
   getProp(propShortName, d, defaultValue=null) {
@@ -663,17 +681,32 @@ export class Chart {
   // * `transitionSettings.<property>` then
   // * `<propertDefaultValue>`
   _transitionSetup(...levels) {
-    return (transition) => {
+    return (transition, ...args) => {
       const { duration, delay, ease } = this._transitionSettings(...levels);
-      transition.duration(duration).delay(delay).ease(ease);
+      let durationWrap = null;
+      let delayWrap = null;
+
+      if (isFunc(duration) && args && args.length) {
+        durationWrap = function(d, i, nodes) {
+          return duration(d, i, nodes, ...args);
+        };
+      }
+
+      if (isFunc(delay) && args && args.length) {
+        delayWrap = function(d, i, nodes) {
+          return delay(d, i, nodes, ...args);
+        };
+      }
+
+      transition.duration(durationWrap || duration).delay(delayWrap || delay).ease(ease);
     };
   }
 
-  _transitionConfigure(transition, transitionSettings, d, i, nodes) {
+  _transitionConfigure(transition, transitionSettings, d, i, nodes, ...args) {
     const { duration, delay, ease } = transitionSettings;
 
-    transition.duration(this.tryInvoke(duration, d, i, nodes))
-      .delay(this.tryInvoke(delay, d, i, nodes))
+    transition.duration(this.tryInvoke(duration, d, i, nodes, ...args))
+      .delay(this.tryInvoke(delay, d, i, nodes, ...args))
       .ease(ease);
   }
 

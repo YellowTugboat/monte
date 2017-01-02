@@ -20,6 +20,7 @@ const EVENT_UPDATED_LABELS = 'updatedLabels';
 
 const EVENTS = [ EVENT_UPDATING_LABELS, EVENT_UPDATED_LABELS ];
 
+const WEDGE = 'wedge';
 const ARC_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart',
 
@@ -98,7 +99,7 @@ export class ArcChart extends PolarChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('wedge'),   // Wedge events
+      ...commonEventNames(WEDGE),   // Wedge events
       ...EVENTS
     );
   }
@@ -154,15 +155,17 @@ export class ArcChart extends PolarChart {
               this.opts.arcWedgeCss,
               this.opts.arcWedgeCssScaleAccessor,
               d.data.css], d, i))
-          .call(this.__bindCommonEvents('wedge'))
+          .call(this.__bindCommonEvents(WEDGE))
+          .call((sel) => this.fnInvoke(this.opts.wedgeEnterSelectionCustomize, sel))
           .transition()
-            .call(this._transitionSetup('arc', ENTER))
+            .call(this._transitionSetup(WEDGE, ENTER))
             .attrTween('d', (d) => {
               const start = this.tryInvoke(this.opts.arcWedgeEnter, d);
               return arcSimpleTween(arc, start, d);
             })
             .style('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor'))
-            .style('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
+            .style('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'))
+            .call((sel) => this.fnInvoke(this.opts.wedgeEnterTransitionCustomize, sel));
 
     arcs.selectAll('.monte-arc-wedge')
         .each(function() {
@@ -180,19 +183,23 @@ export class ArcChart extends PolarChart {
             this.opts.arcWedgeCss,
             this.opts.arcWedgeCssScaleAccessor,
             d.data.css], d, i))
+        .call((sel) => this.fnInvoke(this.opts.wedgeUpdateSelectionCustomize, sel))
         .transition()
-          .call(this._transitionSetup('arc', UPDATE))
+          .call(this._transitionSetup(WEDGE, UPDATE))
           .attrTween('d', function(d) {
             return arcSimpleTween(arc, d.prev, d);
           })
           .style('stroke', this.optionReaderFunc('arcWedgeStrokeScaleAccessor'))
-          .style('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'));
+          .style('fill', this.optionReaderFunc('arcWedgeFillScaleAccessor'))
+          .call((sel) => this.fnInvoke(this.opts.wedgeUpdateTransitionCustomize, sel));
 
     arcs.exit()
+      .call((sel) => this.fnInvoke(this.opts.wedgeExitSelectionCustomize, sel))
       .transition()
-        .call(this._transitionSetup('arc', EXIT))
-        .style('opacity', 0.01)
-        .remove();
+        .call(this._transitionSetup(WEDGE, EXIT))
+        .style('opacity', 0)
+        .call((sel) => this.fnInvoke(this.opts.wedgeExitTransitionCustomize, sel))
+      .remove();
 
     return arcs.merge(arcs.enter().selectAll('.monte-arc'));
   }
@@ -214,7 +221,8 @@ export class ArcChart extends PolarChart {
         .style('fill', this.optionReaderFunc('arcBgWedgeFillScaleAccessor'))
         .attr('class', (d, i) => this._buildCss(
           ['monte-arc-bg',
-            this.opts.arcBgWedgeCssScaleAccessor], d, i));
+            this.opts.arcBgWedgeCssScaleAccessor], d, i))
+        .call((sel) => this.fnInvoke(this.opts.bgUpdateSelectionCustomize, sel));
   }
 
   _updateLabels(arcGrps) {
@@ -254,17 +262,20 @@ export class ArcChart extends PolarChart {
       .style('opacity', 0)
       .style('fill', this.optionReaderFunc('labelFillScaleAccessor'))
       .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes))
+      .call((sel) => this.fnInvoke(this.opts.labelEnterSelectionCustomize, sel))
       .transition()
         .call((t) => {
           const ts = this._transitionSettings('label', ENTER);
           this._transitionConfigure(t, ts, d, i, nodes);
         })
-        .style('opacity', 1);
+        .style('opacity', 1)
+        .call((sel) => this.fnInvoke(this.opts.labelEnterTransitionCustomize, sel));
 
     lbl.style('fill', this.optionReaderFunc('labelFillScaleAccessor'))
         .style('opacity', 1)
         .attr('dx', (d1) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
         .attr('dy', (d1) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
+        .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
         .transition()
           .call((t) => {
             const ts = this._transitionSettings('label', UPDATE);
@@ -283,15 +294,18 @@ export class ArcChart extends PolarChart {
           })
           .attr('angle', angle)
           .attr('radius', labelRadius)
-          .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes));
+          .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes))
+          .call((sel) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, sel));
 
     lbl.exit()
+      .call((sel) => this.fnInvoke(this.opts.labelExitSelectionCustomize, sel))
       .transition()
-      .call((t) => {
-        const ts = this._transitionSettings('label', EXIT);
-        this._transitionConfigure(t, ts, d, i, nodes);
-      })
-      .attr('opacity', 0)
+        .call((t) => {
+          const ts = this._transitionSettings('label', EXIT);
+          this._transitionConfigure(t, ts, d, i, nodes);
+        })
+        .attr('opacity', 0)
+        .call((sel) => this.fnInvoke(this.opts.labelExitTransitionCustomize, sel))
       .remove();
   }
 }

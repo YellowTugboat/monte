@@ -11,6 +11,8 @@ export const ICON_MODE = {
   SVG_USE_EXTERNAL: 'svgUseExternal',
 };
 
+const ICON = 'icon';
+
 // TODO: export icon arrangements on Monte object.
 export const iconArrangeBottomTop = {
   rowIndex: function(d, i) {
@@ -90,7 +92,7 @@ export class IconArray extends AxesChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('icon') // Icon events
+      ...commonEventNames(ICON) // Icon events
     );
   }
 
@@ -150,7 +152,7 @@ export class IconArray extends AxesChart {
     // Fade out removed icons.
     icons.exit()
       .transition()
-        .call(this._transitionSetup('icon', EXIT))
+        .call(this._transitionSetup(ICON, EXIT))
         .style('opacity', 0)
         .remove();
   }
@@ -184,7 +186,8 @@ export class IconArray extends AxesChart {
 
   _updateCommon(type, icons, transform, merge = noop) {
     const t = icons.enter().append(type)
-        .call(this.__bindCommonEvents('icon'))
+        .call(this.__bindCommonEvents(ICON))
+      // TODO: Split apart merge
       .merge(icons)
         .each(merge)
         .attr('transform', (d, i, nodes) => transform.call(this, d, i, nodes))
@@ -192,10 +195,12 @@ export class IconArray extends AxesChart {
           this.opts.iconCss,
           this.opts.iconCssScaleAccessor,
           d.css], d, i))
+          .call((sel) => this.fnInvoke(this.opts.iconUpdateSelectionCustomize, sel))
         .transition()
-          .call(this._transitionSetup('icon', UPDATE))
+          .call(this._transitionSetup(ICON, UPDATE))
           .style('fill', this.optionReaderFunc('iconFillScaleAccessor'))
-          .style('stroke', this.optionReaderFunc('iconStrokeScaleAccessor'));
+          .style('stroke', this.optionReaderFunc('iconStrokeScaleAccessor'))
+          .call((t) => this.fnInvoke(this.opts.iconUpdateTransitionCustomize, t));
 
     return t;
   }

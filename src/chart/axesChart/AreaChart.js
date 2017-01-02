@@ -4,6 +4,9 @@ import { commonEventNames } from '../../tools/commonEventNames';
 import { extentFromZero } from '../../util/extents';
 import { noop } from '../../tools/noop';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
+import { upperFirst } from '../../tools/string';
+
+const AREA = 'area';
 
 const AREA_CHART_DEFAULTS = {
   chartCss: 'monte-area-chart',
@@ -66,7 +69,7 @@ export class AreaChart extends LineChart {
 
   _initPublicEvents(...events) {
     super._initPublicEvents(...events,
-      ...commonEventNames('area')   // Area events
+      ...commonEventNames(AREA)   // Area events
     );
   }
 
@@ -81,31 +84,36 @@ export class AreaChart extends LineChart {
     const lineGrps = super._update();
 
     lineGrps.each((d, i, nodes) => {
-      this._updateLineArea(nodes[i], d, i);
+      this._updateLineArea(nodes[i], d, i, nodes);
     });
   }
 
-  _updateLineArea(node, lineDatum, lineIndex) {
+  _updateLineArea(node, lineDatum, lineIndex, lineNodes) {
     const lineGrp = d3.select(node);
 
-    // Data join for the points
+    // Data join for the area
     const area = lineGrp.selectAll('.monte-area').data((d) => [d]);
 
     // Create new area and update existing
     const enterAreas = area.enter().insert('path', ':first-child')
-        .call(this.__bindCommonEvents('area'));
-    this._updateLineAreaSelections(enterAreas, ENTER, lineDatum, lineIndex);
-    this._updateLineAreaSelections(area, UPDATE, lineDatum, lineIndex);
+        .call(this.__bindCommonEvents(AREA));
+    this._updateLineAreaSelections(enterAreas, ENTER, lineDatum, lineIndex, lineNodes);
+    this._updateLineAreaSelections(area, UPDATE, lineDatum, lineIndex, lineNodes);
 
-    // Fade out removed points.
+    // Fade out removed area
     area.exit()
+      .call((sel) => this.fnInvoke(this.opts.areaExitSelectionCustomize, sel))
       .transition()
-        .call(this._transitionSetup('area', EXIT))
+        .call(this._transitionSetup(AREA, EXIT))
         .style('opacity', 0)
+        .call((t) => this.fnInvoke(this.opts.areaExitTransitionCustomize, t))
         .remove();
   }
 
-  _updateLineAreaSelections(sel, stage, lineDatum, lineIndex) {
+  _updateLineAreaSelections(sel, stage, lineDatum, lineIndex, lineNodes) {
+    const selectionFnName = AREA + upperFirst(stage) + 'SelectionCustomize';
+    const transitionFnName = AREA + upperFirst(stage) + 'TransitionCustomize';
+
     sel.attr('class', (d) => this._buildCss(
       ['monte-area',
         lineDatum.css,
@@ -113,9 +121,11 @@ export class AreaChart extends LineChart {
         this.opts.areaCss,
         this.opts.areaCssScaleAccessor,
         d.css], lineDatum, lineIndex))
+        .call((sel) => this.fnInvoke(this.opts[selectionFnName], sel))
     .transition()
-        .call(this._transitionSetup('area', stage))
+        .call(this._transitionSetup(AREA, stage), lineDatum, lineIndex, lineNodes)
         .attr('d', (d) => this.area(this.getProp('values', d)))
-        .style('fill', this.optionReaderFunc('areaFillScaleAccessor'));
+        .style('fill', this.optionReaderFunc('areaFillScaleAccessor'))
+        .call((t) => this.fnInvoke(this.opts[transitionFnName], t));
   }
 }

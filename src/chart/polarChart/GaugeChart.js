@@ -20,6 +20,8 @@ const EVENTS = [
   EVENT_UPDATING_NEEDLE, EVENT_UPDATED_NEEDLE,
 ];
 
+const NEEDLE = 'needle';
+
 const GAUGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-gauge-chart',
   piePadAngle: 0,
@@ -186,25 +188,31 @@ export class GaugeChart extends ArcChart {
     needle.enter().append('path')
       .attr('class', 'monte-gauge-needle')
       .attr('d', path)
+      .call((sel) => this.fnInvoke(this.opts.needleEnterSelectionCustomize, sel))
       .transition()
-        .call(this._transitionSetup('needle', ENTER))
-        .style('transform', (d) => 'rotate(' + d + 'rad)');
+        .call(this._transitionSetup(NEEDLE, ENTER))
+        .style('transform', (d) => 'rotate(' + d + 'rad)')
+        .call((t) => this.fnInvoke(this.opts.needleEnterTransitionCustomize, t));
 
-    needle.transition()
-      .call(this._transitionSetup('needle', UPDATE))
-      .styleTween('transform', (d) => {
-        const a = this._prevNeedleAngleValueData;
-        const b = d;
+    needle.call((sel) => this.fnInvoke(this.opts.needleExitSelectionCustomize, sel))
+      .transition()
+        .call(this._transitionSetup(NEEDLE, UPDATE))
+        .styleTween('transform', (d) => {
+          const a = this._prevNeedleAngleValueData;
+          const b = d;
 
-        return function(t) {
-          const r = a * (1 - t) + b * t;
-          return 'rotate(' + r + 'rad)';
-        };
-      });
+          return function(t) {
+            const r = a * (1 - t) + b * t;
+            return 'rotate(' + r + 'rad)';
+          };
+        })
+        .call((t) => this.fnInvoke(this.opts.needleExitTransitionCustomize, t));
 
     needle.exit()
+      .call((sel) => this.fnInvoke(this.opts.needleExitSelectionCustomize, sel))
       .transition()
-        .call(this._transitionSetup('needle', EXIT))
+        .call(this._transitionSetup(NEEDLE, EXIT))
+        .call((t) => this.fnInvoke(this.opts.needleExitTransitionCustomize, t))
         .remove();
 
     this.emit(EVENT_UPDATED_NEEDLE);
