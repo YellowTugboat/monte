@@ -524,6 +524,7 @@ export class Chart {
       return isFunc(value) ? value.call(this, ...args) : value;
     }
     catch (e) {
+      if (console && console.error) { console.error(e); } // eslint-disable-line no-console
       this.__notify(EV.SUPPRESSED_ERROR, e);
       return null;
     }
