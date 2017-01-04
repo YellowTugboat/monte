@@ -96,8 +96,8 @@ export class GaugeChart extends ArcChart {
   _resetStyleDomains() {
     super._resetStyleDomains();
 
-    resetScaleDomain(this.opts.arcBgCssScaleAccessor);
-    resetScaleDomain(this.opts.arcBgFillScaleAccessor);
+    resetScaleDomain(this.opts.arcBgCssScale);
+    resetScaleDomain(this.opts.arcBgFillScale);
   }
 
   _data(data) {

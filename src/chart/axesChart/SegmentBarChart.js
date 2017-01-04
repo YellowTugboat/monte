@@ -158,7 +158,7 @@ export class SegmentBarChart extends AxesChart {
 
     resetScaleDomain(this.opts.barSegCssScale);
     resetScaleDomain(this.opts.barSegFillScale);
-    resetScaleDomain(this.opts.labelFillScaleAccessor);
+    resetScaleDomain(this.opts.labelFillScale);
   }
 
   setMode(mode) {

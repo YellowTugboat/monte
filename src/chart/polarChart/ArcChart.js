@@ -110,9 +110,9 @@ export class ArcChart extends PolarChart {
     resetScaleDomain(this.opts.arcWedgeCssScale);
     resetScaleDomain(this.opts.arcWedgeFillScale);
     resetScaleDomain(this.opts.arcWedgeStrokeScale);
-    resetScaleDomain(this.opts.arcBgWedgeCssScaleAccessor);
-    resetScaleDomain(this.opts.arcBgWedgeFillScaleAccessor);
-    resetScaleDomain(this.opts.labelFillScaleAccessor);
+    resetScaleDomain(this.opts.arcBgWedgeCssScale);
+    resetScaleDomain(this.opts.arcBgWedgeFillScale);
+    resetScaleDomain(this.opts.labelFillScale);
   }
 
   _updateBounds() {
