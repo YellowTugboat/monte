@@ -8,13 +8,12 @@ const LABEL_PLACEMENT = {
       const chart = this.chart || this; // Expecting to be invoked from an `Extension` or a `Chart`
       const innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
       const outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
-      // return innerRadius + (outerRadius - innerRadius) * 0.5;
 
       return function(d, i, nodes) {
         const ir = chart.tryInvoke(innerRadius, d, i, nodes);
         const or = chart.tryInvoke(outerRadius, d, i, nodes);
 
-        return ir + (or - ir) * 0.5;
+        return (ir + or) / 2;
       };
     },
   },
