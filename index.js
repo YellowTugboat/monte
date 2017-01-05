@@ -29,6 +29,7 @@ export {
 export { ArcChart } from './src/chart/polarChart/ArcChart';
 export { GaugeChart } from './src/chart/polarChart/GaugeChart';
 export { PolarAreaChart } from './src/chart/polarChart/PolarAreaChart';
+export { RadarChart } from './src/chart/polarChart/RadarChart';
 export { WedgeChart } from './src/chart/polarChart/WedgeChart';
 
 // Const
