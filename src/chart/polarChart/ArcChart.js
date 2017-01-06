@@ -3,7 +3,6 @@ import { arcLabelTween, arcSimpleTween } from '../../util/tween';
 import { polarLabelCentroid, polarLabelCssPrefix } from '../../util/polarLabels';
 import { PolarChart } from './PolarChart';
 import { TAU } from '../../const/math';
-import { classedPattern } from '../../util/css';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { getPolarCoord } from '../../tools/polar';
 import { noop } from '../../tools/noop';
@@ -11,6 +10,7 @@ import { polarLabelRotateTangentFlip } from '../../util/polarLabelRotations';
 import { radiansToDegrees } from '../../tools/polar';
 import { radiusContrain } from '../../util/dimension';
 import { readTransforms } from '../../tools/transform';
+import { removeClassByPattern } from '../../tools/css';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
 
 const LABEL_CSS_PATTERN = new RegExp(`^${polarLabelCssPrefix}*`);
@@ -232,7 +232,7 @@ export class ArcChart extends PolarChart {
     const css = this.tryInvoke(labelPlacement.css);
 
     // Clear old label CSS from chart and add new.
-    classedPattern(this.bound, LABEL_CSS_PATTERN, false);
+    removeClassByPattern(this.bound, LABEL_CSS_PATTERN);
     this.classed(css, true);
 
     arcGrps.each((d, i, nodes) => {

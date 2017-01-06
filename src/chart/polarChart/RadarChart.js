@@ -4,7 +4,6 @@ import { MonteOptionError } from '../../support/MonteOptionError';
 import { PolarChart } from './PolarChart';
 import { TAU } from '../../const/math';
 import { arcLabelTween } from '../../util/tween';
-import { classedPattern } from '../../util/css';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { gaugeLabelRotateTangentFlip } from '../../util/polarLabelRotations';
 import { getPolarCoord } from '../../tools/polar';
@@ -13,6 +12,7 @@ import { noop } from '../../tools/noop';
 import { radiansToDegrees } from '../../tools/polar';
 import { radiusContrain } from '../../util/dimension';
 import { readTransforms } from '../../tools/transform';
+import { removeClassByPattern } from '../../tools/css';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
 import { upperFirst } from '../../tools/string';
 
@@ -325,7 +325,7 @@ export class RadarChart extends PolarChart {
     const css = this.tryInvoke(labelPlacement.css);
 
     // Clear old label CSS from chart and add new.
-    classedPattern(this.bound, LABEL_CSS_PATTERN, false);
+    removeClassByPattern(this.bound, LABEL_CSS_PATTERN);
     this.classed(css, true);
 
     rayGrps.each((d, i, nodes) => {

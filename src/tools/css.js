@@ -1,6 +1,7 @@
 import { MonteError } from '../support/MonteError';
 
-export function classedPattern(selection, pattern, value) {
+// TODO: Move to tools?
+export function removeClassByPattern(selection, pattern) {
   const node = selection.node();
   const classAttr = node.getAttribute('class');
   const classList = classAttr.trim().split(/^|\s+/);
@@ -14,12 +15,12 @@ export function classedPattern(selection, pattern, value) {
     re = pattern;
   }
   else {
-    throw MonteError.InvalidArgumentType('classedPattern', 'pattern', 'String or RegExp', pattern);
+    throw MonteError.InvalidArgumentType('removeClassByPattern', 'pattern', 'String or RegExp', pattern);
   }
 
   classList.forEach((c) => {
     if (re.test(c)) {
-      selection.classed(c, value);
+      selection.classed(c, false);
     }
   });
 }
