@@ -8,18 +8,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Monte: leverage your D3 knowledge to build customized SVG charts for the modern web.">
 
-    <style type="text/css">
-      hr,p{margin-bottom:1rem}.page-header .logo,.page-header .monte,img{vertical-align:middle}html{font-family:sans-serif;line-height:1.15;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}header,section{display:block}.container::after,.row::after{content:"";display:table;clear:both}a{background-color:transparent;-webkit-text-decoration-skip:objects;-ms-touch-action:manipulation;touch-action:manipulation;color:#FB4B4E;text-decoration:none}h1{margin:.67em 0}h1,h2,p{margin-top:0}img{border-style:none}hr{-webkit-box-sizing:content-box;box-sizing:content-box;height:0;overflow:visible;margin-top:1rem;border:0;border-top:1px solid rgba(0,0,0,.1)}::-webkit-input-placeholder{color:inherit;opacity:.54}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}html{-webkit-box-sizing:border-box;box-sizing:border-box;font-size:16px;-ms-overflow-style:scrollbar}*,::after,::before{-webkit-box-sizing:inherit;box-sizing:inherit}@-ms-viewport{width:device-width}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.5;color:#373a3c}h1,h2{margin-bottom:.5rem;font-family:inherit;line-height:1.1;color:inherit;font-weight:lighter;font-weight:200}h1{font-size:2.5rem}h2{font-size:2rem}code{font-family:Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;padding:.2rem .4rem;font-size:90%;border-radius:.25rem}.col-md-6,.col-xs-12,.container{padding-right:15px;padding-left:15px}.container{margin-left:auto;margin-right:auto}@media (min-width:576px){.container{width:540px;max-width:100%}.row{margin-right:-15px;margin-left:-15px}.col-md-6,.col-xs-12{padding-right:15px;padding-left:15px}}@media (min-width:768px){.container{width:720px;max-width:100%}.row{margin-right:-15px;margin-left:-15px}}.row{margin-right:-15px;margin-left:-15px}.col-md-6,.col-xs-12{position:relative;min-height:1px}@media (min-width:992px){.container{width:960px;max-width:100%}.row{margin-right:-15px;margin-left:-15px}.col-md-6,.col-xs-12{padding-right:15px;padding-left:15px}}@media (min-width:1200px){.container{width:1140px;max-width:100%}.row{margin-right:-15px;margin-left:-15px}.col-md-6,.col-xs-12{padding-right:15px;padding-left:15px}}.col-xs-12{float:left;width:100%}@media (min-width:768px){.col-md-6,.col-xs-12{padding-right:15px;padding-left:15px}.col-md-6{float:left;width:50%}}@font-face{font-family:Lato;font-style:normal;font-weight:300;src:local('Lato Light'),local('Lato-Light'),url(https://fonts.gstatic.com/s/lato/v11/nj47mAZe0mYUIySgfn0wpQ.ttf) format('truetype')}body,html{background-color:#292930}hr.fat{margin:100px 50px;border-top:2px dotted #292930}section{position:relative}section .row h1{font-size:3rem;margin-bottom:10px}section .row h2{margin-top:20px}h1.monte{font-family:Lato,sans-serif;color:#19aeff}.inline{display:inline-block}.logo-grp{margin-bottom:20px}.main-content{background-color:#fff;padding:70px 0;min-height:300px;font-size:16px}.main-content i{color:#000}.page-header{background-color:#292930;color:#ccc;padding:100px 10px}.page-header .logo{margin-right:10px}.page-header .monte{margin:0;font-size:68px;line-height:100px}.page-header p{max-width:400px;color:#005c94}code{color:#FB4B4E;background-color:#e8e8ef}@media (max-width:767px){.page-header{text-align:center}}
-    </style>
-    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="preload" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous" as="style" onload="this.rel='stylesheet'">
-    <noscript><link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous"></noscript>
-    <link rel="preload" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous" as="style" onload="this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous"></noscript>
-    <link href="https://fonts.googleapis.com/css?family=Lato:300|Open+Sans:400" rel="preload" as="style" onload="this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css?family=Lato:300|Open+Sans:400" rel="stylesheet"></noscript>
-    <link rel="preload" type="text/css" href="build/main.css" media="screen" as="style" onload="this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" type="text/css" href="build/main.css" media="screen"></noscript>
-    <script>!function(e){"use strict";var t=function(t,n,r){function o(e){return i.body?e():void setTimeout(function(){o(e)})}function a(){d.addEventListener&&d.removeEventListener("load",a),d.media=r||"all"}var l,i=e.document,d=i.createElement("link");if(n)l=n;else{var s=(i.body||i.getElementsByTagName("head")[0]).childNodes;l=s[s.length-1]}var u=i.styleSheets;d.rel="stylesheet",d.href=t,d.media="only x",o(function(){l.parentNode.insertBefore(d,n?l:l.nextSibling)});var f=function(e){for(var t=d.href,n=u.length;n--;)if(u[n].href===t)return e();setTimeout(function(){f(e)})};return d.addEventListener&&d.addEventListener("load",a),d.onloadcssdefined=f,f(a),d};"undefined"!=typeof exports?exports.loadCSS=t:e.loadCSS=t}("undefined"!=typeof global?global:this),function(e){if(e.loadCSS){var t=loadCSS.relpreload={};if(t.support=function(){try{return e.document.createElement("link").relList.supports("preload")}catch(e){return!1}},t.poly=function(){for(var t=e.document.getElementsByTagName("link"),n=0;n<t.length;n++){var r=t[n];"preload"===r.rel&&"style"===r.getAttribute("as")&&(e.loadCSS(r.href,r),r.rel=null)}},!t.support()){t.poly();var n=e.setInterval(t.poly,300);e.addEventListener&&e.addEventListener("load",function(){e.clearInterval(n)}),e.attachEvent&&e.attachEvent("onload",function(){e.clearInterval(n)})}}}(this);</script>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300|Open+Sans:400" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="build/main.css" media="screen">
 
     <link rel="icon" type="image/png" href="img/logo_32.png" sizes="32x32">
     <link rel="icon" type="image/png" href="img/logo_64.png" sizes="64x64">
@@ -36,7 +28,7 @@
       <div class="row">
         <div class="col-xs-12 col-md-6">
           <div class="logo-grp">
-              <img src="img/monte-logo.min.svg" class="logo" height="100">
+              <img src="img/monte-logo.min.svg" class="logo" height="100" />
               <h1 class="monte inline">Monte</h1>
           </div>
           <p>
@@ -89,7 +81,7 @@
     </div>
   </section>
 
-  <hr class="fat">
+  <hr class="fat" />
     <section class="overview">
       <div class="container">
         <div class="row">
@@ -233,7 +225,7 @@
       </div>
     </section>
 
-    <hr class="fat">
+    <hr class="fat" />
 
     <section>
       <div class="container">
@@ -991,7 +983,7 @@
       </div>
     </section>
 
-    <hr class="fat">
+    <hr class="fat" />
 
     <section>
       <div class="container">
@@ -1010,7 +1002,7 @@
 
   <footer>
     <div class="container">
-      <i class="fa fa-map-marker"></i> Fresh from the <a href="https://en.wikipedia.org/wiki/Front_Range_Urban_Corridor">Front Range</a><br>
+      <i class="fa fa-map-marker"></i> Fresh from the <a href="https://en.wikipedia.org/wiki/Front_Range_Urban_Corridor">Front Range</a><br />
       Copyright &copy; 2016 <a href="http://yellowtugboat.com">Yellow Tugboat</a>
     </div>
   </footer>

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "http-server -a localhost -p 8042 -c0",
     "build-schemes": "./bin/schemeInject",
+    "build-critical": "./bin/critical",
     "build-css": "node-sass --importer node_modules/node-sass-json-importer/dist/node-sass-json-importer.js --include-path ./node_modules/boostrap/scss/ --source-map build --output-style compressed --output ./build/ --precision 8 stylesheets/main.scss",
     "build-js": "npm run build-schemes && uglifyjs build/schemes.js js/arc.js js/bar.js js/gauges.js js/header.js js/line.js js/scatter.js js/icon.js --source-map build/index.min.js.map --source-map-root ../ --source-map-url index.min.js.map --output ./build/index.min.js --compress --mangle",
     "build": "npm run build-js && npm run build-css",
@@ -24,6 +25,7 @@
   "homepage": "https://github.com/YellowTugboat/monte#readme",
   "devDependencies": {
     "bootstrap": "^4.0.0-alpha.4",
+    "critical": "^0.8.1",
     "node-sass-json-importer": "^2.1.1",
     "nodemon": "^1.11.0",
     "uglify-js": "^2.7.4"

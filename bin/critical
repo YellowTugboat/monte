@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+
+var critical = require('critical');
+
+critical.generate({
+    inline: true,
+    base: './',
+    src: 'index-base.html',
+    dest: 'index.html',
+    minify: true,
+    width: 1300,
+    height: 900
+});
