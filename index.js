@@ -94,11 +94,8 @@ export {
 } from './src/util/axis';
 
 export {
-  needleRoundedEnd,
-  needleFlatEnd,
-  needleExtraPointer,
-  needleRect,
-} from './src/util/needle';
+  radiusContrain,
+} from './src/util/dimension';
 
 export {
   extentFromZero,
@@ -109,12 +106,11 @@ export {
 } from './src/util/extents';
 
 export {
-  AutoResizer,
-  HorizontalResizer,
-  HorizontalRatioResizer,
-  Resizer,
-  VerticalResizer,
-} from './src/util/resizeHandlers';
+  needleRoundedEnd,
+  needleFlatEnd,
+  needleExtraPointer,
+  needleRect,
+} from './src/util/needle';
 
 export {
   polarLabelCentroid,
@@ -140,3 +136,16 @@ export {
   polarLabelRotateRayOpposite,
   polarLabelRotateNone,
 } from './src/util/polarLabelRotations';
+
+export {
+  AutoResizer,
+  HorizontalResizer,
+  HorizontalRatioResizer,
+  Resizer,
+  VerticalResizer,
+} from './src/util/resizeHandlers';
+
+export {
+  arcSimpleTween,
+  arcLabelTween,
+} from './src/util/tween';
