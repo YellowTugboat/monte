@@ -930,11 +930,16 @@
                   <!-- <tr>
                     <td>Notable Options</td>
                     <td></td>
-                  </tr>
+                  </tr>-->
                   <tr>
                     <td>More</td>
-                    <td></td>
-                  </tr> -->
+                    <td>
+                      Person icon path was taken from this
+                      <a href="https://github.com/google/material-design-icons/blob/master/social/svg/production/ic_person_24px.svg">file</a>
+                      in Google's
+                      <a href="https://github.com/google/material-design-icons">Material Design Icons</a>.
+                    </td>
+                  </tr>
                 </table>
               </div>
             </div>
@@ -959,11 +964,16 @@
                   <!-- <tr>
                     <td>Notable Options</td>
                     <td></td>
-                  </tr>
+                  </tr>-->
                   <tr>
                     <td>More</td>
-                    <td></td>
-                  </tr> -->
+                    <td>
+                      <a href="https://github.com/google/material-design-icons/blob/master/action/svg/production/ic_motorcycle_24px.svg">Motorcycle icon file</a>
+                      was taken from Google's
+                      <a href="https://github.com/google/material-design-icons">Material Design Icons</a>
+                      (an <code>id</code> attribute was added).
+                    </td>
+                  </tr>
                 </table>
               </div>
             </div>
@@ -997,28 +1007,27 @@
     </div>
   </footer>
 
-  <script src="https://d3js.org/d3.v4.js"></script>
-  <script src="https://unpkg.com/monte@0.0.0-alpha24/build/monte.min.js"></script>
-  <!-- <script src="monte.js"></script> -->
-  <script src="build/index.min.js"></script>
+  <script defer src="https://d3js.org/d3.v4.min.js"></script>
+  <script defer src="https://unpkg.com/monte@0.0.0-alpha24/build/monte.min.js"></script>
+  <script defer src="build/index.min.js"></script>
 
-  <script type="">
-    var showDetails = d3.select('#show-details');
-    var moreDetails = d3.select('#more-details');
+  <script type="text/javascript">
+    var showDetails = document.getElementById('show-details');
+    var moreDetails = document.getElementById('more-details');
 
-    showDetails.on('click', function() {
-      if (moreDetails.classed('in')) {
-        moreDetails.classed('in', false);
-        showDetails.text('Show Details');
+    showDetails.onclick = function() {
+      if (moreDetails.classList.contains('in')) {
+        moreDetails.classList.remove('in');
+        showDetails.textContent = 'Show Details';
         location.href="#overview";
       }
       else {
-        moreDetails.classed('in', true);
-        showDetails.text('Hide Details');
+        moreDetails.classList.add('in');
+        showDetails.textContent = 'Hide Details';
       }
 
       return false;
-    });
+    };
   </script>
 </body>
 </html>

@@ -70,6 +70,7 @@ var scatterOpts = {
       y1Adjust: 10,
       y2Adjust: -10,
     }),
+    new monte.ExtCrosshair(),
     // new monte.ExtD3Tip({
     //   featurePrefix: 'point',
     //   offset: { y: -10 },
@@ -116,7 +117,7 @@ var scatterPowOpts = {
   },
   yExtentCustomize: function(extent) { return [0.5, extent[1]]; },
   xExtentCustomize: function(extent) { return [0.001, extent[1]]; },
-  extensions: [new monte.ExtGrid(), new monte.ExtCrosshair()],
+  extensions: [new monte.ExtGrid()],
   resize: new monte.HorizontalResizer(),
 
   transition: {

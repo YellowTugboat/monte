@@ -137,6 +137,8 @@ var svgUseDefIconArray = new monte.IconArray('#svgUseDefIconArray', defIconOpts,
 // ICON ARRAY EXTERNAL FILE
 //
 //**************************************************************************************************
+var iconColors = [colorSet.montePrimary, colorSet.monteAccent, colorSet.monteSecondary, colorSet.monteGreyDark];
+var iconColorCodes = ['blue', 'red', 'darkBlue', 'black'];
 var extIconOpts = {
   rows: 4,
   columns: 4,
@@ -146,12 +148,8 @@ var extIconOpts = {
   boundingWidth: 170,
 
   iconCss: 'svg-icon',
-  // iconFillScaleAccessor: function(d) {
-  //   return d.type;
-  // },
-  iconFillScale: d3.scaleOrdinal([colorSet.montePrimary, colorSet.monteAccent, colorSet.monteSecondary, colorSet.monteGreyDark]).domain(['blue', 'red', 'darkBlue', 'black']),
+  iconFillScale: d3.scaleOrdinal(iconColors).domain(iconColorCodes),
   iconProp: 'color',
-
   iconSvgWidth: 24,
   iconSvgHeight: 24,
   iconHref: 'ic_motorcycle_black_24px.svg#mc',

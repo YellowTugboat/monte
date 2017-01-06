@@ -84,6 +84,7 @@ var pieOpts = {
   transition: { duration: 750 },
 
   margin: 5,
+  piePadAngle: 0,
 
   includeLabels: true,
   labelProp: 'value',
