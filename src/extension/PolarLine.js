@@ -18,20 +18,25 @@ const POLAR_LINE_DEFAULTS = {
 export class PolarLine extends Extension {
   _initOptions(...options) {
     super._initOptions(...options, POLAR_LINE_DEFAULTS);
+  }
 
-    const innerRadius = this.tryInvoke(this.opts.innerRadius);
-    const outerRadius = this.tryInvoke(this.opts.outerRadius);
-    this.innerArc = d3.arc().innerRadius(innerRadius).outerRadius(innerRadius);
-    this.outerArc = d3.arc().innerRadius(outerRadius).outerRadius(outerRadius);
+  _render() {
+    this.innerArc = d3.arc();
+    this.outerArc = d3.arc();
   }
 
   _update() {
+    const innerRadius = this.tryInvoke(this.opts.innerRadius);
+    const outerRadius = this.tryInvoke(this.opts.outerRadius);
     const css = this.tryInvoke(this.opts.lineCss);
     const angle = this.tryInvoke(this.opts.angle);
     const line = this._extCreateSelection().data([{ startAngle: angle, endAngle: angle}]);
     const newLine = line.enter().append('line')
       .call(this._setExtAttrs.bind(this))
       .attr('class', css);
+
+    this.innerArc.innerRadius(innerRadius).outerRadius(innerRadius);
+    this.outerArc.innerRadius(outerRadius).outerRadius(outerRadius);
 
     if (isDefined(angle)) {
       newLine.merge(line)

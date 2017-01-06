@@ -10,7 +10,7 @@ const POLAR_GRID_DEFAULTS = {
   arcCss: 'monte-ext-polar-grid-arc',
   arcSpecificCss: null,
   arcSort: (a, b) => b - a,
-  arcDepth: 0,
+  arcWidth: 0,
   cornerRadius: 0,
 };
 
@@ -22,10 +22,10 @@ export class PolarGrid extends Extension {
   _initOptions(...options) {
     super._initOptions(...options, POLAR_GRID_DEFAULTS);
 
-    const arcDepth = this.tryInvoke(this.opts.arcDepth);
+    const arcWidth = this.tryInvoke(this.opts.arcWidth);
     this.arc = d3.arc()
       .innerRadius(function(d) { return d.radius; })
-      .outerRadius(function(d) { return d.radius + arcDepth; })
+      .outerRadius(function(d) { return d.radius + arcWidth; })
       .cornerRadius(this.tryInvoke(this.opts.cornerRadius));
   }
 
