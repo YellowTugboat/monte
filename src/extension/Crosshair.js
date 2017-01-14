@@ -4,10 +4,11 @@ import { isArray, isDefined, isFunc } from '../tools/is';
 import { Extension } from './Extension';
 import { noop } from '../tools/noop';
 
+// TODO: Add support for "always active" (i.e chart:mousemove)
 const CROSSHAIR_DEFAULTS = {
   featurePrefix: 'point',
   eventPrefix: 'crosshair',
-  crosshairCss: 'monte-ext-crosshair',
+  crosshairCss: '',
   lines: ['bottom', 'left'],
   alignmentShift: AXIS_SHIFT, // Use a slight shift to match default d3-axis drawing.
   showBindings: INTERACTION_SHOW_EVENTS,
@@ -76,9 +77,9 @@ export class Crosshair extends Extension {
 
       bottom: {
         x1: (d) => this.chart.getScaledProp('x', d) + shift,
-        y1: this.chart.height,
+        y1: (d) => this.chart.getScaledProp('y', d),
         x2: (d) => this.chart.getScaledProp('x', d) + shift,
-        y2: (d) => this.chart.getScaledProp('y', d),
+        y2: this.chart.height,
       },
     };
 
@@ -86,7 +87,8 @@ export class Crosshair extends Extension {
       lines.enter().append('line')
           .call(this._setExtAttrs.bind(this))
           .attr('opacity', 0)
-          .attr('class', css);
+          .attr('class', css)
+          .classed('monte-ext-crosshair', true);
 
       if (this.activeFeatureDatum) {
         lines.transition()

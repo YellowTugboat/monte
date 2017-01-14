@@ -158,7 +158,7 @@ export class BarChart extends AxesChart {
         .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
         .attr('class', (d, i) => this._buildCss([
           this.opts.barCss,
-          this.opts.barCssScale,
+          this.opts.barCssScaleAccessor,
           d.css], d, i))
         .call((sel) => this.fnInvoke(this.opts.barEnterSelectionCustomize, sel))
         .transition()
@@ -175,7 +175,7 @@ export class BarChart extends AxesChart {
       .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
       .attr('class', (d, i) => this._buildCss([
         this.opts.barCss,
-        this.opts.barCssScale,
+        this.opts.barCssScaleAccessor,
         d.css], d, i))
       .call((sel) => this.fnInvoke(this.opts.barUpdateSelectionCustomize, sel))
       .transition()

@@ -1,6 +1,5 @@
 import { MonteError } from '../support/MonteError';
 
-// TODO: Move to tools?
 export function removeClassByPattern(selection, pattern) {
   const node = selection.node();
   const classAttr = node.getAttribute('class');
