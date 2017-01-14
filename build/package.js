@@ -1,5 +1,5 @@
 export var name = "monte";
-export var version = "0.0.0-alpha24";
+export var version = "0.0.0-alpha25";
 export var author = {"name":"Yellow Tugboat","url":"http://www.yellowtugboat.com"};
 export var description = "A set of common charts based on D3 built for extension and modification.";
 export var main = "build/monte.js";
@@ -9,5 +9,5 @@ export var keywords = ["D3","chart","charts","Monte","line","scatter","bar","pie
 export var license = "GPL-3.0";
 export var bugs = {"url":"https://github.com/YellowTugboat/monte/issues"};
 export var homepage = "https://github.com/YellowTugboat/monte#readme";
-export var devDependencies = {"babel-cli":"6","babel-plugin-lodash":"3.2","babel-preset-es2015-rollup":"3","browser-run":"^3.2.0","browserify":"^13.1.0","d3":"4","eslint":"3","eslint-config-yellow-tugboat":"0","http-server":"^0.9.0","json2module":"0.0.3","lodash":"4","lodash-es":"4","nodemon":"^1.9","rollup":"^0.37","rollup-plugin-babel":"2","rollup-plugin-node-resolve":"2","rollup-plugin-uglify":"1","tape":"^4.6.0","tape-run":"^2.1.4"};
+export var devDependencies = {"babel-cli":"6","babel-plugin-lodash":"3.2","babel-preset-es2015-rollup":"3","browser-run":"^3.2.0","browserify":"^13.1.0","d3":"4","eslint":"3","eslint-config-yellow-tugboat":"0","http-server":"^0.9.0","json2module":"0.0.3","lodash":"4","lodash-es":"4","nodemon":"^1.9","rollup":"^0.41","rollup-plugin-babel":"2","rollup-plugin-node-resolve":"2","rollup-plugin-uglify":"1","tape":"^4.6.0","tape-run":"^2.1.4"};
 export var peerDependencies = {"d3":"^4"};
