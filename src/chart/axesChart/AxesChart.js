@@ -164,7 +164,9 @@ export class AxesChart extends Chart {
       const axisGrp = this.support.select(`.${scaleName}-axis`);
       const trans = this.__axisOpt(scaleName, 'AxisTransform');
 
-      if (trans) { axisGrp.attr('transform', trans(this.width, this.height)); }
+      if (trans) {
+        axisGrp.attr('transform', this.tryInvoke(trans, this.width, this.height));
+      }
     });
 
     return this;
@@ -249,13 +251,13 @@ export class AxesChart extends Chart {
       .merge(lbl)
         .attr('class', 'monte-axis-label')
         .text((d) => d)
-        .call(() => {
+        .call((lbls) => {
           const opt =`${scaleName}LabelCustomize`;
           const lblCustomize = this.opts[opt];
 
           if (lblCustomize) {
             if (isFunc(lblCustomize)) {
-              this.tryInvoke(lblCustomize, lbl);
+              this.fnInvoke(lblCustomize, lbls);
             }
             else {
               throw MonteOptionError.OptionMustBeFunction(opt, `(${opt} is optional)`);
