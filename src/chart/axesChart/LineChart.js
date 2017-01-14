@@ -126,7 +126,7 @@ export class LineChart extends AxesChart {
   _updateLines() {
     // Data join for the lines
     const lineGrps = this.draw.selectAll('.monte-line-grp')
-      .data(this.displayData, (d, i) => d.id || i);
+      .data(this.displayData, this.opts.dataKey);
 
     const enterLines = lineGrps.enter().append('g')
       .attr('class', 'monte-line-grp')
@@ -172,7 +172,8 @@ export class LineChart extends AxesChart {
     const lineGrp = d3.select(node);
 
     // Data join for the points
-    const points = lineGrp.selectAll('.monte-point').data((d) => this.getProp('values', d));
+    const points = lineGrp.selectAll('.monte-point')
+      .data((d) => this.getProp('values', d)); // TODO: Does this need a custom data key?
 
     const genSym = (d, i) => {
       const size = this.tryInvoke(this.opts.pointSize, d, i);

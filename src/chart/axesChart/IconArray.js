@@ -145,7 +145,7 @@ export class IconArray extends AxesChart {
       [ICON_MODE.SVG_USE_EXTERNAL]: this._updateSvgUse,
     };
 
-    const icons = this.draw.selectAll('.monte-icon').data(this.displayData);
+    const icons = this.draw.selectAll('.monte-icon').data(this.displayData, this.opts.dataKey);
 
     modeMap[this.opts.iconMode].call(this, icons, this.opts.iconMode);
 

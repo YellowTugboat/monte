@@ -285,7 +285,7 @@ export class SegmentBarChart extends AxesChart {
 
   _updateBars(barXInner, barYInner, barWidth, barHeight) {
     const barGrps = this.draw.selectAll('.monte-segment-bar-grp')
-      .data(this.displayData);
+      .data(this.displayData, this.opts.dataKey);
 
     const fns = {barXInner, barYInner, barWidth, barHeight};
     const barGrpsEnter = barGrps.enter().append('g')
@@ -321,7 +321,7 @@ export class SegmentBarChart extends AxesChart {
       .each((d, i, nodes) => {
         const prop = this._barProp();
         const nestedData = d[prop];
-        const innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData);
+        const innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData); // TODO: Does this need a custom data key?
 
         innerRects.enter().append('rect')
           .call(this.__bindCommonEvents(BARSEG))

@@ -70,6 +70,10 @@ const ARC_CHART_DEFAULTS = {
   },
   labelXAdjust: '',
   labelYAdjust: '0.35em',
+
+  dataKey: function(d, i) {
+    return (d && d.data && d.data.id) || i;
+  },
 };
 
 export class ArcChart extends PolarChart {
@@ -144,7 +148,7 @@ export class ArcChart extends PolarChart {
   }
 
   _updateArcs() {
-    const arcs = this.draw.selectAll('.monte-arc').data(this.pieDisplayData);
+    const arcs = this.draw.selectAll('.monte-arc').data(this.pieDisplayData, this.opts.dataKey);
     const arc = this.arc;
 
     arcs.enter().append('g')
@@ -176,6 +180,7 @@ export class ArcChart extends PolarChart {
           pd.prev = nd;
           n.datum(pd);
 
+          // TODO: Convert `prev` to use `d3.local` instead?
           delete nd.prev; // Remove old records to prevent building a history tree.
         })
         .attr('class', (d, i) => this._buildCss(

@@ -35,6 +35,11 @@ const DEFAULTS = {
 
   resize: null,
 
+  // TODO: Adopt data key for all draw layer and feature level selections in all charts.
+  dataKey: function(d, i) {
+    return (d && d.id) || i;
+  },
+
   /*************************************************************************************************
    *
    * Misc. options

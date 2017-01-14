@@ -232,7 +232,8 @@ export class RadarChart extends PolarChart {
 
   _updateAreas() {
     // Data join for the area
-    const areaGrps = this.draw.selectAll('.monte-radar-area-grp').data(this.displayData);
+    const areaGrps = this.draw.selectAll('.monte-radar-area-grp')
+      .data(this.displayData, this.opts.dataKey);
 
     // Create new area and update existing
     const enterAreas = areaGrps.enter().append('g').classed('monte-radar-area-grp', true)

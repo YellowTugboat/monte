@@ -136,7 +136,7 @@ export class BarChart extends AxesChart {
 
   _updateBars() {
     const barGrps = this.draw.selectAll('.monte-bar-grp')
-      .data(this.displayData, (d, i) => d.id || i); // TODO: Add custom key function support.
+      .data(this.displayData, this.opts.dataKey); // TODO: Add custom key function support.
 
     const barX = this._barX.bind(this);
     const barY = this._barY.bind(this);

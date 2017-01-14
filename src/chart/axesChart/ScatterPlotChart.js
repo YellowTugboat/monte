@@ -79,7 +79,7 @@ export class ScatterPlot extends AxesChart {
 
   _updatePoints() {
     // Data join for the points
-    const points = this.draw.selectAll('.monte-point').data(this.displayData);
+    const points = this.draw.selectAll('.monte-point').data(this.displayData, this.opts.dataKey);
 
     // Create new points and update existing
     const pointsEnter = points.enter().append('path')
