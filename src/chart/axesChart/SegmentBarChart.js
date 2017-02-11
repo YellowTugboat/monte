@@ -2,6 +2,7 @@ import { ENTER, EXIT, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { MonteOptionError } from '../../support/MonteOptionError';
 import { commonEventNames } from '../../tools/commonEventNames';
+import { defaultDataKey } from '../Chart';
 import { extentBalanced } from '../../util/extents';
 import { noop } from '../../tools/noop';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
@@ -88,6 +89,8 @@ const SEGMENT_BAR_CHART_DEFAULTS = {
       return this._barYInnerGrouped(d);
     }
   },
+
+  innerDataKey: defaultDataKey,
 };
 
 export class SegmentBarChart extends AxesChart {
@@ -321,7 +324,9 @@ export class SegmentBarChart extends AxesChart {
       .each((d, i, nodes) => {
         const prop = this._barProp();
         const nestedData = d[prop];
-        const innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData); // TODO: Does this need a custom data key?
+        const n = d3.select(nodes[i]);
+        const innerRects = n.selectAll('.monte-segment-bar-seg')
+          .data(nestedData, this.opts.innerDataKey);
 
         innerRects.enter().append('rect')
           .call(this.__bindCommonEvents(BARSEG))

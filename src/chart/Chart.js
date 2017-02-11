@@ -13,6 +13,10 @@ import { noop } from '../tools/noop';
 
 const CLIP_PATH_ID = 'drawPath';
 
+export function defaultDataKey(d, i) {
+  return (d && d.id) || i;
+}
+
 const DEFAULTS = {
   css: '',
   boundingWidth: 250,
@@ -35,10 +39,8 @@ const DEFAULTS = {
 
   resize: null,
 
-  // TODO: Adopt data key for all draw layer and feature level selections in all charts.
-  dataKey: function(d, i) {
-    return (d && d.id) || i;
-  },
+  // Data key for all draw layer and feature level selections in all charts.
+  dataKey: defaultDataKey,
 
   /*************************************************************************************************
    *

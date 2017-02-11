@@ -65,6 +65,8 @@ const LINE_CHART_DEFAULTS = {
   pointSize: 64,
 
   pointSymbol: (symbol) => symbol.type(d3.symbolCircle),
+
+  pointDataKey: AxesChart.defaultDataKey,
 };
 
 export class LineChart extends AxesChart {
@@ -173,7 +175,7 @@ export class LineChart extends AxesChart {
 
     // Data join for the points
     const points = lineGrp.selectAll('.monte-point')
-      .data((d) => this.getProp('values', d)); // TODO: Does this need a custom data key?
+      .data((d) => this.getProp('values', d), this.opts.pointDataKey);
 
     const genSym = (d, i) => {
       const size = this.tryInvoke(this.opts.pointSize, d, i);
