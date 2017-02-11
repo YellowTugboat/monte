@@ -185,8 +185,8 @@ export class Chart {
     });
 
     // Bind resize function if given.
-    if (this.opts.resize) {
-      const resizer = this.opts.resize;
+    const resizer = this.tryInvoke(this.opts.resize);
+    if (resizer) {
       this._resizeHandler = resizer.resize.bind(resizer, this);
       global.getResizeWatcher().add(this._resizeHandler);
     }
