@@ -682,34 +682,50 @@ export class Chart {
     return cssClasses.join(' ').replace(/\s+/, ' ');
   }
 
-  // Apply the transition settings (duration, delay, and ease). Attempt to match specfic settings
-  // based on the provided levels.
-  //
-  // For example given the levels `['line', 'update']` the transition settings will first be read:
-  // * `transitionSettings.line.update.<property>` then
-  // * `transitionSettings.update.<property>` then
-  // * `transitionSettings.<property>` then
-  // * `<propertDefaultValue>`
+  /**
+   * Apply the transition settings (duration, delay, and ease). Attempt to match specfic settings
+   * based on the provided levels.
+   *
+   * For example given the levels `['line', 'update']` the transition settings will first be read:
+   * + `transitionSettings.line.update.<property>` then
+   * + `transitionSettings.update.<property>` then
+   * + `transitionSettings.<property>` then
+   * + `<propertDefaultValue>`
+   *
+   * @param {...string} levels The transition depths to load settings for.
+   */
   _transitionSetup(...levels) {
     return (transition, ...args) => {
       const { duration, delay, ease } = this._transitionSettings(...levels);
-      let durationWrap = null;
-      let delayWrap = null;
 
-      if (isFunc(duration) && args && args.length) {
-        durationWrap = function(d, i, nodes) {
-          return duration(d, i, nodes, ...args);
-        };
-      }
-
-      if (isFunc(delay) && args && args.length) {
-        delayWrap = function(d, i, nodes) {
-          return delay(d, i, nodes, ...args);
-        };
-      }
-
-      transition.duration(durationWrap || duration).delay(delayWrap || delay).ease(ease);
+      this._transitionConfigureDuration(transition, duration, ...args);
+      this._transitionConfigureDelay(transition, delay, ...args);
+      transition.ease(ease);
     };
+  }
+
+  _transitionConfigureDuration(transition, duration, ...args) {
+    let durationWrap = null;
+
+    if (isFunc(duration) && args && args.length) {
+      durationWrap = function(d, i, nodes) {
+        return duration(d, i, nodes, ...args);
+      };
+    }
+
+    transition.duration(durationWrap || duration);
+  }
+
+  _transitionConfigureDelay(transition, delay, ...args) {
+    let delayWrap = null;
+
+    if (isFunc(delay) && args && args.length) {
+      delayWrap = function(d, i, nodes) {
+        return delay(d, i, nodes, ...args);
+      };
+    }
+
+    transition.delay(delayWrap || delay);
   }
 
   _transitionConfigure(transition, transitionSettings, d, i, nodes, ...args) {
