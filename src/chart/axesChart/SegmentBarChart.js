@@ -6,7 +6,6 @@ import { defaultDataKey } from '../Chart';
 import { extentBalanced } from '../../util/extents';
 import { noop } from '../../tools/noop';
 import { resetScaleDomain } from '../../tools/resetScaleDomain';
-import { upperFirst } from '../../tools/string';
 
 export const SEGMENT_BAR_MODE = {
   GROUPED: 'grouped',
@@ -41,7 +40,7 @@ const SEGMENT_BAR_CHART_DEFAULTS = {
 
   xProp: 'id',
   yProp: 'values',
-  xInnerProp: 'type',
+  xInnerProp: 'id',
   yInnerProp: 'value',
 
   xInnerScale: function() {
@@ -79,11 +78,11 @@ const SEGMENT_BAR_CHART_DEFAULTS = {
     }
   },
   labelYAdjust: '1.05em',
-  labelY: function(d, i, nodes) {
+  labelY: function(d, i, nodes, allNodes) {
     const mode = this.option('segmentBarMode');
 
     if (mode === SEGMENT_BAR_MODE.STACKED) {
-      return this._barYInnerStacked(d, i, nodes); // + this._barHeightStacked(d, i, nodes);
+      return this._barYInnerStacked(d, i, nodes, allNodes);
     }
     else if (mode === SEGMENT_BAR_MODE.GROUPED) {
       return this._barYInnerGrouped(d);
@@ -171,11 +170,13 @@ export class SegmentBarChart extends AxesChart {
     this.renderAxes();
     this.update();
     this.emit(EVENT_MODE_CHANGED);
+
+    return this;
   }
 
   mode(mode) {
     if (mode) {
-      this.setMode();
+      return this.setMode(mode);
     }
 
     return this.tryInvoke(this.opts.segmentBarMode);
@@ -294,33 +295,28 @@ export class SegmentBarChart extends AxesChart {
     const barGrpsEnter = barGrps.enter().append('g')
       .attr('class', 'monte-segment-bar-grp')
       .call(this.__bindCommonEvents(BARGRP));
-    const enterTrans = this._updateBarSelection(barGrpsEnter, ENTER, fns);
-    const updateTrans = this._updateBarSelection(barGrps, UPDATE, fns);
+    this._updateBarSelection(barGrps.merge(barGrpsEnter), fns);
 
     // TODO: Should this have transitions? Only have a delay?
     barGrps.exit()
       .call((sel) => this.fnInvoke(this.opts.bargrpExitSelectionCustomize, sel))
       .transition()
-        .call(this._transitionSetup(BARGRP, EXIT))
+        .call((t) => {
+          const settings = this._transitionSettings(BARGRP, EXIT);
+          t.delay(this.tryInvoke(settings.delay));
+        })
         .call((t) => this.fnInvoke(this.opts.bargrpExitTransitionCustomize, t))
       .remove();
 
     return {
-      barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp')),
-      enterTransition: enterTrans,
-      updateTransition: updateTrans,
+      barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-segment-bar-grp')),
     };
   }
 
-  _updateBarSelection(sel, stage, fns) {
+  _updateBarSelection(barGrps, fns) {
     const translate = this._barGroupTranslate.bind(this);
-    const trans = this.draw.transition()
-      .call(this._transitionSetup('bargrp', stage));
 
-    const selectionFnName = BARSEG + upperFirst(stage) + 'SelectionCustomize';
-    const transitionFnName = BARSEG + upperFirst(stage) + 'TransitionCustomize';
-
-    sel.attr('transform', (d) => `translate(${translate(d)})`)
+    barGrps.attr('transform', (d) => `translate(${translate(d)})`)
       .each((d, i, nodes) => {
         const prop = this._barProp();
         const nestedData = d[prop];
@@ -328,35 +324,59 @@ export class SegmentBarChart extends AxesChart {
         const innerRects = n.selectAll('.monte-segment-bar-seg')
           .data(nestedData, this.opts.innerDataKey);
 
-        innerRects.enter().append('rect')
+        const innerRectsEnter = innerRects.enter().append('rect');
+        const innerRectsEnterUpdate = innerRects.merge(innerRectsEnter);
+
+        // Enter
+        innerRectsEnter
           .call(this.__bindCommonEvents(BARSEG))
           .style('opacity', 0)
-          .merge(innerRects)
-            .attr('class', (d, i) => this._buildCss(
-              ['monte-segment-bar-seg',
-                this.opts.barSegCss,
-                this.opts.barSegCssScaleAccessor,
-                d.css], d, i))
-            .call((sel) => this.fnInvoke(this.opts[selectionFnName], sel))
-            .transition()
-              .call(this._transitionSetup(BARSEG, stage), d, i, nodes)
-              .style('fill', this.optionReaderFunc('barSegFillScaleAccessor'))
-              .attr('x', fns.barXInner)
-              .attr('y', fns.barYInner)
-              .attr('width', fns.barWidth)
-              .attr('height', fns.barHeight)
-              .style('opacity', 1)
-              .call((t) => this.fnInvoke(this.opts[transitionFnName], t));
+          .style('fill', this.optionReaderFunc('barSegFillScaleAccessor'))
+          .attr('class', (d, i) => this._buildCss(
+            ['monte-segment-bar-seg',
+              this.opts.barSegCss,
+              this.opts.barSegCssScaleAccessor,
+              d.css], d, i))
+          .attr('x', 0)
+          .attr('y', 0)
+          .attr('width', 0)
+          .attr('height', 0)
+          .call((sel) => this.fnInvoke(this.opts.barsegEnterSelectionCustomize, sel))
+          .transition()
+            .call(this._transitionSetup(BARSEG, ENTER), d, i, nodes)
+            .attr('x', (d, i, nodes) => fns.barXInner(d, i, nodes, innerRectsEnterUpdate.nodes()))
+            .attr('y', (d, i, nodes) => fns.barYInner(d, i, nodes, innerRectsEnterUpdate.nodes()))
+            .attr('width', fns.barWidth)
+            .attr('height', fns.barHeight)
+            .style('opacity', 1)
+            .call((t) => this.fnInvoke(this.opts.barsegEnterTransitionCustomize, t));
 
+        // Update
+        innerRects
+          .attr('class', (d, i) => this._buildCss(
+            ['monte-segment-bar-seg',
+              this.opts.barSegCss,
+              this.opts.barSegCssScaleAccessor,
+              d.css], d, i))
+          .call((sel) => this.fnInvoke(this.opts.barsegUpdateSelectionCustomize, sel))
+          .transition()
+            .call(this._transitionSetup(BARSEG, UPDATE), d, i, nodes)
+            .style('fill', this.optionReaderFunc('barSegFillScaleAccessor'))
+            .attr('x', (d, i, nodes) => fns.barXInner(d, i, nodes, innerRectsEnterUpdate.nodes()))
+            .attr('y', (d, i, nodes) => fns.barYInner(d, i, nodes, innerRectsEnterUpdate.nodes()))
+            .attr('width', fns.barWidth)
+            .attr('height', fns.barHeight)
+            .style('opacity', 1)
+            .call((t) => this.fnInvoke(this.opts.barsegUpdateTransitionCustomize, t));
+
+        // Exit
         innerRects.exit()
           .call((sel) => this.fnInvoke(this.opts.barsegExitSelectionCustomize, sel))
           .transition()
-            .call(this._transitionSetup(BARSEG, EXIT))
+            .call(this._transitionSetup(BARSEG, EXIT), d, i, nodes)
             .call((t) => this.fnInvoke(this.opts.barsegExitTransitionCustomize, t))
           .remove();
       });
-
-    return trans;
   }
 
   _segLabels(d) {
@@ -375,19 +395,20 @@ export class SegmentBarChart extends AxesChart {
     const lbl = barGrp.selectAll('.monte-bar-label').data(this._segLabels(barData));
 
     // TODO: Split enter and merge?
-    lbl.enter().append('text')
-      .attr('class', 'monte-bar-label')
-      .merge(lbl)
-        .text((d1, i, nodes) => this.tryInvoke(this.opts.label, d1, i, nodes))
-        .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
-        .transition(transition)
-          .call(this._transitionSetup(LABEL, UPDATE), barData, barIndex, barNodes)
-          .style('fill', (d1, i, nodes) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
-          .attr('x', (d1, i, nodes) => this.tryInvoke(this.opts.labelX, d1, i, nodes))
-          .attr('dx', (d1, i, nodes) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
-          .attr('y', (d1, i, nodes) => this.tryInvoke(this.opts.labelY, d1, i, nodes))
-          .attr('dy', (d1, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
-          .call((t) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, t));
+    const enterLbls = lbl.enter().append('text').attr('class', 'monte-bar-label');
+    const allNodes = enterLbls.merge(lbl);
+
+    allNodes.text((d1, i, nodes) => this.tryInvoke(this.opts.label, d1, i, nodes))
+      .call((sel) => sel.raise())
+      .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
+      .transition(transition)
+        .call(this._transitionSetup(LABEL, UPDATE), barData, barIndex, barNodes)
+        .style('fill', (d1, i, nodes) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
+        .attr('x', (d1, i, nodes) => this.tryInvoke(this.opts.labelX, d1, i, nodes, allNodes.nodes()))
+        .attr('dx', (d1, i, nodes) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
+        .attr('y', (d1, i, nodes) => this.tryInvoke(this.opts.labelY, d1, i, nodes, allNodes.nodes()))
+        .attr('dy', (d1, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
+        .call((t) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, t));
 
     lbl.exit()
       .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
@@ -407,12 +428,14 @@ export class SegmentBarChart extends AxesChart {
   _barWidthGrouped() { return this.xInner.bandwidth(); }
   _barY(d) { return this.getScaledProp('y', d); }
   _barYInnerGrouped(d) { return this.height - this._barHeightGrouped(d); }
-  _barYInnerStacked(d, i, nodes) {
+  _barYInnerStacked(d, i, nodes, allNodes) {
     const baseY = this.getScaledProp('y', 'yInner', d);
     let yShift = 0;
 
+    // New nodes have to account for the presence of old nodes therefore y-shifts are accounted for
+    // using `allNodes`.
     for (let j = 0; j < i; j++) {
-      const n = d3.select(nodes[j]);
+      const n = d3.select(allNodes[j]);
       const d1 = n.datum();
       yShift -= this._barHeightStacked(d1);
     }

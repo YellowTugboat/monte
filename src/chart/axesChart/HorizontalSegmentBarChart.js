@@ -38,11 +38,11 @@ const HSEGMENT_BAR_CHART_DEFAULTS = {
 
 
   labelXAdjust: '-0.1em',
-  labelX: function(d, i, nodes) {
+  labelX: function(d, i, nodes, allNodes) {
     const mode = this.option('segmentBarMode');
 
     if (mode === SEGMENT_BAR_MODE.STACKED) {
-      return this._barXInnerStacked(d, i, nodes) + this._barWidthStacked(d);
+      return this._barXInnerStacked(d, i, nodes, allNodes) + this._barWidthStacked(d);
     }
     else if (mode === SEGMENT_BAR_MODE.GROUPED) {
       return this._barWidthGrouped(d);
@@ -117,12 +117,12 @@ export class HorizontalSegmentBarChart extends SegmentBarChart {
   _barGroupTranslate(d) { return `0, ${this._barY(d)}`; }
   _barX(d) { return this.getScaledProp('x', d); }
   _barXInnerGrouped() { return 0; }
-  _barXInnerStacked(d, i, nodes) {
+  _barXInnerStacked(d, i, nodes, allNodes) {
     const baseX = 0;
     let xShift = 0;
 
     for (let j = 0; j < i; j++) {
-      const n = d3.select(nodes[j]);
+      const n = d3.select(allNodes[j]);
       const d1 = n.datum();
       xShift += this._barWidthStacked(d1);
     }
