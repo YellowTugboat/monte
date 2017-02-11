@@ -30,7 +30,7 @@ export class Label extends Extension {
       .call(this._setExtAttrs.bind(this))
       .attr('class', labelCss)
       .merge(lbl)
-        .text((d) => d)
+        .html((d) => d)
         .attr('text-anchor', this.tryInvoke(this.opts.anchor))
         .call((lblSel) => this._checkMaxWidth(lblSel, maxWidth))
         .attr('x', this.tryInvoke(this.opts.x))
