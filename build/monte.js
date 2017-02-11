@@ -1,11 +1,11 @@
-// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha25 Copyright 2017 Yellow Tugboat
+// https://github.com/YellowTugboat/monte#readme Version 0.0.0-alpha26 Copyright 2017 Yellow Tugboat
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
 	(factory((global.monte = global.monte || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "0.0.0-alpha25";
+var version = "0.0.0-alpha26";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -4734,6 +4734,10 @@ function noop() {}
 
 var CLIP_PATH_ID = 'drawPath';
 
+function defaultDataKey(d, i) {
+  return d && d.id || i;
+}
+
 var DEFAULTS = {
   css: '',
   boundingWidth: 250,
@@ -4756,10 +4760,8 @@ var DEFAULTS = {
 
   resize: null,
 
-  // TODO: Adopt data key for all draw layer and feature level selections in all charts.
-  dataKey: function dataKey(d, i) {
-    return d && d.id || i;
-  },
+  // Data key for all draw layer and feature level selections in all charts.
+  dataKey: defaultDataKey,
 
   /*************************************************************************************************
    *
@@ -4881,6 +4883,8 @@ var Chart = function () {
         this.bound = parent.append('svg');
       }
 
+      // Add reference of chart to the node for flexibility of access.
+      this.bound.node().monteChart = this;
       this.bound.attr('class', this._buildCss(['monte-chart', this.opts.css, this.opts.chartCss]));
 
       // SVG Defs element
@@ -4920,8 +4924,8 @@ var Chart = function () {
       });
 
       // Bind resize function if given.
-      if (this.opts.resize) {
-        var resizer = this.opts.resize;
+      var resizer = this.tryInvoke(this.opts.resize);
+      if (resizer) {
         this._resizeHandler = resizer.resize.bind(resizer, this);
         global$1.getResizeWatcher().add(this._resizeHandler);
       }
@@ -5539,14 +5543,18 @@ var Chart = function () {
       return cssClasses.join(' ').replace(/\s+/, ' ');
     }
 
-    // Apply the transition settings (duration, delay, and ease). Attempt to match specfic settings
-    // based on the provided levels.
-    //
-    // For example given the levels `['line', 'update']` the transition settings will first be read:
-    // * `transitionSettings.line.update.<property>` then
-    // * `transitionSettings.update.<property>` then
-    // * `transitionSettings.<property>` then
-    // * `<propertDefaultValue>`
+    /**
+     * Apply the transition settings (duration, delay, and ease). Attempt to match specfic settings
+     * based on the provided levels.
+     *
+     * For example given the levels `['line', 'update']` the transition settings will first be read:
+     * + `transitionSettings.line.update.<property>` then
+     * + `transitionSettings.update.<property>` then
+     * + `transitionSettings.<property>` then
+     * + `<propertDefaultValue>`
+     *
+     * @param {...string} levels The transition depths to load settings for.
+     */
 
   }, {
     key: '_transitionSetup',
@@ -5567,23 +5575,44 @@ var Chart = function () {
             delay = _transitionSettings2.delay,
             ease = _transitionSettings2.ease;
 
-        var durationWrap = null;
-        var delayWrap = null;
-
-        if (isFunc(duration) && args && args.length) {
-          durationWrap = function durationWrap(d, i, nodes) {
-            return duration.apply(undefined, [d, i, nodes].concat(args));
-          };
-        }
-
-        if (isFunc(delay) && args && args.length) {
-          delayWrap = function delayWrap(d, i, nodes) {
-            return delay.apply(undefined, [d, i, nodes].concat(args));
-          };
-        }
-
-        transition.duration(durationWrap || duration).delay(delayWrap || delay).ease(ease);
+        _this6._transitionConfigureDuration.apply(_this6, [transition, duration].concat(args));
+        _this6._transitionConfigureDelay.apply(_this6, [transition, delay].concat(args));
+        transition.ease(ease);
       };
+    }
+  }, {
+    key: '_transitionConfigureDuration',
+    value: function _transitionConfigureDuration(transition, duration) {
+      for (var _len12 = arguments.length, args = Array(_len12 > 2 ? _len12 - 2 : 0), _key12 = 2; _key12 < _len12; _key12++) {
+        args[_key12 - 2] = arguments[_key12];
+      }
+
+      var durationWrap = null;
+
+      if (isFunc(duration) && args && args.length) {
+        durationWrap = function durationWrap(d, i, nodes) {
+          return duration.apply(undefined, [d, i, nodes].concat(args));
+        };
+      }
+
+      transition.duration(durationWrap || duration);
+    }
+  }, {
+    key: '_transitionConfigureDelay',
+    value: function _transitionConfigureDelay(transition, delay) {
+      for (var _len13 = arguments.length, args = Array(_len13 > 2 ? _len13 - 2 : 0), _key13 = 2; _key13 < _len13; _key13++) {
+        args[_key13 - 2] = arguments[_key13];
+      }
+
+      var delayWrap = null;
+
+      if (isFunc(delay) && args && args.length) {
+        delayWrap = function delayWrap(d, i, nodes) {
+          return delay.apply(undefined, [d, i, nodes].concat(args));
+        };
+      }
+
+      transition.delay(delayWrap || delay);
     }
   }, {
     key: '_transitionConfigure',
@@ -5592,8 +5621,8 @@ var Chart = function () {
           delay = transitionSettings.delay,
           ease = transitionSettings.ease;
 
-      for (var _len12 = arguments.length, args = Array(_len12 > 5 ? _len12 - 5 : 0), _key12 = 5; _key12 < _len12; _key12++) {
-        args[_key12 - 5] = arguments[_key12];
+      for (var _len14 = arguments.length, args = Array(_len14 > 5 ? _len14 - 5 : 0), _key14 = 5; _key14 < _len14; _key14++) {
+        args[_key14 - 5] = arguments[_key14];
       }
 
       transition.duration(this.tryInvoke.apply(this, [duration, d, i, nodes].concat(args))).delay(this.tryInvoke.apply(this, [delay, d, i, nodes].concat(args))).ease(ease);
@@ -5601,8 +5630,8 @@ var Chart = function () {
   }, {
     key: '_transitionSettings',
     value: function _transitionSettings() {
-      for (var _len13 = arguments.length, levels = Array(_len13), _key13 = 0; _key13 < _len13; _key13++) {
-        levels[_key13] = arguments[_key13];
+      for (var _len15 = arguments.length, levels = Array(_len15), _key15 = 0; _key15 < _len15; _key15++) {
+        levels[_key15] = arguments[_key15];
       }
 
       var transitionSettings = this.tryInvoke(this.opts.transition);
@@ -5688,8 +5717,8 @@ var Chart = function () {
   }, {
     key: 'call',
     value: function call(f) {
-      for (var _len14 = arguments.length, args = Array(_len14 > 1 ? _len14 - 1 : 0), _key14 = 1; _key14 < _len14; _key14++) {
-        args[_key14 - 1] = arguments[_key14];
+      for (var _len16 = arguments.length, args = Array(_len16 > 1 ? _len16 - 1 : 0), _key16 = 1; _key16 < _len16; _key16++) {
+        args[_key16 - 1] = arguments[_key16];
       }
 
       f.call.apply(f, [this].concat(args));
@@ -5774,8 +5803,8 @@ var Chart = function () {
   }, {
     key: 'addExt',
     value: function addExt() {
-      for (var _len15 = arguments.length, exts = Array(_len15), _key15 = 0; _key15 < _len15; _key15++) {
-        exts[_key15] = arguments[_key15];
+      for (var _len17 = arguments.length, exts = Array(_len17), _key17 = 0; _key17 < _len17; _key17++) {
+        exts[_key17] = arguments[_key17];
       }
 
       this._bindExt(exts);
@@ -5809,8 +5838,8 @@ var Chart = function () {
   }, {
     key: '__updateExt',
     value: function __updateExt(bindingName) {
-      for (var _len16 = arguments.length, extArgs = Array(_len16 > 1 ? _len16 - 1 : 0), _key16 = 1; _key16 < _len16; _key16++) {
-        extArgs[_key16 - 1] = arguments[_key16];
+      for (var _len18 = arguments.length, extArgs = Array(_len18 > 1 ? _len18 - 1 : 0), _key18 = 1; _key18 < _len18; _key18++) {
+        extArgs[_key18 - 1] = arguments[_key18];
       }
 
       this.extensions.forEach(function (ext) {
@@ -5915,8 +5944,8 @@ var Chart = function () {
     value: function __notify(eventName) {
       var _dispatch;
 
-      for (var _len17 = arguments.length, args = Array(_len17 > 1 ? _len17 - 1 : 0), _key17 = 1; _key17 < _len17; _key17++) {
-        args[_key17 - 1] = arguments[_key17];
+      for (var _len19 = arguments.length, args = Array(_len19 > 1 ? _len19 - 1 : 0), _key19 = 1; _key19 < _len19; _key19++) {
+        args[_key19 - 1] = arguments[_key19];
       }
 
       this.__updateExt.apply(this, [eventName].concat(args));
@@ -5983,8 +6012,8 @@ var Chart = function () {
   }, {
     key: 'createInstanceGroup',
     value: function createInstanceGroup(charts) {
-      for (var _len18 = arguments.length, additionalMethodsToProxy = Array(_len18 > 1 ? _len18 - 1 : 0), _key18 = 1; _key18 < _len18; _key18++) {
-        additionalMethodsToProxy[_key18 - 1] = arguments[_key18];
+      for (var _len20 = arguments.length, additionalMethodsToProxy = Array(_len20 > 1 ? _len20 - 1 : 0), _key20 = 1; _key20 < _len20; _key20++) {
+        additionalMethodsToProxy[_key20 - 1] = arguments[_key20];
       }
 
       return new InstanceGroup(charts, GROUP_PROXY_METHODS, additionalMethodsToProxy);
@@ -6482,7 +6511,9 @@ var LINE_CHART_DEFAULTS = {
 
   pointSymbol: function pointSymbol(symbol) {
     return symbol.type(d3.symbolCircle);
-  }
+  },
+
+  pointDataKey: AxesChart.defaultDataKey
 };
 
 var LineChart = function (_AxesChart) {
@@ -6633,7 +6664,7 @@ var LineChart = function (_AxesChart) {
       // Data join for the points
       var points = lineGrp.selectAll('.monte-point').data(function (d) {
         return _this5.getProp('values', d);
-      }); // TODO: Does this need a custom data key?
+      }, this.opts.pointDataKey);
 
       var genSym = function genSym(d, i) {
         var size = _this5.tryInvoke(_this5.opts.pointSize, d, i);
@@ -7558,7 +7589,7 @@ var SEGMENT_BAR_CHART_DEFAULTS = {
 
   xProp: 'id',
   yProp: 'values',
-  xInnerProp: 'type',
+  xInnerProp: 'id',
   yInnerProp: 'value',
 
   xInnerScale: function xInnerScale() {
@@ -7595,15 +7626,17 @@ var SEGMENT_BAR_CHART_DEFAULTS = {
     }
   },
   labelYAdjust: '1.05em',
-  labelY: function labelY(d, i, nodes) {
+  labelY: function labelY(d, i, nodes, allNodes) {
     var mode = this.option('segmentBarMode');
 
     if (mode === SEGMENT_BAR_MODE.STACKED) {
-      return this._barYInnerStacked(d, i, nodes); // + this._barHeightStacked(d, i, nodes);
+      return this._barYInnerStacked(d, i, nodes, allNodes);
     } else if (mode === SEGMENT_BAR_MODE.GROUPED) {
       return this._barYInnerGrouped(d);
     }
-  }
+  },
+
+  innerDataKey: defaultDataKey
 };
 
 var SegmentBarChart = function (_AxesChart) {
@@ -7723,12 +7756,14 @@ var SegmentBarChart = function (_AxesChart) {
       this.renderAxes();
       this.update();
       this.emit(EVENT_MODE_CHANGED);
+
+      return this;
     }
   }, {
     key: 'mode',
     value: function mode(_mode) {
       if (_mode) {
-        this.setMode();
+        return this.setMode(_mode);
       }
 
       return this.tryInvoke(this.opts.segmentBarMode);
@@ -7751,6 +7786,9 @@ var SegmentBarChart = function (_AxesChart) {
       var data = this.data();
       var yProp = this.tryInvoke(this.opts.yProp);
       var xInnerProp = this.tryInvoke(this.opts.xInnerProp);
+
+      // TODO: Find all X inner values to build domain.
+      // TODO: Should this be `yProp` or `xProp`?
       var xInnerDomain = data[0][yProp].map(function (d) {
         return d[xInnerProp];
       });
@@ -7874,56 +7912,73 @@ var SegmentBarChart = function (_AxesChart) {
 
       var fns = { barXInner: barXInner, barYInner: barYInner, barWidth: barWidth, barHeight: barHeight };
       var barGrpsEnter = barGrps.enter().append('g').attr('class', 'monte-segment-bar-grp').call(this.__bindCommonEvents(BARGRP));
-      var enterTrans = this._updateBarSelection(barGrpsEnter, ENTER, fns);
-      var updateTrans = this._updateBarSelection(barGrps, UPDATE, fns);
+      this._updateBarSelection(barGrps.merge(barGrpsEnter), fns);
 
       // TODO: Should this have transitions? Only have a delay?
       barGrps.exit().call(function (sel) {
         return _this6.fnInvoke(_this6.opts.bargrpExitSelectionCustomize, sel);
-      }).transition().call(this._transitionSetup(BARGRP, EXIT)).call(function (t) {
+      }).transition().call(function (t) {
+        var settings = _this6._transitionSettings(BARGRP, EXIT);
+        t.delay(_this6.tryInvoke(settings.delay));
+      }).call(function (t) {
         return _this6.fnInvoke(_this6.opts.bargrpExitTransitionCustomize, t);
       }).remove();
 
       return {
-        barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-bar-grp')),
-        enterTransition: enterTrans,
-        updateTransition: updateTrans
+        barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-segment-bar-grp'))
       };
     }
   }, {
     key: '_updateBarSelection',
-    value: function _updateBarSelection(sel, stage, fns) {
+    value: function _updateBarSelection(barGrps, fns) {
       var _this7 = this;
 
       var translate = this._barGroupTranslate.bind(this);
-      var trans = this.draw.transition().call(this._transitionSetup('bargrp', stage));
 
-      var selectionFnName = BARSEG + upperFirst(stage) + 'SelectionCustomize';
-      var transitionFnName = BARSEG + upperFirst(stage) + 'TransitionCustomize';
-
-      sel.attr('transform', function (d) {
+      barGrps.attr('transform', function (d) {
         return 'translate(' + translate(d) + ')';
       }).each(function (d, i, nodes) {
         var prop = _this7._barProp();
         var nestedData = d[prop];
-        var innerRects = d3.select(nodes[i]).selectAll('rect').data(nestedData); // TODO: Does this need a custom data key?
+        var n = d3.select(nodes[i]);
+        var innerRects = n.selectAll('.monte-segment-bar-seg').data(nestedData, _this7.opts.innerDataKey);
 
-        innerRects.enter().append('rect').call(_this7.__bindCommonEvents(BARSEG)).style('opacity', 0).merge(innerRects).attr('class', function (d, i) {
+        var innerRectsEnter = innerRects.enter().append('rect');
+        var innerRectsEnterUpdate = innerRects.merge(innerRectsEnter);
+
+        // Enter
+        innerRectsEnter.call(_this7.__bindCommonEvents(BARSEG)).style('opacity', 0).style('fill', _this7.optionReaderFunc('barSegFillScaleAccessor')).attr('class', function (d, i) {
           return _this7._buildCss(['monte-segment-bar-seg', _this7.opts.barSegCss, _this7.opts.barSegCssScaleAccessor, d.css], d, i);
-        }).call(function (sel) {
-          return _this7.fnInvoke(_this7.opts[selectionFnName], sel);
-        }).transition().call(_this7._transitionSetup(BARSEG, stage), d, i, nodes).style('fill', _this7.optionReaderFunc('barSegFillScaleAccessor')).attr('x', fns.barXInner).attr('y', fns.barYInner).attr('width', fns.barWidth).attr('height', fns.barHeight).style('opacity', 1).call(function (t) {
-          return _this7.fnInvoke(_this7.opts[transitionFnName], t);
+        }).attr('x', 0).attr('y', 0).attr('width', 0).attr('height', 0).call(function (sel) {
+          return _this7.fnInvoke(_this7.opts.barsegEnterSelectionCustomize, sel);
+        }).transition().call(_this7._transitionSetup(BARSEG, ENTER), d, i, nodes).attr('x', function (d, i, nodes) {
+          return fns.barXInner(d, i, nodes, innerRectsEnterUpdate.nodes());
+        }).attr('y', function (d, i, nodes) {
+          return fns.barYInner(d, i, nodes, innerRectsEnterUpdate.nodes());
+        }).attr('width', fns.barWidth).attr('height', fns.barHeight).style('opacity', 1).call(function (t) {
+          return _this7.fnInvoke(_this7.opts.barsegEnterTransitionCustomize, t);
         });
 
+        // Update
+        innerRects.attr('class', function (d, i) {
+          return _this7._buildCss(['monte-segment-bar-seg', _this7.opts.barSegCss, _this7.opts.barSegCssScaleAccessor, d.css], d, i);
+        }).call(function (sel) {
+          return _this7.fnInvoke(_this7.opts.barsegUpdateSelectionCustomize, sel);
+        }).transition().call(_this7._transitionSetup(BARSEG, UPDATE), d, i, nodes).style('fill', _this7.optionReaderFunc('barSegFillScaleAccessor')).attr('x', function (d, i, nodes) {
+          return fns.barXInner(d, i, nodes, innerRectsEnterUpdate.nodes());
+        }).attr('y', function (d, i, nodes) {
+          return fns.barYInner(d, i, nodes, innerRectsEnterUpdate.nodes());
+        }).attr('width', fns.barWidth).attr('height', fns.barHeight).style('opacity', 1).call(function (t) {
+          return _this7.fnInvoke(_this7.opts.barsegUpdateTransitionCustomize, t);
+        });
+
+        // Exit
         innerRects.exit().call(function (sel) {
           return _this7.fnInvoke(_this7.opts.barsegExitSelectionCustomize, sel);
-        }).transition().call(_this7._transitionSetup(BARSEG, EXIT)).call(function (t) {
+        }).transition().call(_this7._transitionSetup(BARSEG, EXIT), d, i, nodes).call(function (t) {
           return _this7.fnInvoke(_this7.opts.barsegExitTransitionCustomize, t);
         }).remove();
       });
-
-      return trans;
     }
   }, {
     key: '_segLabels',
@@ -7951,18 +8006,23 @@ var SegmentBarChart = function (_AxesChart) {
       var lbl = barGrp.selectAll('.monte-bar-label').data(this._segLabels(barData));
 
       // TODO: Split enter and merge?
-      lbl.enter().append('text').attr('class', 'monte-bar-label').merge(lbl).text(function (d1, i, nodes) {
+      var enterLbls = lbl.enter().append('text').attr('class', 'monte-bar-label');
+      var allNodes = enterLbls.merge(lbl);
+
+      allNodes.text(function (d1, i, nodes) {
         return _this9.tryInvoke(_this9.opts.label, d1, i, nodes);
+      }).call(function (sel) {
+        return sel.raise();
       }).call(function (sel) {
         return _this9.fnInvoke(_this9.opts.labelUpdateSelectionCustomize, sel);
       }).transition(transition).call(this._transitionSetup(LABEL$1, UPDATE), barData, barIndex, barNodes).style('fill', function (d1, i, nodes) {
         return _this9.tryInvoke(_this9.opts.labelFillScaleAccessor, d1, i, nodes);
       }).attr('x', function (d1, i, nodes) {
-        return _this9.tryInvoke(_this9.opts.labelX, d1, i, nodes);
+        return _this9.tryInvoke(_this9.opts.labelX, d1, i, nodes, allNodes.nodes());
       }).attr('dx', function (d1, i, nodes) {
         return _this9.tryInvoke(_this9.opts.labelXAdjust, d1, i, nodes);
       }).attr('y', function (d1, i, nodes) {
-        return _this9.tryInvoke(_this9.opts.labelY, d1, i, nodes);
+        return _this9.tryInvoke(_this9.opts.labelY, d1, i, nodes, allNodes.nodes());
       }).attr('dy', function (d1, i, nodes) {
         return _this9.tryInvoke(_this9.opts.labelYAdjust, d1, i, nodes);
       }).call(function (t) {
@@ -8022,12 +8082,14 @@ var SegmentBarChart = function (_AxesChart) {
     }
   }, {
     key: '_barYInnerStacked',
-    value: function _barYInnerStacked(d, i, nodes) {
+    value: function _barYInnerStacked(d, i, nodes, allNodes) {
       var baseY = this.getScaledProp('y', 'yInner', d);
       var yShift = 0;
 
+      // New nodes have to account for the presence of old nodes therefore y-shifts are accounted for
+      // using `allNodes`.
       for (var j = 0; j < i; j++) {
-        var n = d3.select(nodes[j]);
+        var n = d3.select(allNodes[j]);
         var d1 = n.datum();
         yShift -= this._barHeightStacked(d1);
       }
@@ -8116,11 +8178,11 @@ var HSEGMENT_BAR_CHART_DEFAULTS = {
   yDomainCustomize: null,
 
   labelXAdjust: '-0.1em',
-  labelX: function labelX(d, i, nodes) {
+  labelX: function labelX(d, i, nodes, allNodes) {
     var mode = this.option('segmentBarMode');
 
     if (mode === SEGMENT_BAR_MODE.STACKED) {
-      return this._barXInnerStacked(d, i, nodes) + this._barWidthStacked(d);
+      return this._barXInnerStacked(d, i, nodes, allNodes) + this._barWidthStacked(d);
     } else if (mode === SEGMENT_BAR_MODE.GROUPED) {
       return this._barWidthGrouped(d);
     }
@@ -8178,6 +8240,8 @@ var HorizontalSegmentBarChart = function (_SegmentBarChart) {
       var data = this.data();
       var xProp = this.tryInvoke(this.opts.xProp);
       var yInnerProp = this.tryInvoke(this.opts.yInnerProp);
+
+      // TODO: Find all Y inner values to build domain.
       var yInnerDomain = data[0][xProp].map(function (d) {
         return d[yInnerProp];
       });
@@ -8235,12 +8299,12 @@ var HorizontalSegmentBarChart = function (_SegmentBarChart) {
     }
   }, {
     key: '_barXInnerStacked',
-    value: function _barXInnerStacked(d, i, nodes) {
+    value: function _barXInnerStacked(d, i, nodes, allNodes) {
       var baseX = 0;
       var xShift = 0;
 
       for (var j = 0; j < i; j++) {
-        var n = d3.select(nodes[j]);
+        var n = d3.select(allNodes[j]);
         var d1 = n.datum();
         xShift += this._barWidthStacked(d1);
       }
@@ -10745,6 +10809,10 @@ var index = Object.freeze({
 	UNDEF: UNDEF
 });
 
+// TODO: Allow setting presets that are automatically merged with settings to create "subtypes"?
+//       For example a "Horizontal" preset for ReferenceLine that makes assumptions about x1 being 0
+//       and x2 being `this.chart.width`. This could apply to charts to create standardized transistion
+//       effects.
 var DEFAULTS$2 = {
   // The layer for drawing operations
   layer: 'bg',
@@ -11923,7 +11991,7 @@ var Label = function (_Extension) {
 
       var lbl = this._extCreateSelection().data([text]);
 
-      lbl.enter().append('text').call(this._setExtAttrs.bind(this)).attr('class', labelCss).merge(lbl).text(function (d) {
+      lbl.enter().append('text').call(this._setExtAttrs.bind(this)).attr('class', labelCss).merge(lbl).html(function (d) {
         return d;
       }).attr('text-anchor', this.tryInvoke(this.opts.anchor)).call(function (lblSel) {
         return _this2._checkMaxWidth(lblSel, maxWidth);
@@ -12993,10 +13061,12 @@ function axisXLabelStart(lbl) {
 }
 
 function axisXLabelCenter(lbl) {
-  lbl.attr('transform', 'translate(' + this.width / 2 + ', 30)').style('text-anchor', 'middle');
+  var w = this.width || 0;
+  lbl.attr('transform', 'translate(' + w / 2 + ', 30)').style('text-anchor', 'middle');
 }
 function axisXLabelEnd(lbl) {
-  lbl.attr('transform', 'translate(' + this.width + ', 30)').style('text-anchor', 'end');
+  var w = this.width || 0;
+  lbl.attr('transform', 'translate(' + w + ', 30)').style('text-anchor', 'end');
 }
 
 var Y_LABEL_DEFAULTS = {
@@ -13021,11 +13091,13 @@ function axisYLabelGenerator(options) {
   };
 }
 function axisYLabelStart(lbl) {
-  lbl.attr('transform', 'translate(-30, ' + this.height + '), rotate(-90)').style('text-anchor', 'start');
+  var h = this.height || 0;
+  lbl.attr('transform', 'translate(-30, ' + h + '), rotate(-90)').style('text-anchor', 'start');
 }
 
 function axisYLabelCenter(lbl) {
-  lbl.attr('transform', 'translate(-30, ' + this.height / 2 + '), rotate(-90)').style('text-anchor', 'middle');
+  var h = this.height || 0;
+  lbl.attr('transform', 'translate(-30, ' + h / 2 + '), rotate(-90)').style('text-anchor', 'middle');
 }
 function axisYLabelEnd(lbl) {
   lbl.attr('transform', 'translate(-30, 0), rotate(-90)').style('text-anchor', 'end');

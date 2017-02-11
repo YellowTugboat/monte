@@ -1,5 +1,5 @@
 export var name = "monte";
-export var version = "0.0.0-alpha25";
+export var version = "0.0.0-alpha26";
 export var author = {"name":"Yellow Tugboat","url":"http://www.yellowtugboat.com"};
 export var description = "A set of common charts based on D3 built for extension and modification.";
 export var main = "build/monte.js";
