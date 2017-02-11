@@ -41,12 +41,14 @@ export function axisXLabelStart(lbl) {
 }
 
 export function axisXLabelCenter(lbl) {
-  lbl.attr('transform', 'translate(' + this.width / 2 + ', 30)').style('text-anchor', 'middle');
+  const w = this.width || 0;
+  lbl.attr('transform', `translate(${w/2}, 30)`).style('text-anchor', 'middle');
 }
 export { axisXLabelCenter as axisXLabelMiddle };
 
 export function axisXLabelEnd(lbl) {
-  lbl.attr('transform', 'translate(' + this.width + ', 30)').style('text-anchor', 'end');
+  const w = this.width || 0;
+  lbl.attr('transform', `translate(${w}, 30)`).style('text-anchor', 'end');
 }
 
 const Y_LABEL_DEFAULTS = {
@@ -70,11 +72,13 @@ export function axisYLabelGenerator(options) {
   };
 }
 export function axisYLabelStart(lbl) {
-  lbl.attr('transform', 'translate(-30, ' + this.height + '), rotate(-90)').style('text-anchor', 'start');
+  const h = this.height || 0;
+  lbl.attr('transform', `translate(-30, ${h}), rotate(-90)`).style('text-anchor', 'start');
 }
 
 export function axisYLabelCenter(lbl) {
-  lbl.attr('transform', 'translate(-30, ' + this.height / 2 + '), rotate(-90)').style('text-anchor', 'middle');
+  const h = this.height || 0;
+  lbl.attr('transform', `translate(-30, ${h / 2}), rotate(-90)`).style('text-anchor', 'middle');
 }
 export { axisYLabelCenter as axisYLabelMiddle };
 
