@@ -37,18 +37,6 @@ const RADAR_CHART_DEFAULTS = {
 
   outerRadius: radiusContrain,
 
-  // The properties to display
-  displayProps: function(data) {
-    const keys = Object.keys(data[0]);
-    const idIndex = keys.indexOf('id');
-    if (idIndex > -1) { keys.splice(idIndex, 1); }
-
-    const cssIndex = keys.indexOf('css');
-    if (cssIndex > -1) { keys.splice(cssIndex, 1); }
-
-    return keys;
-  },
-
   // Callback function to customize the area generator.
   areaCustomize: null,
   areaProp: 'value',
@@ -66,6 +54,9 @@ const RADAR_CHART_DEFAULTS = {
   suppressRadiusLabels: false, // TODO: Always place along the start angle?
   radiusScale: d3.scaleLinear,
   radiusDomainCustomize: null,
+
+  // TODO: Add radius label features
+  //
 
   // Web
   suppressWeb: false,
@@ -108,6 +99,10 @@ const RADAR_CHART_DEFAULTS = {
   pointCss: 'point',
   pointSize: 64,
   pointSymbol: (symbol) => symbol.type(d3.symbolCircle),
+
+  areaValuesProp: 'values',
+  rayIdProp: 'id',
+  rayValueProp: 'value',
 };
 
 export class RadarChart extends PolarChart {
@@ -171,7 +166,23 @@ export class RadarChart extends PolarChart {
   _data(data) {
     super._data(data);
 
-    const props = this.tryInvoke(this.opts.displayProps, this.displayData);
+    const propsMap = {};
+    this.displayData.forEach((area) => {
+      const values = this.getProp('areaValues', area);
+      // For each area look at the ids. Compile a list of all ids across all areas.
+      values.forEach((ray) => {
+        const rayId = this.getProp('rayId', ray);
+
+        if (!propsMap[rayId]) {
+          propsMap[rayId] = 1;
+        }
+        else {
+          propsMap[rayId]++;
+        }
+      });
+    });
+
+    const props = Object.keys(propsMap);
     let currentMax = 0;
 
     // Find max across all properties
@@ -188,6 +199,13 @@ export class RadarChart extends PolarChart {
       [0, currentMax];
     this.radius.domain(domain);
 
+    const { rayAngleMap, rayData } = this.__rayData(props);
+    this.rayAngleMap = rayAngleMap;
+    this.rayData = rayData;
+    this.props = props;
+  }
+
+  __rayData(props) {
     const startAngle = this.tryInvoke(this.opts.startAngle);
     const endAngle = this.tryInvoke(this.opts.endAngle);
     const rayCount = props.length;
@@ -206,9 +224,7 @@ export class RadarChart extends PolarChart {
       activeAngle += rayInterval;
     }
 
-    this.rayAngleMap = rayAngleMap;
-    this.rayData = rayData;
-    this.props = props;
+    return { rayAngleMap, rayData };
   }
 
   _update() {
@@ -259,20 +275,26 @@ export class RadarChart extends PolarChart {
     const selectionFnName = AREA + upperFirst(stage) + 'SelectionCustomize';
     const transitionFnName = AREA + upperFirst(stage) + 'TransitionCustomize';
 
-    sel.attr('class', (d, i) => this._buildCss(
-      ['monte-radar-area',
-        this.opts.areaCss,
-        this.opts.areaCssScaleAccessor,
-        d.css], d, i))
+    sel.attr('class', (d, i) => this._buildCss([
+      'monte-radar-area',
+      this.opts.areaCss,
+      this.opts.areaCssScaleAccessor,
+      d.css], d, i))
       .call((sel) => this.fnInvoke(this.opts[selectionFnName], sel))
       .transition()
         .call(this._transitionSetup(AREA, stage))
         .attr('d', (d) => {
+          const areaValues = this.getProp('areaValues', d);
           const values = [];
 
           this.props.forEach((p) => {
+            // TODO: Find the correct value element for a particular label
+            const idKey = this.getPropKey('rayId');
+            const valueKey = this.getPropKey('rayValue');
+            const radius = findBy(areaValues, idKey, p, valueKey);
+
             values.push({
-              radius: d[p],
+              radius,
               angle: this.rayAngleMap[p],
             });
           });
@@ -535,7 +557,6 @@ export class RadarChart extends PolarChart {
   }
 
   _updatePoints(areaGrps) {
-    // TODO: Implement
     areaGrps.each((d, i, nodes) => this._updateAreaPoints(nodes[i], d, i));
   }
 
@@ -604,3 +625,18 @@ export class RadarChart extends PolarChart {
 }
 
 RadarChart.EVENTS = EVENTS;
+
+function findBy(objArray, searchKey, searchKeyMatch, valueKey) {
+  let v = null;
+
+  for (let i = 0; i < objArray.length; i++) {
+    if (objArray[i]) {
+      if (objArray[i][searchKey] === searchKeyMatch) {
+        v = objArray[i][valueKey];
+        break;
+      }
+    }
+  }
+
+  return v;
+}
