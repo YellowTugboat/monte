@@ -332,11 +332,11 @@ export class SegmentBarChart extends AxesChart {
           .call(this.__bindCommonEvents(BARSEG))
           .style('opacity', 0)
           .style('fill', this.optionReaderFunc('barSegFillScaleAccessor'))
-          .attr('class', (d, i) => this._buildCss(
-            ['monte-segment-bar-seg',
-              this.opts.barSegCss,
-              this.opts.barSegCssScaleAccessor,
-              d.css], d, i))
+          .attr('class', (d, i) => this._buildCss([
+            'monte-segment-bar-seg',
+            this.opts.barSegCss,
+            this.opts.barSegCssScaleAccessor,
+            d.css], d, i))
           .attr('x', 0)
           .attr('y', 0)
           .attr('width', 0)
@@ -353,11 +353,11 @@ export class SegmentBarChart extends AxesChart {
 
         // Update
         innerRects
-          .attr('class', (d, i) => this._buildCss(
-            ['monte-segment-bar-seg',
-              this.opts.barSegCss,
-              this.opts.barSegCssScaleAccessor,
-              d.css], d, i))
+          .attr('class', (d, i) => this._buildCss([
+            'monte-segment-bar-seg',
+            this.opts.barSegCss,
+            this.opts.barSegCssScaleAccessor,
+            d.css], d, i))
           .call((sel) => this.fnInvoke(this.opts.barsegUpdateSelectionCustomize, sel))
           .transition()
             .call(this._transitionSetup(BARSEG, UPDATE), d, i, nodes)

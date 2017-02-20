@@ -154,11 +154,11 @@ export class ArcChart extends PolarChart {
     arcs.enter().append('g')
         .attr('class', `monte-arc ${this.opts.arcCss}`)
         .append('path')
-          .attr('class', (d, i) => this._buildCss(
-            ['monte-arc-wedge',
-              this.opts.arcWedgeCss,
-              this.opts.arcWedgeCssScaleAccessor,
-              d.data.css], d, i))
+          .attr('class', (d, i) => this._buildCss([
+            'monte-arc-wedge',
+            this.opts.arcWedgeCss,
+            this.opts.arcWedgeCssScaleAccessor,
+            d.data.css], d, i))
           .call(this.__bindCommonEvents(WEDGE))
           .call((sel) => this.fnInvoke(this.opts.wedgeEnterSelectionCustomize, sel))
           .transition()
@@ -183,11 +183,11 @@ export class ArcChart extends PolarChart {
           // TODO: Convert `prev` to use `d3.local` instead?
           delete nd.prev; // Remove old records to prevent building a history tree.
         })
-        .attr('class', (d, i) => this._buildCss(
-          ['monte-arc-wedge',
-            this.opts.arcWedgeCss,
-            this.opts.arcWedgeCssScaleAccessor,
-            d.data.css], d, i))
+        .attr('class', (d, i) => this._buildCss([
+          'monte-arc-wedge',
+          this.opts.arcWedgeCss,
+          this.opts.arcWedgeCssScaleAccessor,
+          d.data.css], d, i))
         .call((sel) => this.fnInvoke(this.opts.wedgeUpdateSelectionCustomize, sel))
         .transition()
           .call(this._transitionSetup(WEDGE, UPDATE))
@@ -224,9 +224,9 @@ export class ArcChart extends PolarChart {
       .merge(wedge)
         .attr('d', (d) => d)
         .style('fill', this.optionReaderFunc('arcBgWedgeFillScaleAccessor'))
-        .attr('class', (d, i) => this._buildCss(
-          ['monte-arc-bg',
-            this.opts.arcBgWedgeCssScaleAccessor], d, i))
+        .attr('class', (d, i) => this._buildCss([
+          'monte-arc-bg',
+          this.opts.arcBgWedgeCssScaleAccessor], d, i))
         .call((sel) => this.fnInvoke(this.opts.bgUpdateSelectionCustomize, sel));
   }
 

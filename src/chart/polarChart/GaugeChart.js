@@ -166,9 +166,9 @@ export class GaugeChart extends ArcChart {
 
     this.bg.append('path')
       .style('fill', this.optionReaderFunc('arcBgFillScaleAccessor'))
-      .attr('class', (d, i) => this._buildCss(
-        ['monte-gauge-bg',
-          this.opts.arcBgCssScaleAccessor], d, i))
+      .attr('class', (d, i) => this._buildCss([
+        'monte-gauge-bg',
+        this.opts.arcBgCssScaleAccessor], d, i))
       .attr('d', this.bgArc());
 
     this.emit(EVENT_UPDATED_BACKGROUND_ARC);

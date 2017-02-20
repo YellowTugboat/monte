@@ -191,7 +191,8 @@ export class IconArray extends AxesChart {
       .merge(icons)
         .each(merge)
         .attr('transform', (d, i, nodes) => transform.call(this, d, i, nodes))
-        .attr('class', (d, i) => this._buildCss(['monte-icon',
+        .attr('class', (d, i) => this._buildCss([
+          'monte-icon',
           this.opts.iconCss,
           this.opts.iconCssScaleAccessor,
           d.css], d, i))

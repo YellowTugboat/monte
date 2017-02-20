@@ -31,11 +31,11 @@ const AREA_CHART_DEFAULTS = {
 
   // Scale function for the `fill` attribute to apply per area.
   areaFillScale: noop,
-  areaFillScaleAccessor: LineChart.generateScaleAccessor('areaFillScale', '  areaProp'),
+  areaFillScaleAccessor: LineChart.generateScaleAccessor('areaFillScale', 'areaProp'),
 
   // Scale function for CSS class to apply per area. Input: line index, Output: String of CSS Class.
   areaCssScale: noop,
-  areaCssScaleAccessor: LineChart.generateScaleAccessor('areaCssScale', '  areaProp'),
+  areaCssScaleAccessor: LineChart.generateScaleAccessor('areaCssScale', 'areaProp'),
 
   // Static CSS class(es) to apply to every area.
   areaCss: 'area',

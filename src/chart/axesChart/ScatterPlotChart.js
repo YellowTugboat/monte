@@ -108,11 +108,11 @@ export class ScatterPlot extends AxesChart {
       const symbol = this.opts.pointSymbol(symbase, d, i);
       return symbol(d, i);
     })
-    .attr('class', (d, i) => this._buildCss(
-      ['monte-point',
-        this.opts.pointCss,
-        this.opts.pointCssScaleAccessor,
-        d.css], d, i))
+    .attr('class', (d, i) => this._buildCss([
+      'monte-point',
+      this.opts.pointCss,
+      this.opts.pointCssScaleAccessor,
+      d.css], d, i))
     .style('fill', this.optionReaderFunc('pointFillScaleAccessor'))
     .style('stroke', this.optionReaderFunc('pointStrokeScaleAccessor'))
     .call((sel) => this.fnInvoke(this.opts[selectionFnName], sel))
