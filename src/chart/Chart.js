@@ -143,6 +143,11 @@ export class Chart {
   _initCore() {
     // Create SVG element and drawing area setup
     const parent = d3.select(this.parentSelector);
+
+    if (parent.node() === null) {
+      throw new MonteError(`Invalid selector. "${this.parentSelector}" did not match any element."`);
+    }
+
     if (parent.node().tagName.toLowerCase() === 'svg') {
       this.bound = parent;
     }
@@ -162,20 +167,7 @@ export class Chart {
 
     this.clipRect = this.clip.append('rect').attr('x', 0).attr('y', 0);
 
-    // Create a background area.
-    this.addLayer('bg');
-
-    // Create the support area.
-    this.addLayer('support');
-
-    // Create the selection area.
-    this.addLayer('selection');
-
-    // Create the primary drawing area.
-    this.addLayer('draw');
-
-    // Create the overlay area.
-    this.addLayer('overlay');
+    this._initLayers();
 
     const chart = this;
 
@@ -190,6 +182,23 @@ export class Chart {
       this._resizeHandler = resizer.resize.bind(resizer, this);
       global.getResizeWatcher().add(this._resizeHandler);
     }
+  }
+
+  _initLayers() {
+    // Create a background area.
+    this.addLayer('bg');
+
+    // Create the support area.
+    this.addLayer('support');
+
+    // Create the selection area.
+    this.addLayer('selection');
+
+    // Create the primary drawing area.
+    this.addLayer('draw');
+
+    // Create the overlay area.
+    this.addLayer('overlay');
   }
 
   _initPublicEvents(...events) {
