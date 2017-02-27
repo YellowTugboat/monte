@@ -110,7 +110,7 @@ export class Chart {
     this._initCustomize();
 
     // Update the bounding box and layout basics.
-    this._updateBounds();
+    this._boundsUpdate();
 
     // Bind initial extensions to this chart instance.
     this._bindExt(this.tryInvoke(this.opts.extensions));
@@ -246,8 +246,8 @@ export class Chart {
 
   _initRender() {}
 
-  _updateBounds(suppressNotify=false, suppressUpdate=false) {
-    this.__notify(EV.UPDATING_BOUNDS);
+  _boundsUpdate(suppressNotify=false, suppressUpdate=false) {
+    this.__notify(EV.BEFORE_BOUNDS_UPDATE);
 
     // Margin Convention and calculate drawing area size
     this.margin = this.opts.margin;
@@ -269,7 +269,7 @@ export class Chart {
         .attr('height', this.height);
     }
 
-    const notify = () => { if (this._constructed) { this.__notify(EV.UPDATED_BOUNDS); } };
+    const notify = () => { if (this._constructed) { this.__notify(EV.BOUNDS_UPDATED); } };
     const update = () => { if (this.hasRendered) { this.update(); } };
 
     if (!suppressNotify) { notify(); }
@@ -291,7 +291,7 @@ export class Chart {
   }
 
   destroy() {
-    this.__notify(EV.DESTROYING);
+    this.__notify(EV.BEFORE_DESTROY);
 
     if (this._resizeHandler) {
       global.getResizeWatcher().remove(this._resizeHandler);
@@ -359,7 +359,7 @@ export class Chart {
       this.opts.boundingHeight = height;
     }
 
-    this._updateBounds();
+    this._boundsUpdate();
     this.update();
 
     return this;
@@ -438,7 +438,7 @@ export class Chart {
   /**
    * Get or set a chart option.
    *
-   * NOTE: Does not invoke the "Update cycle". To apply option changes call `update`.
+   * NOTE: Does not invoke the "Update cycle" except for margin changes. To apply option changes call `update`.
    *
    * @Chainable
    */
@@ -450,7 +450,7 @@ export class Chart {
     }
 
     if (this._optsSet) {
-      this.__notify(EV.OPTION_CHANGING, key);
+      this.__notify(EV.BEFORE_OPTION_CHANGE, key);
     }
 
     _set(this.opts, key, value);
@@ -459,7 +459,7 @@ export class Chart {
     if (this._optsSet) {
       // Margins affect the drawing area size so various updates are required.
       if (updateBounds) {
-        this._updateBounds();
+        this._boundsUpdate();
       }
 
       this.__notify(EV.OPTION_CHANGED, key);
@@ -634,7 +634,7 @@ export class Chart {
    * @Chainable
    */
   clear() {
-    this.__notify(EV.CLEARING);
+    this.__notify(EV.BEFORE_CLEAR);
 
     this.displayData = null;
     this._clearDataElements();
@@ -656,9 +656,9 @@ export class Chart {
    * @Chainable
    */
   resetStyleDomains() {
-    this.__notify(EV.CSS_DOMAINS_RESETTING);
+    this.__notify(EV.BEFORE_STYLE_DOMAINS_RESET);
     this._resetStyleDomains();
-    this.__notify(EV.CSS_DOMAINS_RESET);
+    this.__notify(EV.STYLE_DOMAINS_RESET);
 
     return this;
   }
@@ -931,13 +931,13 @@ export class Chart {
   update() {
     if (!this.data()) { return; } // Don't allow update if data has not been set.
     if (!this.hasRendered) {
-      this.__notify(EV.RENDERING);
+      this.__notify(EV.BEFORE_RENDER);
       this._render();
       this.hasRendered = true;
       this.__notify(EV.RENDERED);
     }
 
-    this.__notify(EV.UPDATING);
+    this.__notify(EV.BEFORE_UPDATE);
     this._update();
     this.__notify(EV.UPDATED);
 

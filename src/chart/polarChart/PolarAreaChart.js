@@ -44,8 +44,8 @@ export class PolarAreaChart extends ArcChart {
     this.pie.value(() => 1);
   }
 
-  _updateBounds() {
-    super._updateBounds();
+  _boundsUpdate() {
+    super._boundsUpdate();
     this.updateRadiusRange();
   }
 

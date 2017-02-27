@@ -5,10 +5,9 @@ import { MonteError } from '../../support/MonteError';
 import { MonteOptionError } from '../../support/MonteOptionError';
 import { noop } from '../../tools/noop';
 
-const EVENT_AXIS_PRERENDER = 'axisPrerender';
-const EVENT_AXIS_RENDERING = 'axisRendering';
+const EVENT_AXIS_BEFORE_RENDER = 'beforeAxisRender';
 const EVENT_AXIS_RENDERED = 'axisRendered';
-const EVENTS = [EVENT_AXIS_PRERENDER, EVENT_AXIS_RENDERING, EVENT_AXIS_RENDERED];
+const EVENTS = [EVENT_AXIS_BEFORE_RENDER, EVENT_AXIS_RENDERED];
 
 const AXES_CHART_DEFAULTS = {
   // The axes X and Y are generally assumed. In some cases it may be desirable to add an additional
@@ -134,8 +133,8 @@ export class AxesChart extends Chart {
     super._initRender();
   }
 
-  _updateBounds() {
-    const actions = super._updateBounds(true, true);
+  _boundsUpdate() {
+    const actions = super._boundsUpdate(true, true);
 
     this.updateAxesRanges();
     this.updateAxesTransforms();
@@ -211,11 +210,10 @@ export class AxesChart extends Chart {
       if (isSuppressArray && suppressAxes.indexOf(scaleName) > -1) { return; }
 
       const axis = this[`${scaleName}Axis`];
-      this.emit(EVENT_AXIS_PRERENDER, scaleName, axis);
+      this.emit(EVENT_AXIS_BEFORE_RENDER, scaleName, axis);
 
       this.support.select(`.${scaleName}-axis`)
         .transition(t)
-          .call((t) => this.emit(EVENT_AXIS_RENDERING, scaleName, axis, t))
           .call(axis)
           .call(this._setLabel.bind(this, scaleName))
           .call((t) => this.emit(EVENT_AXIS_RENDERED, scaleName, axis, t));

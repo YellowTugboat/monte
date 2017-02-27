@@ -161,8 +161,8 @@ export class RadarChart extends PolarChart {
     resetScaleDomain(this.opts.pointCssScale);
   }
 
-  _updateBounds() {
-    super._updateBounds();
+  _boundsUpdate() {
+    super._boundsUpdate();
 
     const or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
     this.radius.range([0, or]);

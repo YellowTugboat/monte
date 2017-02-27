@@ -119,8 +119,8 @@ export class ArcChart extends PolarChart {
     resetScaleDomain(this.opts.labelFillScale);
   }
 
-  _updateBounds() {
-    super._updateBounds();
+  _boundsUpdate() {
+    super._boundsUpdate();
 
     this.arc
       .innerRadius(this.tryInvoke(this.opts.innerRadius, this.width, this.height))

@@ -12,7 +12,7 @@ const DEFAULTS = {
   layer: 'bg',
 
   // The chart events to listen for.
-  binding: [EV.DESTROYING, EV.RENDERED, EV.UPDATED, EV.UPDATED_BOUNDS],
+  binding: [EV.BEFORE_DESTROY, EV.RENDERED, EV.UPDATED, EV.BOUNDS_UPDATED],
 
   // Flag for global updates for any option change.
   // Subclasses can override `_shouldOptionUpdate` for nuanced behavior.
@@ -46,8 +46,8 @@ export class Extension {
     }
 
     // Always require the "destroying" event to ensure extension clean up.
-    if (this.opts.binding.indexOf(EV.DESTROYING) === -1) {
-      this.opts.binding.push(EV.DESTROYING);
+    if (this.opts.binding.indexOf(EV.BEFORE_DESTROY) === -1) {
+      this.opts.binding.push(EV.BEFORE_DESTROY);
     }
   }
 
@@ -143,7 +143,7 @@ export class Extension {
    * @Chainable
    */
   clear() {
-    this.__notify(EV.CLEARING);
+    this.__notify(EV.BEFORE_CLEAR);
     this._clearDataElements();
     this.__notify(EV.CLEARED);
 
@@ -160,7 +160,7 @@ export class Extension {
    * all other events resulting in an 'updated' event and invoking the update-cycle.
    *
    * The 'updatedBounds' and 'rendered' chart events result in update-cycle invocation if the
-   * extension does not override the event-bound methods (`_updateBounds`, `_render`).
+   * extension does not override the event-bound methods (`_boundsUpdate`, `_render`).
    *
    * The 'optionChanged' extension event results in `_option<>`
    */
@@ -171,11 +171,11 @@ export class Extension {
 
     try {
       switch (event) {
-      case EV.DESTROYING:
+      case EV.BEFORE_DESTROY:
         this.destroy();
         break;
 
-      case EV.UPDATED_BOUNDS:
+      case EV.BOUNDS_UPDATED:
         this.updateBounds(...args);
         break;
 
@@ -202,7 +202,7 @@ export class Extension {
    * Invoke the extension update-cycle.
    */
   update(...args) {
-    this.__notify(EV.UPDATING);
+    this.__notify(EV.BEFORE_UPDATE);
     this._update(...args);
     this.__notify(EV.UPDATED);
   }
@@ -216,7 +216,7 @@ export class Extension {
    */
   render(...args) {
     if (this._render) {
-      this.__notify(EV.RENDERING);
+      this.__notify(EV.BEFORE_RENDER);
       this._render(...args);
       this.__notify(EV.RENDERED);
     }
@@ -225,13 +225,13 @@ export class Extension {
   }
 
   /**
-   * Invoke `_updateBounds` if defined.
+   * Invoke `_boundsUpdate` if defined.
    */
   updateBounds(...args) {
-    if (this._updateBounds) {
-      this.__notify(EV.UPDATING_BOUNDS);
-      this._updateBounds(...args);
-      this.__notify(EV.UPDATED_BOUNDS);
+    if (this._boundsUpdate) {
+      this.__notify(EV.BEFORE_BOUNDS_UPDATE);
+      this._boundsUpdate(...args);
+      this.__notify(EV.BOUNDS_UPDATED);
     }
   }
 
@@ -243,7 +243,7 @@ export class Extension {
     const prop = args[0];
     const optionMethodName = `_option${pascalCase(prop)}`;
 
-    this.__notify(EV.OPTION_CHANGING, prop);
+    this.__notify(EV.BEFORE_OPTION_CHANGE, prop);
 
     if (this[optionMethodName]) {
       this[optionMethodName]();
@@ -323,7 +323,7 @@ export class Extension {
    * Invoke `_destroy`.
    */
   destroy() {
-    this.__notify(EV.DESTROYING);
+    this.__notify(EV.BEFORE_DESTROY);
     this._destroy();
     this.__notify(EV.DESTROYED);
   }
