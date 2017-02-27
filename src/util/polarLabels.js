@@ -91,7 +91,7 @@ export function polarLabelOuterEdge() {
 
 export function polarLabelInnerFactor(factor) {
   return {
-    css: `${polarLabelCssPrefix}inner-x${factor}`,
+    css: `${polarLabelCssPrefix}inner ${polarLabelCssPrefix}inner-x${factor}`,
     radius: function(w, h) {
       const chart = this.chart || this;
       const innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
@@ -106,7 +106,7 @@ export function polarLabelInnerFactor(factor) {
 
 export function polarLabelInnerAdjust(adjust) {
   return {
-    css: `${polarLabelCssPrefix}inner-${adjust}`,
+    css: `${polarLabelCssPrefix}inner ${polarLabelCssPrefix}inner-${adjust}`,
     radius: function(w, h) {
       const chart = this.chart || this;
       const innerRadius = this.tryInvoke(this.option('innerRadius'), w, h);
@@ -121,7 +121,7 @@ export function polarLabelInnerAdjust(adjust) {
 
 export function polarLabelOuterFactor(factor) {
   return {
-    css: `${polarLabelCssPrefix}outer-x${factor}`,
+    css: `${polarLabelCssPrefix}outer ${polarLabelCssPrefix}outer-x${factor}`,
     radius: function(w, h) {
       const chart = this.chart || this;
       const outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
@@ -136,7 +136,7 @@ export function polarLabelOuterFactor(factor) {
 
 export function polarLabelOuterAdjust(adjust) {
   return {
-    css: `${polarLabelCssPrefix}outer-${adjust}`,
+    css: `${polarLabelCssPrefix}outer ${polarLabelCssPrefix}outer-${adjust}`,
     radius: function(w, h) {
       const chart = this.chart || this;
       const outerRadius = this.tryInvoke(this.option('outerRadius'), w, h);
