@@ -6,7 +6,7 @@ This code is currently in active development. Things may change substantially be
 release occurs.
 
 # License
-GNU General Public License, Version 3 (GPLv3). See LICENSE for details.
+MIT. See LICENSE for details.
 
 # Author
-Yellow Tugboat. Copyright © 2016.
+Yellow Tugboat. Copyright © 2016-2017.
