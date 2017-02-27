@@ -567,11 +567,31 @@ export class Chart {
   }
 
   /**
+   * Gets the object key bound to the property of a datum.
+   */
+  getPropKey(propShortName) {
+    const propFullName = `${propShortName}Prop`;
+
+    if (this.opts[propFullName]) {
+      return this.opts[propFullName];
+    }
+    else if (this.opts[propShortName]) {
+      const propIndex = propShortName.indexOf('Prop');
+
+      if (propIndex > -1) {
+        const expected = propShortName.substring(0, propIndex);
+        throw new MonteError(`Property options should be accessed using short names without the "Prop" suffix. Given ${propShortName}, but expected ${expected}.`);
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Reads a property from a datum and returns the raw (unscaled) value.
    */
   getProp(propShortName, d, defaultValue=null) {
-    const propFullName = `${propShortName}Prop`;
-    const dataPropName = this.opts[propFullName];
+    const dataPropName = this.getPropKey(propShortName);
 
     if (dataPropName) {
       return d[dataPropName];
