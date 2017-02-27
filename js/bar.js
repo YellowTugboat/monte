@@ -208,6 +208,7 @@ var opts = {
   transition: {
     duration: 500
   },
+  xInnerProp: 'type',
 };
 var segBarChart = new monte.SegmentBarChart('#segBarChart', opts);
 

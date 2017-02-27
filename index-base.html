@@ -4,9 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Monte - Home</title>
-
+    <meta name="theme-color" content="#1E1E23">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Monte: leverage your D3 knowledge to build customized SVG charts for the modern web.">
+    <style type="text/css">
+      /* Manually inline header chart styles */
+      .header-mtns {display: block;}
+      .header-mtns .monte-line {stroke: transparent; fill: none;}
+      .header-mtns .monte-area.bg-mtns {fill: #005C94;}
+      .header-mtns .monte-area.fg-mtns {fill: #19AEFF;}
+    </style>
 
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
@@ -26,19 +33,18 @@
   <header class="page-header">
     <div class="container">
       <div class="row">
-        <div class="col-xs-12 col-md-6">
+        <div class="col-xs-12 col-md-6 col-lg-5 intro-cell">
           <div class="logo-grp">
               <img src="img/monte-logo.min.svg" class="logo" height="100" />
               <h1 class="monte inline">Monte</h1>
           </div>
           <p>
-            Monte: leverage your D3 knowledge to build customized SVG charts for the modern web.
+            A visualization framework for D3.js and SVG. Ships with prebuilt charts and components.
           </p>
         </div>
 
-        <div class="col-xs-12 col-md-6">
+        <div class="col-xs-12 col-md-6 col-lg-7">
           <div id="headerChart"></div>
-          <!-- <div class="reset-header"><button class="btn light tight">Reset</button></div> -->
         </div>
       </div>
     </div>
@@ -52,17 +58,21 @@
         <div class="col-xs-12">
           <h1>Preview Releases Available</h1>
           <p>
-            Preview releases are currently available for the <i>brave</i>. Fair warning: the
-            API is subject to change and documentation is still pending.
+            Alpha releases are currently available, but the code base is stablizing. A fair warning though:
+            the API is still subject to change and documentation is still pending. Examples are
+            available below demonstrating the basics of getting started.
+          </p>
+          <p>
+            <a href="https://www.npmjs.com/package/monte"><img src="https://img.shields.io/npm/v/monte.svg"></a>
+            <a href="https://www.npmjs.com/package/monte"><img src="https://img.shields.io/npm/l/monte.svg"></a>
           </p>
         </div>
 
         <div class="col-xs-12 col-md-6">
           <h2>NPM</h2>
           <p>
-            <code>npm install monte</code>
             <div>
-              <a href="https://www.npmjs.com/package/monte">View on NPM</a>
+              <code>npm install monte</code>
             </div>
           </p>
         </div>
@@ -88,8 +98,9 @@
           <div class="col-xs-12">
             <h1 id="overview">Overview</h1>
             <p>
-              Monte is a JavaScript library of SVG charts, based on <a href="http://d3js.org">D3.js</a>
-              and built for customization, modification, and extension.
+              Monte is a JavaScript framework built using <a href="http://d3js.org">D3.js</a> for building SVG 
+              visualizations and comes with a library of prebuilt SVG charts, components, and a series of utilities.
+              The intent is to enable building of charts that can be customized, modified, and extended.
             </p>
 
             <p>
@@ -1003,12 +1014,12 @@
   <footer>
     <div class="container">
       <i class="fa fa-map-marker"></i> Fresh from the <a href="https://en.wikipedia.org/wiki/Front_Range_Urban_Corridor">Front Range</a><br />
-      Copyright &copy; 2016 <a href="http://yellowtugboat.com">Yellow Tugboat</a>
+      Copyright &copy; 2016&mdash;2017 <a href="http://yellowtugboat.com">Yellow Tugboat</a>
     </div>
   </footer>
 
   <script defer src="https://d3js.org/d3.v4.min.js"></script>
-  <script defer src="https://unpkg.com/monte@0.0.0-alpha24/build/monte.min.js"></script>
+  <script defer src="https://unpkg.com/monte@0.0.0-alpha26/build/monte.min.js"></script>
   <script defer src="build/index.min.js"></script>
 
   <script type="text/javascript">
@@ -1028,6 +1039,11 @@
 
       return false;
     };
+
+    // Update sizes after critical has time to load.
+    setTimeout(function() {
+      MonteGlobal.getResizeWatcher().runCallbacks();
+    }, 1000);
   </script>
 </body>
 </html>
