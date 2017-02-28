@@ -55,10 +55,11 @@ const RADAR_CHART_DEFAULTS = {
 
   // Radius Labels
   suppressRadiusLabels: false,
+  radiusLabelLayer: 'support',
   radiusLabelRotation: gaugeLabelRotateTangentFlip,
   radiusLabelAngle: 0,
   radiusLabelFillScale: noop,
-  radiusLabelFillScaleAccessor: PolarChart.generateScaleAccessor('radiusLabelFillScale', 'radiusLabel'),
+  radiusLabelFillScaleAccessor: function(d) { return this.opts.radiusLabelFillScale(d); },
   radiusLabel: (d) => d,
   radiusLabelXAdjust: '',
   radiusLabelYAdjust: '0.35em',
@@ -430,13 +431,15 @@ export class RadarChart extends PolarChart {
 
   _updateRadiusLabels() {
     const levels = this.tryInvoke(this.opts.webLevels);
-    const lbls = this.support.selectAll('.monte-radar-radius-label').data(levels);
+    const layer = this.tryInvoke(this.opts.radiusLabelLayer);
+    const lbls = this[layer].selectAll('.monte-radar-radius-label').data(levels);
 
     const transform = (d, i, nodes) => {
       const radius = this.radius(d);
-      const angle = this.tryInvoke(this.opts.radiusLabelAngle, d, i, nodes);
+      const angle = this.tryInvoke(this.opts.radiusLabelAngle, angle, i, nodes);
       const coord = getPolarCoord(radius, angle);
-      const rotate = radiansToDegrees(this.tryInvoke(this.opts.labelRotation, d.angle, i, nodes));
+      const radRot = this.tryInvoke(this.opts.radiusLabelRotation, angle, i, nodes);
+      const rotate = radiansToDegrees(radRot);
 
       return `translate(${coord}) rotate(${rotate})`;
     };
