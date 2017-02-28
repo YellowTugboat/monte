@@ -7,6 +7,11 @@ class MonteGlobal {
     this._developerModeEvents = null;
     this._resizeWatch = new EventWatcher();
     this.extensionId = 0;
+    this.chartId = 0;
+  }
+
+  getNextChartId() {
+    return this.chartId++; // Post-increment so counts start at zero.
   }
 
   getNextExtensionId() {

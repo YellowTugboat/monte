@@ -1,7 +1,7 @@
 import * as EV from '../const/events';
 import { TRANSITION_DELAY_MS, TRANSITION_DURATION_MS, TRANSITION_EASE } from '../const/d3';
 import { get as _get, set as _set, isEqual } from '../external/lodash';
-import { isArray, isDefined, isFunc, isObject, isString } from '../tools/is';
+import { isArray, isDefined, isFunc, isNumeric, isObject, isString } from '../tools/is';
 import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
@@ -11,7 +11,17 @@ import { global } from '../support/MonteGlobal';
 import { mergeOptions } from '../tools/mergeOptions';
 import { noop } from '../tools/noop';
 
-const CLIP_PATH_ID = 'drawPath';
+const CLIP_PATH_ID_BASE = 'drawPath';
+
+export function chartClipPathId(chartId) {
+  const num = +chartId;
+
+  if (!isNumeric(num)) {
+    throw new MonteError('Cannot get chart clipPath ID. The chart ID must be numeric.');
+  }
+
+  return CLIP_PATH_ID_BASE + num;
+}
 
 export function defaultDataKey(d, i) {
   return (d && d.id) || i;
@@ -82,11 +92,12 @@ export class Chart {
   constructor(parentSelector, options, data) { // eslint-disable-line max-statements
     this._constructed = false;
     this._optsSet = false;
-    this.parentSelector = parentSelector;
     this.hasRendered = false;
     this.layers = [];
     this.extensions = [];
     this._optionReaderCache = {};
+    this.__chartId = global.getNextChartId();
+    this.parentSelector = parentSelector;
 
     // Configure the data options.
     this._initOptions(options);
@@ -127,6 +138,14 @@ export class Chart {
     if (data) { this.data(data); }
   }
 
+  getChartId() {
+    return this.__chartId;
+  }
+
+  _getChartAttr() {
+    return `monte-chart-${this.getChartId()}`; // ID is stored on the element as an attribute.
+  }
+
   _initOptions(...options) {
     this.opts = {};
     const opts = mergeOptions(...options, DEFAULTS);
@@ -155,6 +174,8 @@ export class Chart {
       this.bound = parent.append('svg');
     }
 
+    this.bound.attr(this._getChartAttr(), '');
+
     // Add reference of chart to the node for flexibility of access.
     this.bound.node().monteChart = this;
     this.bound.attr('class', this._buildCss(['monte-chart', this.opts.css, this.opts.chartCss]));
@@ -163,7 +184,7 @@ export class Chart {
     this.defs = this.bound.append('defs');
 
     // Drawing area path clipping
-    this.clip = this.defs.append('clipPath').attr('id', CLIP_PATH_ID);
+    this.clip = this.defs.append('clipPath').attr('id', chartClipPathId(this.getChartId()));
 
     this.clipRect = this.clip.append('rect').attr('x', 0).attr('y', 0);
 
@@ -331,7 +352,11 @@ export class Chart {
    *
    * @Chainable
    */
-  layerUseClipPath(layerName, pathId=CLIP_PATH_ID) {
+  layerUseClipPath(layerName, pathId) {
+    if (!isDefined(pathId)) {
+      pathId = chartClipPathId(this.getChartId());
+    }
+
     this[layerName].attr('clip-path', `url(#${pathId})`);
 
     return this;
