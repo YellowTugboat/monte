@@ -37,18 +37,6 @@ const RADAR_CHART_DEFAULTS = {
 
   outerRadius: radiusContrain,
 
-  // The properties to display
-  displayProps: function(data) {
-    const keys = Object.keys(data[0]);
-    const idIndex = keys.indexOf('id');
-    if (idIndex > -1) { keys.splice(idIndex, 1); }
-
-    const cssIndex = keys.indexOf('css');
-    if (cssIndex > -1) { keys.splice(cssIndex, 1); }
-
-    return keys;
-  },
-
   // Callback function to customize the area generator.
   areaCustomize: null,
   areaProp: 'value',
@@ -62,10 +50,19 @@ const RADAR_CHART_DEFAULTS = {
   startAngle: 0,
   endAngle: TAU,
 
-  // Radius Labels
-  suppressRadiusLabels: false, // TODO: Always place along the start angle?
   radiusScale: d3.scaleLinear,
   radiusDomainCustomize: null,
+
+  // Radius Labels
+  suppressRadiusLabels: false,
+  radiusLabelLayer: 'support',
+  radiusLabelRotation: gaugeLabelRotateTangentFlip,
+  radiusLabelAngle: 0,
+  radiusLabelFillScale: noop,
+  radiusLabelFillScaleAccessor: function(d) { return this.opts.radiusLabelFillScale(d); },
+  radiusLabel: (d) => d,
+  radiusLabelXAdjust: '',
+  radiusLabelYAdjust: '0.35em',
 
   // Web
   suppressWeb: false,
@@ -80,14 +77,11 @@ const RADAR_CHART_DEFAULTS = {
   suppressLabels: false,
   labelPlacement: polarLabelOuter,
   labelRotation: gaugeLabelRotateTangentFlip,
-  labelAngle: (d) => d.startAngle + (d.endAngle - d.startAngle) / 2,
-
+  labelAngle: 0,
   labelProp: 'value',
   labelFillScale: noop,
   labelFillScaleAccessor: PolarChart.generateScaleAccessor('labelFillScale', 'label'),
-  label: function(d) {
-    return d.prop;
-  },
+  label: (d) => d.prop,
   labelXAdjust: '',
   labelYAdjust: '0.35em',
 
@@ -108,6 +102,10 @@ const RADAR_CHART_DEFAULTS = {
   pointCss: 'point',
   pointSize: 64,
   pointSymbol: (symbol) => symbol.type(d3.symbolCircle),
+
+  areaValuesProp: 'values',
+  rayIdProp: 'id',
+  rayValueProp: 'value',
 };
 
 export class RadarChart extends PolarChart {
@@ -156,13 +154,14 @@ export class RadarChart extends PolarChart {
     resetScaleDomain(this.opts.areaFillScale);
     resetScaleDomain(this.opts.areaStrokeScale);
     resetScaleDomain(this.opts.labelFillScale);
+    resetScaleDomain(this.opts.radiusLabelFillScale);
     resetScaleDomain(this.opts.pointFillScale);
     resetScaleDomain(this.opts.pointStrokeScale);
     resetScaleDomain(this.opts.pointCssScale);
   }
 
-  _updateBounds() {
-    super._updateBounds();
+  _boundsUpdate() {
+    super._boundsUpdate();
 
     const or = this.tryInvoke(this.opts.outerRadius, this.width, this.height);
     this.radius.range([0, or]);
@@ -171,7 +170,23 @@ export class RadarChart extends PolarChart {
   _data(data) {
     super._data(data);
 
-    const props = this.tryInvoke(this.opts.displayProps, this.displayData);
+    const propsMap = {};
+    this.displayData.forEach((area) => {
+      const values = this.getProp('areaValues', area);
+      // For each area look at the ids. Compile a list of all ids across all areas.
+      values.forEach((ray) => {
+        const rayId = this.getProp('rayId', ray);
+
+        if (!propsMap[rayId]) {
+          propsMap[rayId] = 1;
+        }
+        else {
+          propsMap[rayId]++;
+        }
+      });
+    });
+
+    const props = Object.keys(propsMap);
     let currentMax = 0;
 
     // Find max across all properties
@@ -188,6 +203,13 @@ export class RadarChart extends PolarChart {
       [0, currentMax];
     this.radius.domain(domain);
 
+    const { rayAngleMap, rayData } = this.__rayData(props);
+    this.rayAngleMap = rayAngleMap;
+    this.rayData = rayData;
+    this.props = props;
+  }
+
+  __rayData(props) {
     const startAngle = this.tryInvoke(this.opts.startAngle);
     const endAngle = this.tryInvoke(this.opts.endAngle);
     const rayCount = props.length;
@@ -206,9 +228,7 @@ export class RadarChart extends PolarChart {
       activeAngle += rayInterval;
     }
 
-    this.rayAngleMap = rayAngleMap;
-    this.rayData = rayData;
-    this.props = props;
+    return { rayAngleMap, rayData };
   }
 
   _update() {
@@ -259,20 +279,26 @@ export class RadarChart extends PolarChart {
     const selectionFnName = AREA + upperFirst(stage) + 'SelectionCustomize';
     const transitionFnName = AREA + upperFirst(stage) + 'TransitionCustomize';
 
-    sel.attr('class', (d, i) => this._buildCss(
-      ['monte-radar-area',
-        this.opts.areaCss,
-        this.opts.areaCssScaleAccessor,
-        d.css], d, i))
+    sel.attr('class', (d, i) => this._buildCss([
+      'monte-radar-area',
+      this.opts.areaCss,
+      this.opts.areaCssScaleAccessor,
+      d.css], d, i))
       .call((sel) => this.fnInvoke(this.opts[selectionFnName], sel))
       .transition()
         .call(this._transitionSetup(AREA, stage))
         .attr('d', (d) => {
+          const areaValues = this.getProp('areaValues', d);
           const values = [];
 
           this.props.forEach((p) => {
+            // Find the correct value element for a particular label
+            const idKey = this.getPropKey('rayId');
+            const valueKey = this.getPropKey('rayValue');
+            const radius = findBy(areaValues, idKey, p, valueKey);
+
             values.push({
-              radius: d[p],
+              radius,
               angle: this.rayAngleMap[p],
             });
           });
@@ -342,7 +368,7 @@ export class RadarChart extends PolarChart {
     const labelPlacement = this.tryInvoke(this.opts.labelPlacement);
     const labelRadius = this.tryInvoke(labelPlacement.radius, this.width, this.height);
     const radius = this.tryInvoke(labelRadius, d, i, nodes);
-    const angle = d.angle; // this.tryInvoke(this.opts.labelAngle, d, i, nodes);
+    const angle = d.angle;
     const rotate = radiansToDegrees(this.tryInvoke(this.opts.labelRotation, d.angle, i, nodes));
     const coord = getPolarCoord(radius, angle);
 
@@ -389,7 +415,7 @@ export class RadarChart extends PolarChart {
           .attr('angle', angle)
           .attr('radius', labelRadius)
           .text((d1) => this.tryInvoke(this.opts.label, d1, i, nodes))
-          .call((sel) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, sel));
+          .call((t) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, t));
 
     lbl.exit()
       .call((sel) => this.fnInvoke(this.opts.labelExitSelectionCustomize, sel))
@@ -398,36 +424,55 @@ export class RadarChart extends PolarChart {
           const ts = this._transitionSettings(LABEL, EXIT);
           this._transitionConfigure(t, ts, d, i, nodes);
         })
-        .attr('opacity', 0)
-        .call((sel) => this.fnInvoke(this.opts.labelExitTransitionCustomize, sel))
+        .style('opacity', 0)
+        .call((t) => this.fnInvoke(this.opts.labelExitTransitionCustomize, t))
       .remove();
   }
 
   _updateRadiusLabels() {
     const levels = this.tryInvoke(this.opts.webLevels);
-    const lbls = this.support.selectAll('.monte-radar-radius-label').data(levels);
+    const layer = this.tryInvoke(this.opts.radiusLabelLayer);
+    const lbls = this[layer].selectAll('.monte-radar-radius-label').data(levels);
+
+    const transform = (d, i, nodes) => {
+      const radius = this.radius(d);
+      const angle = this.tryInvoke(this.opts.radiusLabelAngle, angle, i, nodes);
+      const coord = getPolarCoord(radius, angle);
+      const radRot = this.tryInvoke(this.opts.radiusLabelRotation, angle, i, nodes);
+      const rotate = radiansToDegrees(radRot);
+
+      return `translate(${coord}) rotate(${rotate})`;
+    };
 
     lbls.enter().append('text').classed('monte-radar-radius-label', true)
+      .attr('class', 'monte-radar-ray-label')
+      .attr('dx', this.optionReaderFunc('radiusLabelXAdjust'))
+      .attr('dy', this.optionReaderFunc('radiusLabelYAdjust'))
+      .style('opacity', 0)
+      .style('fill', this.optionReaderFunc('radiusLabelFillScaleAccessor'))
       .attr('transform', 'translate(0, 0)')
-      .text((d) => d)
-      .attr('dy', '0.35em')
+      .text(this.optionReaderFunc('radiusLabel'))
       .call((sel) => this.fnInvoke(this.opts.radiusLabelEnterSelectionCustomize, sel))
       .transition()
         .call(this._transitionSetup(LABEL, ENTER))
-        .attr('transform', (d) => `translate(0, -${this.radius(d)})`)
+        .style('opacity', 1)
+        .attr('transform', transform)
         .call((t) => this.fnInvoke(this.opts.radiusLabelEnterTransitionCustomize, t));
 
-    lbls.text((d) => d)
+    lbls.style('fill', this.optionReaderFunc('radiusLabelFillScaleAccessor'))
+      .style('opacity', 1)
       .call((sel) => this.fnInvoke(this.opts.radiusLabelUpdateSelectionCustomize, sel))
       .transition()
         .call(this._transitionSetup(LABEL, UPDATE))
-        .attr('transform', (d) => `translate(0, -${this.radius(d)})`)
+        .attr('transform', transform)
+        .text(this.optionReaderFunc('radiusLabel'))
         .call((t) => this.fnInvoke(this.opts.radiusLabelUpdateTransitionCustomize, t));
 
     lbls.exit()
       .call((sel) => this.fnInvoke(this.opts.radiusLabelExitSelectionCustomize, sel))
       .transition()
         .call(this._transitionSetup(LABEL, EXIT))
+        .style('opacity', 0)
         .call((t) => this.fnInvoke(this.opts.radiusLabelExitTransitionCustomize, t))
       .remove();
   }
@@ -535,7 +580,6 @@ export class RadarChart extends PolarChart {
   }
 
   _updatePoints(areaGrps) {
-    // TODO: Implement
     areaGrps.each((d, i, nodes) => this._updateAreaPoints(nodes[i], d, i));
   }
 
@@ -604,3 +648,18 @@ export class RadarChart extends PolarChart {
 }
 
 RadarChart.EVENTS = EVENTS;
+
+function findBy(objArray, searchKey, searchKeyMatch, valueKey) {
+  let v = null;
+
+  for (let i = 0; i < objArray.length; i++) {
+    if (objArray[i]) {
+      if (objArray[i][searchKey] === searchKeyMatch) {
+        v = objArray[i][valueKey];
+        break;
+      }
+    }
+  }
+
+  return v;
+}

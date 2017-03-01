@@ -46,7 +46,7 @@ const LINE_CHART_DEFAULTS = {
    *
    **********************************************************************************************/
 
-  includePoints: true,
+  includePoints: false,
 
   pointProp: '',
   pointFillScale: noop,

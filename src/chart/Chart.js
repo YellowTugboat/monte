@@ -1,7 +1,7 @@
 import * as EV from '../const/events';
 import { TRANSITION_DELAY_MS, TRANSITION_DURATION_MS, TRANSITION_EASE } from '../const/d3';
 import { get as _get, set as _set, isEqual } from '../external/lodash';
-import { isArray, isDefined, isFunc, isObject, isString } from '../tools/is';
+import { isArray, isDefined, isFunc, isNumeric, isObject, isString } from '../tools/is';
 import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
@@ -11,7 +11,17 @@ import { global } from '../support/MonteGlobal';
 import { mergeOptions } from '../tools/mergeOptions';
 import { noop } from '../tools/noop';
 
-const CLIP_PATH_ID = 'drawPath';
+const CLIP_PATH_ID_BASE = 'drawPath';
+
+export function chartClipPathId(chartId) {
+  const num = +chartId;
+
+  if (!isNumeric(num)) {
+    throw new MonteError('Cannot get chart clipPath ID. The chart ID must be numeric.');
+  }
+
+  return CLIP_PATH_ID_BASE + num;
+}
 
 export function defaultDataKey(d, i) {
   return (d && d.id) || i;
@@ -82,11 +92,12 @@ export class Chart {
   constructor(parentSelector, options, data) { // eslint-disable-line max-statements
     this._constructed = false;
     this._optsSet = false;
-    this.parentSelector = parentSelector;
     this.hasRendered = false;
     this.layers = [];
     this.extensions = [];
     this._optionReaderCache = {};
+    this.__chartId = global.getNextChartId();
+    this.parentSelector = parentSelector;
 
     // Configure the data options.
     this._initOptions(options);
@@ -110,7 +121,7 @@ export class Chart {
     this._initCustomize();
 
     // Update the bounding box and layout basics.
-    this._updateBounds();
+    this._boundsUpdate();
 
     // Bind initial extensions to this chart instance.
     this._bindExt(this.tryInvoke(this.opts.extensions));
@@ -125,6 +136,14 @@ export class Chart {
 
     // First full draw cycle
     if (data) { this.data(data); }
+  }
+
+  getChartId() {
+    return this.__chartId;
+  }
+
+  _getChartAttr() {
+    return `monte-chart-${this.getChartId()}`; // ID is stored on the element as an attribute.
   }
 
   _initOptions(...options) {
@@ -143,12 +162,19 @@ export class Chart {
   _initCore() {
     // Create SVG element and drawing area setup
     const parent = d3.select(this.parentSelector);
+
+    if (parent.node() === null) {
+      throw new MonteError(`Invalid selector. "${this.parentSelector}" did not match any element."`);
+    }
+
     if (parent.node().tagName.toLowerCase() === 'svg') {
       this.bound = parent;
     }
     else {
       this.bound = parent.append('svg');
     }
+
+    this.bound.attr(this._getChartAttr(), '');
 
     // Add reference of chart to the node for flexibility of access.
     this.bound.node().monteChart = this;
@@ -158,24 +184,11 @@ export class Chart {
     this.defs = this.bound.append('defs');
 
     // Drawing area path clipping
-    this.clip = this.defs.append('clipPath').attr('id', CLIP_PATH_ID);
+    this.clip = this.defs.append('clipPath').attr('id', chartClipPathId(this.getChartId()));
 
     this.clipRect = this.clip.append('rect').attr('x', 0).attr('y', 0);
 
-    // Create a background area.
-    this.addLayer('bg');
-
-    // Create the support area.
-    this.addLayer('support');
-
-    // Create the selection area.
-    this.addLayer('selection');
-
-    // Create the primary drawing area.
-    this.addLayer('draw');
-
-    // Create the overlay area.
-    this.addLayer('overlay');
+    this._initLayers();
 
     const chart = this;
 
@@ -190,6 +203,23 @@ export class Chart {
       this._resizeHandler = resizer.resize.bind(resizer, this);
       global.getResizeWatcher().add(this._resizeHandler);
     }
+  }
+
+  _initLayers() {
+    // Create a background area.
+    this.addLayer('bg');
+
+    // Create the support area.
+    this.addLayer('support');
+
+    // Create the selection area.
+    this.addLayer('selection');
+
+    // Create the primary drawing area.
+    this.addLayer('draw');
+
+    // Create the overlay area.
+    this.addLayer('overlay');
   }
 
   _initPublicEvents(...events) {
@@ -237,8 +267,8 @@ export class Chart {
 
   _initRender() {}
 
-  _updateBounds(suppressNotify=false, suppressUpdate=false) {
-    this.__notify(EV.UPDATING_BOUNDS);
+  _boundsUpdate(suppressNotify=false, suppressUpdate=false) {
+    this.__notify(EV.BEFORE_BOUNDS_UPDATE);
 
     // Margin Convention and calculate drawing area size
     this.margin = this.opts.margin;
@@ -260,7 +290,7 @@ export class Chart {
         .attr('height', this.height);
     }
 
-    const notify = () => { if (this._constructed) { this.__notify(EV.UPDATED_BOUNDS); } };
+    const notify = () => { if (this._constructed) { this.__notify(EV.BOUNDS_UPDATED); } };
     const update = () => { if (this.hasRendered) { this.update(); } };
 
     if (!suppressNotify) { notify(); }
@@ -282,7 +312,7 @@ export class Chart {
   }
 
   destroy() {
-    this.__notify(EV.DESTROYING);
+    this.__notify(EV.BEFORE_DESTROY);
 
     if (this._resizeHandler) {
       global.getResizeWatcher().remove(this._resizeHandler);
@@ -322,7 +352,11 @@ export class Chart {
    *
    * @Chainable
    */
-  layerUseClipPath(layerName, pathId=CLIP_PATH_ID) {
+  layerUseClipPath(layerName, pathId) {
+    if (!isDefined(pathId)) {
+      pathId = chartClipPathId(this.getChartId());
+    }
+
     this[layerName].attr('clip-path', `url(#${pathId})`);
 
     return this;
@@ -350,7 +384,7 @@ export class Chart {
       this.opts.boundingHeight = height;
     }
 
-    this._updateBounds();
+    this._boundsUpdate();
     this.update();
 
     return this;
@@ -429,7 +463,7 @@ export class Chart {
   /**
    * Get or set a chart option.
    *
-   * NOTE: Does not invoke the "Update cycle". To apply option changes call `update`.
+   * NOTE: Does not invoke the "Update cycle" except for margin changes. To apply option changes call `update`.
    *
    * @Chainable
    */
@@ -441,7 +475,7 @@ export class Chart {
     }
 
     if (this._optsSet) {
-      this.__notify(EV.OPTION_CHANGING, key);
+      this.__notify(EV.BEFORE_OPTION_CHANGE, key);
     }
 
     _set(this.opts, key, value);
@@ -450,7 +484,7 @@ export class Chart {
     if (this._optsSet) {
       // Margins affect the drawing area size so various updates are required.
       if (updateBounds) {
-        this._updateBounds();
+        this._boundsUpdate();
       }
 
       this.__notify(EV.OPTION_CHANGED, key);
@@ -558,11 +592,31 @@ export class Chart {
   }
 
   /**
+   * Gets the object key bound to the property of a datum.
+   */
+  getPropKey(propShortName) {
+    const propFullName = `${propShortName}Prop`;
+
+    if (this.opts[propFullName]) {
+      return this.opts[propFullName];
+    }
+    else if (this.opts[propShortName]) {
+      const propIndex = propShortName.indexOf('Prop');
+
+      if (propIndex > -1) {
+        const expected = propShortName.substring(0, propIndex);
+        throw new MonteError(`Property options should be accessed using short names without the "Prop" suffix. Given ${propShortName}, but expected ${expected}.`);
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Reads a property from a datum and returns the raw (unscaled) value.
    */
   getProp(propShortName, d, defaultValue=null) {
-    const propFullName = `${propShortName}Prop`;
-    const dataPropName = this.opts[propFullName];
+    const dataPropName = this.getPropKey(propShortName);
 
     if (dataPropName) {
       return d[dataPropName];
@@ -625,7 +679,7 @@ export class Chart {
    * @Chainable
    */
   clear() {
-    this.__notify(EV.CLEARING);
+    this.__notify(EV.BEFORE_CLEAR);
 
     this.displayData = null;
     this._clearDataElements();
@@ -647,9 +701,9 @@ export class Chart {
    * @Chainable
    */
   resetStyleDomains() {
-    this.__notify(EV.CSS_DOMAINS_RESETTING);
+    this.__notify(EV.BEFORE_STYLE_DOMAINS_RESET);
     this._resetStyleDomains();
-    this.__notify(EV.CSS_DOMAINS_RESET);
+    this.__notify(EV.STYLE_DOMAINS_RESET);
 
     return this;
   }
@@ -922,13 +976,13 @@ export class Chart {
   update() {
     if (!this.data()) { return; } // Don't allow update if data has not been set.
     if (!this.hasRendered) {
-      this.__notify(EV.RENDERING);
+      this.__notify(EV.BEFORE_RENDER);
       this._render();
       this.hasRendered = true;
       this.__notify(EV.RENDERED);
     }
 
-    this.__notify(EV.UPDATING);
+    this.__notify(EV.BEFORE_UPDATE);
     this._update();
     this.__notify(EV.UPDATED);
 

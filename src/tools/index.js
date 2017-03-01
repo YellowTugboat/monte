@@ -1,7 +1,7 @@
 export { commonEventNames } from './commonEventNames';
-export { compose } from './compose';
 export { removeClassByPattern } from './css';
 export { getTreeSetting } from './getTreeSetting';
+export { invokeMany } from './invokeMany';
 export { isArray, isDefined, isFunc, isNumeric, isObject, isString } from './is';
 export { mergeOptions, ReplacePreceding } from './mergeOptions';
 export { noop } from './noop';

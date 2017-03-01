@@ -10,21 +10,21 @@ export const SUPPRESSED_ERROR = 'suppressedError';
 export const EXTENSION = 'extension';
 
 // Chart and Extension Lifecycle (extensions support a subset)
-export const RENDERING = 'rendering';
+export const BEFORE_RENDER = 'beforeRender';
 export const RENDERED = 'rendered';
-export const UPDATING = 'updating';
+export const BEFORE_UPDATE = 'beforeUpdate';
 export const UPDATED = 'updated';
-export const UPDATING_BOUNDS = 'updatingBounds';
-export const UPDATED_BOUNDS = 'updatedBounds';
-export const CLEARING = 'clearing';
+export const BEFORE_BOUNDS_UPDATE = 'beforeBoundsUpdate';
+export const BOUNDS_UPDATED = 'updatedBounds';
+export const BEFORE_CLEAR = 'beforeClear';
 export const CLEARED = 'cleared';
-export const DESTROYING = 'destroying';
+export const BEFORE_DESTROY = 'beforeDestroy';
 export const DESTROYED = 'destroyed';
 
-export const OPTION_CHANGING = 'optionChanging';
+export const BEFORE_OPTION_CHANGE = 'beforeOptionChange';
 export const OPTION_CHANGED = 'optionChanged';
-export const CSS_DOMAINS_RESETTING = 'cssDomainsResetting';
-export const CSS_DOMAINS_RESET = 'cssDomainsReset';
+export const BEFORE_STYLE_DOMAINS_RESET = 'beforeStyleDomainsReset';
+export const STYLE_DOMAINS_RESET = 'styleDomainsReset';
 
 export const INTERACTION_EVENTS = [CLICK, TOUCHSTART, TOUCHEND, MOUSEOVER, MOUSEOUT];
 export const INTERACTION_SHOW_EVENTS = [TOUCHSTART, MOUSEOVER];
@@ -35,20 +35,20 @@ export const CHART_SUPPORT_EVENTS = [SUPPRESSED_ERROR, EXTENSION];
 
 // Lifecycle event pairs
 export const CHART_LIFECYCLE_EVENTS = [
-  RENDERING, RENDERED,
-  UPDATING, UPDATED,
-  UPDATING_BOUNDS, UPDATED_BOUNDS,
-  CLEARING, CLEARED,
-  CSS_DOMAINS_RESETTING, CSS_DOMAINS_RESET,
-  OPTION_CHANGING, OPTION_CHANGED,
-  DESTROYING, DESTROYED,
+  BEFORE_RENDER, RENDERED,
+  BEFORE_UPDATE, UPDATED,
+  BEFORE_BOUNDS_UPDATE, BOUNDS_UPDATED,
+  BEFORE_CLEAR, CLEARED,
+  BEFORE_STYLE_DOMAINS_RESET, STYLE_DOMAINS_RESET,
+  BEFORE_OPTION_CHANGE, OPTION_CHANGED,
+  BEFORE_DESTROY, DESTROYED,
 ];
 
 export const EXTENSION_LIFECYCLE_EVENTS = [
-  UPDATING, UPDATED,
-  CLEARING, CLEARED,
-  OPTION_CHANGING, OPTION_CHANGED,
-  DESTROYING, DESTROYED,
+  BEFORE_UPDATE, UPDATED,
+  BEFORE_CLEAR, CLEARED,
+  BEFORE_OPTION_CHANGE, OPTION_CHANGED,
+  BEFORE_DESTROY, DESTROYED,
 ];
 
 export const ACTION_ADD = 'add';

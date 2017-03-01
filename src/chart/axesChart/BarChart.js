@@ -157,6 +157,7 @@ export class BarChart extends AxesChart {
         .attr('height', barHeight)
         .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
         .attr('class', (d, i) => this._buildCss([
+          'monte-bar',
           this.opts.barCss,
           this.opts.barCssScaleAccessor,
           d.css], d, i))
@@ -174,6 +175,7 @@ export class BarChart extends AxesChart {
     barGrps.select('rect')
       .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
       .attr('class', (d, i) => this._buildCss([
+        'monte-bar',
         this.opts.barCss,
         this.opts.barCssScaleAccessor,
         d.css], d, i))

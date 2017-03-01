@@ -20,7 +20,7 @@ const HSEGMENT_BAR_CHART_DEFAULTS = {
 
   yProp: 'id',
   xProp: 'values',
-  yInnerProp: 'type',
+  yInnerProp: 'id',
   xInnerProp: 'value',
 
   xScale: d3.scaleLinear,

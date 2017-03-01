@@ -1,6 +1,6 @@
 {
   "name": "monte",
-  "version": "0.0.0-alpha26",
+  "version": "0.0.0-alpha27",
   "author": {
     "name": "Yellow Tugboat",
     "url": "http://www.yellowtugboat.com"
@@ -37,7 +37,7 @@
     "icon",
     "iconarray"
   ],
-  "license": "GPL-3.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/YellowTugboat/monte/issues"
   },

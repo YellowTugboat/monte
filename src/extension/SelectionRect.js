@@ -139,7 +139,7 @@ export class SelectionRect extends Extension {
     this.usingCustomHandles = true;
   }
 
-  _updateBounds() {
+  _boundsUpdate() {
     const w = this.chart.width;
     const h = this.chart.height;
     const extent = this.tryInvoke(this.opts.extent, w, h, this.selectionDirection);
