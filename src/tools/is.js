@@ -1,4 +1,4 @@
-export const undef = void 0;
+import { UNDEF } from '../const/undef';
 import { noop } from './noop';
 
 export function isNumeric(v) {
@@ -18,7 +18,7 @@ export function isNoop(v) {
 }
 
 export function isObject(v) {
-  return v !== null && typeof v === 'object';
+  return v !== null && typeof v === 'object' && !isArray(v);
 }
 
 export function isArray(v) {
@@ -26,9 +26,9 @@ export function isArray(v) {
 }
 
 export function isDefined(v) {
-  return v !== null && v !== undef;
+  return v !== null && v !== UNDEF;
 }
 
 export function isFuncDefined(v) {
-  return isDefined(v) && isFunc(v) && !isNoop;
+  return isDefined(v) && isFunc(v) && !isNoop(v);
 }
