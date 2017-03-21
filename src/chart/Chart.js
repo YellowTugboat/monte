@@ -178,7 +178,7 @@ export class Chart {
 
     // Add reference of chart to the node for flexibility of access.
     this.bound.node().monteChart = this;
-    this.bound.attr('class', this._buildCss(['monte-chart', this.opts.css, this.opts.chartCss]));
+    this.bound.classed(this._buildCss(['monte-chart', this.opts.css, this.opts.chartCss]), true);
 
     // SVG Defs element
     this.defs = this.bound.append('defs');
