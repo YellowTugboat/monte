@@ -156,10 +156,10 @@ export class Extension {
   }
 
   /**
-   * Invokes a lifecycle event ('destroying', 'updatedBounds', 'rendered', 'optionChanged') with
+   * Invokes a lifecycle event ('destroying', 'boundsUpdated', 'rendered', 'optionChanged') with
    * all other events resulting in an 'updated' event and invoking the update-cycle.
    *
-   * The 'updatedBounds' and 'rendered' chart events result in update-cycle invocation if the
+   * The 'boundsUpdated' and 'rendered' chart events result in update-cycle invocation if the
    * extension does not override the event-bound methods (`_boundsUpdate`, `_render`).
    *
    * The 'optionChanged' extension event results in `_option<>`
