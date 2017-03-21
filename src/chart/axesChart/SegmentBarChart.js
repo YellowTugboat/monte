@@ -225,48 +225,25 @@ export class SegmentBarChart extends AxesChart {
     const mode = this.tryInvoke(this.opts.segmentBarMode);
     const classesToRemove = nonMatchingMapValues(SEGMENT_BAR_MODE_CSS_MAP, mode);
     const classToAdd = SEGMENT_BAR_MODE_CSS_MAP[mode];
-    let barGrps, enterTransition, updateTransition;
+    let barGrps;
 
     this.classed(classToAdd, true);
 
     if (mode === SEGMENT_BAR_MODE.STACKED) {
-      ({ barGrps, enterTransition, updateTransition } = this._updateStackedBars());
+      barGrps = this._updateStackedBars();
     }
     else if (mode === SEGMENT_BAR_MODE.GROUPED) {
-      ({ barGrps, enterTransition, updateTransition } = this._updateGroupedBars());
+      barGrps = this._updateGroupedBars();
     }
     else {
       throw MonteOptionError.InvalidEnumOption('segmentBarMode', mode);
     }
 
-    if (this.opts.includeLabels && barGrps) {
-      if (barGrps.size()) {
-        this._updateLabels(barGrps, enterTransition, updateTransition);
-      }
-      else {
-        enterTransition.on('end.labels', () => {
-          const g = this.draw.selectAll('.monte-segment-bar-grp');
-          this._updateLabels(g, enterTransition);
-        });
-
-        updateTransition.on('end.labels', () => {
-          const g = this.draw.selectAll('.monte-segment-bar-grp');
-          this._updateLabels(g, updateTransition);
-        });
-      }
+    if (this.opts.includeLabels && barGrps && barGrps.size()) {
+      this._updateLabels(barGrps);
     }
 
-    if (enterTransition) {
-      enterTransition.on('end.classes', () => {
-        classesToRemove.forEach((classToRemove) => this.classed(classToRemove, false));
-      });
-    }
-
-    if (updateTransition) {
-      updateTransition.on('end.classes', () => {
-        classesToRemove.forEach((classToRemove) => this.classed(classToRemove, false));
-      });
-    }
+    classesToRemove.forEach((classToRemove) => this.classed(classToRemove, false));
   }
 
   _updateStackedBars() {
@@ -308,9 +285,7 @@ export class SegmentBarChart extends AxesChart {
         .call((t) => this.fnInvoke(this.opts.bargrpExitTransitionCustomize, t))
       .remove();
 
-    return {
-      barGrps: barGrps.merge(barGrps.enter().selectAll('.monte-segment-bar-grp')),
-    };
+    return barGrps.merge(barGrps.enter().selectAll('.monte-segment-bar-grp'));
   }
 
   _updateBarSelection(barGrps, fns) {
@@ -383,34 +358,37 @@ export class SegmentBarChart extends AxesChart {
     return this.getProp('y', d);
   }
 
-  _updateLabels(barGrps, transition) {
+  _updateLabels(barGrps) {
     barGrps.each((d, i, nodes) => {
       const barGrp = d3.select(nodes[i]);
-      this._updateBarSegLabel(barGrp, transition, d, i, nodes);
+      this._updateBarSegLabels(barGrp, d, i, nodes);
     });
   }
 
   // TODO: Move labels into segment bar grps (a new nested for the rect and label to live together)?
-  _updateBarSegLabel(barGrp, transition, barData, barIndex, barNodes) {
-    const lbl = barGrp.selectAll('.monte-bar-label').data(this._segLabels(barData));
+  _updateBarSegLabels(barGrp, barData, barIndex, barNodes) {
+    const lbls = barGrp.selectAll('.monte-bar-label').data(this._segLabels(barData));
+    const enterLbls = lbls.enter().append('text').attr('class', 'monte-bar-label');
+    const allNodes = enterLbls.merge(lbls);
 
-    // TODO: Split enter and merge?
-    const enterLbls = lbl.enter().append('text').attr('class', 'monte-bar-label');
-    const allNodes = enterLbls.merge(lbl);
+    const updateLabels = (sel, mode) => {
+      sel.text((d, i, nodes) => this.tryInvoke(this.opts.label, d, i, nodes))
+        .call((sel) => sel.raise())
+        .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
+        .transition()
+          .call(this._transitionSetup(LABEL, mode), barData, barIndex, barNodes)
+          .style('fill', this.optionReaderFunc('labelFillScaleAccessor'))
+          .attr('x', (d, i, nodes) => this.tryInvoke(this.opts.labelX, d, i, nodes, allNodes.nodes()))
+          .attr('y', (d, i, nodes) => this.tryInvoke(this.opts.labelY, d, i, nodes, allNodes.nodes()))
+          .attr('dx', this.optionReaderFunc('labelXAdjust'))
+          .attr('dy', this.optionReaderFunc('labelYAdjust'))
+          .call((t) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, t));
+    };
 
-    allNodes.text((d1, i, nodes) => this.tryInvoke(this.opts.label, d1, i, nodes))
-      .call((sel) => sel.raise())
-      .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
-      .transition(transition)
-        .call(this._transitionSetup(LABEL, UPDATE), barData, barIndex, barNodes)
-        .style('fill', (d1, i, nodes) => this.tryInvoke(this.opts.labelFillScaleAccessor, d1, i, nodes))
-        .attr('x', (d1, i, nodes) => this.tryInvoke(this.opts.labelX, d1, i, nodes, allNodes.nodes()))
-        .attr('dx', (d1, i, nodes) => this.tryInvoke(this.opts.labelXAdjust, d1, i, nodes))
-        .attr('y', (d1, i, nodes) => this.tryInvoke(this.opts.labelY, d1, i, nodes, allNodes.nodes()))
-        .attr('dy', (d1, i, nodes) => this.tryInvoke(this.opts.labelYAdjust, d1, i, nodes))
-        .call((t) => this.fnInvoke(this.opts.labelUpdateTransitionCustomize, t));
+    updateLabels(enterLbls, ENTER);
+    updateLabels(lbls, UPDATE);
 
-    lbl.exit()
+    lbls.exit()
       .call((sel) => this.fnInvoke(this.opts.labelUpdateSelectionCustomize, sel))
       .transition()
         .call(this._transitionSetup(LABEL, EXIT), barData, barIndex, barNodes)
