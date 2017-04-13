@@ -26,6 +26,8 @@ const DEFAULTS = {
 
 export class Extension {
   constructor(options) {
+    this.__extId = null; // Not set until a chart is bound
+
     // Configure the data options.
     this._initOptions(options);
 

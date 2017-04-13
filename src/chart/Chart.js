@@ -1,11 +1,11 @@
 import * as EV from '../const/events';
-import { TRANSITION_DELAY_MS, TRANSITION_DURATION_MS, TRANSITION_EASE } from '../const/d3';
 import { get as _get, set as _set, isEqual } from '../external/lodash';
 import { isArray, isDefined, isFunc, isNumeric, isObject, isString } from '../tools/is';
 import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
 import { UNDEF } from '../const/undef';
+import { standard as defaultTransition } from '../util/transitionSettings';
 import { getTreeSetting } from '../tools/getTreeSetting';
 import { global } from '../support/MonteGlobal';
 import { mergeOptions } from '../tools/mergeOptions';
@@ -41,11 +41,7 @@ const DEFAULTS = {
   customEvents: [],
   extensions: [],
 
-  transition: {
-    duration: TRANSITION_DURATION_MS,
-    ease: TRANSITION_EASE,
-    delay: TRANSITION_DELAY_MS,
-  },
+  transition: defaultTransition,
 
   resize: null,
 
@@ -161,13 +157,12 @@ export class Chart {
   // Intialize the vis.
   _initCore() {
     // Create SVG element and drawing area setup
-    const parent = d3.select(this.parentSelector);
+    const parent = d3.select(this.parentSelector); // TODO: Allow parent to be a D3 Selection?
 
     if (parent.node() === null) {
       throw new MonteError(`Invalid selector. "${this.parentSelector}" did not match any element."`);
     }
-
-    if (parent.node().tagName.toLowerCase() === 'svg') {
+    else if (parent.node().tagName.toLowerCase() === 'svg') {
       this.bound = parent;
     }
     else {
@@ -185,7 +180,6 @@ export class Chart {
 
     // Drawing area path clipping
     this.clip = this.defs.append('clipPath').attr('id', chartClipPathId(this.getChartId()));
-
     this.clipRect = this.clip.append('rect').attr('x', 0).attr('y', 0);
 
     this._initLayers();
@@ -463,7 +457,8 @@ export class Chart {
   /**
    * Get or set a chart option.
    *
-   * NOTE: Does not invoke the "Update cycle" except for margin changes. To apply option changes call `update`.
+   * NOTE: Does not invoke the "Update cycle" except for margin changes. To apply option changes
+   *       call `update`.
    *
    * @Chainable
    */
@@ -792,9 +787,9 @@ export class Chart {
 
   _transitionSettings(...levels) {
     const transitionSettings = this.tryInvoke(this.opts.transition);
-    const duration = getTreeSetting(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
-    const delay = getTreeSetting(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
-    const ease = getTreeSetting(transitionSettings, levels, 'ease', TRANSITION_EASE);
+    const duration = getTreeSetting(transitionSettings, levels, 'duration', defaultTransition.duration);
+    const delay = getTreeSetting(transitionSettings, levels, 'delay', defaultTransition.delay);
+    const ease = getTreeSetting(transitionSettings, levels, 'ease', defaultTransition.ease);
 
     if (this.developerMode && this.opts.developerOptions.transitions) {
       console.log('Transition: ' + levels.join('.')); // eslint-disable-line no-console

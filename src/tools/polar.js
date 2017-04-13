@@ -34,6 +34,7 @@ export function arcBisect(startAngle, endAngle) {
   return (startAngle + endAngle) / 2;
 }
 
+// Like `arcBisect`, but takes a datum with the fields of `startAngle` and `endAngle`.
 export function wedgeBisect(d) {
   return arcBisect(d.startAngle, d.endAngle);
 }

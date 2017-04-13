@@ -1,4 +1,4 @@
-import { ENTER, EXIT, UPDATE } from '../../const/d3';
+import { ENTER, EXIT, SYMBOL_SIZE, UPDATE } from '../../const/d3';
 import { polarLabelCssPrefix, polarLabelOuter } from '../../util/polarLabels';
 import { MonteOptionError } from '../../support/MonteOptionError';
 import { PolarChart } from './PolarChart';
@@ -100,7 +100,7 @@ const RADAR_CHART_DEFAULTS = {
 
   // Static CSS class(es) to apply to every line.
   pointCss: 'point',
-  pointSize: 64,
+  pointSize: SYMBOL_SIZE,
   pointSymbol: (symbol) => symbol.type(d3.symbolCircle),
 
   areaValuesProp: 'values',

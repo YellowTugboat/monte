@@ -1,4 +1,4 @@
-import { ENTER, EXIT, UPDATE } from '../../const/d3';
+import { ENTER, EXIT, SYMBOL_SIZE, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
@@ -62,7 +62,7 @@ const LINE_CHART_DEFAULTS = {
   // Static CSS class(es) to apply to every line.
   pointCss: 'point',
 
-  pointSize: 64,
+  pointSize: SYMBOL_SIZE,
 
   pointSymbol: (symbol) => symbol.type(d3.symbolCircle),
 

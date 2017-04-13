@@ -5,6 +5,10 @@ export function isNumeric(v) {
   return typeof v === 'number' && isFinite(v);
 }
 
+export function isNumberLike(v) {
+  return isNumeric(v) || (isString(v) && isNumeric(+v));
+}
+
 export function isString(v) {
   return typeof v === 'string';
 }

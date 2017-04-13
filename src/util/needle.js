@@ -60,7 +60,15 @@ export function needleRect(options) {
     const h2 = opts.smallNeedleHeight || (needleHeight * opts.smallNeedleRatio);
     const w = needleBaseWidth / 2;
 
-    return `M -${w} 0  -${w} -${h1}  ${w} -${h1}  ${w} 0 ${w} ${h2} -${w} ${h2} Z`;
+    const p1 = `-${w} 0`;
+    const p2 = `-${w} -${h1}`;
+    const p3 = `${w} -${h1}`;
+    const p4 = `${w} 0`;
+    const p5 = `${w} ${h2}`;
+    const p6 = `-${w} ${h2}`;
+    const path = ['M', p1, p2, p3, p4, p5, p6, 'Z'].join(' ');
+
+    return path;
   };
 }
 

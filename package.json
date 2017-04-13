@@ -5,7 +5,7 @@
     "name": "Yellow Tugboat",
     "url": "http://www.yellowtugboat.com"
   },
-  "description": "A set of common charts based on D3 built for extension and modification.",
+  "description": "A visualization framework for D3.js and SVG. Ships with prebuilt charts and components.",
   "main": "build/monte.js",
   "jsnext:main": "index.js",
   "scripts": {
@@ -64,6 +64,6 @@
     "tape-run": "^2.1.4"
   },
   "peerDependencies": {
-    "d3": "^4"
+    "d3": "4"
   }
 }

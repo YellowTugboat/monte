@@ -42,6 +42,7 @@ export {
   InstanceGroup,
   MonteError,
   MonteOptionError,
+  global,
 } from './src/support/';
 
 // Extensions
@@ -116,9 +117,11 @@ export {
   polarLabelCentroid,
   polarLabelInner,
   polarLabelInnerAdjust,
+  polarLabelInnerEdge,
   polarLabelInnerFactor,
   polarLabelOuter,
   polarLabelOuterAdjust,
+  polarLabelOuterEdge,
   polarLabelOuterFactor,
 } from './src/util/polarLabels';
 
@@ -144,6 +147,10 @@ export {
   Resizer,
   VerticalResizer,
 } from './src/util/resizeHandlers';
+
+export {
+  transitionSettings,
+} from './src/util/transitionSettings';
 
 export {
   arcSimpleTween,
