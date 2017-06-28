@@ -1,4 +1,4 @@
-import { ENTER, EXIT, UPDATE } from '../../const/d3';
+import { ENTER, EXIT, SYMBOL_SIZE, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { commonEventNames } from '../../tools/commonEventNames';
 import { noop } from '../../tools/noop';
@@ -18,7 +18,7 @@ const SCATTER_PLOT_DEFAULTS = {
   },
 
   // The size of each point
-  pointSize: 64,
+  pointSize: SYMBOL_SIZE,
 
   pointProp: '',
 

@@ -1,11 +1,11 @@
 {
   "name": "monte",
-  "version": "0.0.0-alpha27",
+  "version": "0.0.0-alpha28",
   "author": {
     "name": "Yellow Tugboat",
     "url": "http://www.yellowtugboat.com"
   },
-  "description": "A set of common charts based on D3 built for extension and modification.",
+  "description": "A visualization framework for D3.js and SVG. Ships with prebuilt charts and components.",
   "main": "build/monte.js",
   "jsnext:main": "index.js",
   "scripts": {
@@ -56,14 +56,14 @@
     "lodash": "4",
     "lodash-es": "4",
     "nodemon": "^1.9",
-    "rollup": "^0.41",
+    "rollup": "^0.43",
     "rollup-plugin-babel": "2",
-    "rollup-plugin-node-resolve": "2",
-    "rollup-plugin-uglify": "1",
+    "rollup-plugin-node-resolve": "3",
+    "rollup-plugin-uglify": "2",
     "tape": "^4.6.0",
     "tape-run": "^2.1.4"
   },
   "peerDependencies": {
-    "d3": "^4"
+    "d3": "4"
   }
 }

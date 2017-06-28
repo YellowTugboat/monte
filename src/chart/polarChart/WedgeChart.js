@@ -5,6 +5,13 @@ const WEDGE_CHART_DEFAULTS = {
   chartCss: 'monte-arc-chart monte-wedge-chart',
   piePadAngle: 0,
 
+  margin: {
+    top: 1,
+    right: 1,
+    bottom: 1,
+    left: 1,
+  },
+
   // NOTE: Wedge's use startAngle for the preset angle positions. (ArcChart uses endAngle)
   arcWedgeEnter: (d) => ({
     startAngle: d.startAngle,
@@ -31,7 +38,7 @@ export class WedgeChart extends ArcChart {
     this.rawData = data;
     const itemValueProp = this.tryInvoke(this.opts.itemValueProp);
 
-    // Data is expected to be a single value between 0 & 100.
+    // Data is expected to be a single value between 0 and 100.
     const pieData = [
        // Wrapped value to
       { [itemValueProp]: data, css: 'monte-wedge' },

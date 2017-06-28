@@ -9,7 +9,11 @@ export default {
   moduleName: 'monte',
   banner: `// ${homepage} Version ${version} Copyright ${(new Date).getFullYear()} ${author.name}`,
   plugins: [
-    nodeResolve({ jsnext: true, main: true }),
+    nodeResolve({
+      jsnext: true,
+      main: true,
+      browser: true,
+    }),
     babel(),
   ],
   globals: {

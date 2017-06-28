@@ -1,11 +1,11 @@
 import * as EV from '../const/events';
-import { TRANSITION_DELAY_MS, TRANSITION_DURATION_MS, TRANSITION_EASE } from '../const/d3';
 import { get as _get, set as _set, isEqual } from '../external/lodash';
 import { isArray, isDefined, isFunc, isNumeric, isObject, isString } from '../tools/is';
 import { InstanceGroup } from '../support/InstanceGroup';
 import { MonteError } from '../support/MonteError';
 import { MonteOptionError } from '../support/MonteOptionError';
 import { UNDEF } from '../const/undef';
+import { standard as defaultTransition } from '../util/transitionSettings';
 import { getTreeSetting } from '../tools/getTreeSetting';
 import { global } from '../support/MonteGlobal';
 import { mergeOptions } from '../tools/mergeOptions';
@@ -41,11 +41,7 @@ const DEFAULTS = {
   customEvents: [],
   extensions: [],
 
-  transition: {
-    duration: TRANSITION_DURATION_MS,
-    ease: TRANSITION_EASE,
-    delay: TRANSITION_DELAY_MS,
-  },
+  transition: defaultTransition,
 
   resize: null,
 
@@ -60,7 +56,7 @@ const DEFAULTS = {
 
   // When a `clear` occurs (by direct invocation or via `data` (without an update)) the domain is
   // automatically reset.
-  autoResetStyleDomains: true,
+  autoResetStyleDomains: false,
 
   // Indicates that the chart base is being used directly in a client script chart (an "on the
   // fly" chart). The assumption is most of the time other classes will extend and implement
@@ -161,13 +157,12 @@ export class Chart {
   // Intialize the vis.
   _initCore() {
     // Create SVG element and drawing area setup
-    const parent = d3.select(this.parentSelector);
+    const parent = d3.select(this.parentSelector); // TODO: Allow parent to be a D3 Selection?
 
     if (parent.node() === null) {
       throw new MonteError(`Invalid selector. "${this.parentSelector}" did not match any element."`);
     }
-
-    if (parent.node().tagName.toLowerCase() === 'svg') {
+    else if (parent.node().tagName.toLowerCase() === 'svg') {
       this.bound = parent;
     }
     else {
@@ -178,14 +173,13 @@ export class Chart {
 
     // Add reference of chart to the node for flexibility of access.
     this.bound.node().monteChart = this;
-    this.bound.attr('class', this._buildCss(['monte-chart', this.opts.css, this.opts.chartCss]));
+    this.bound.classed(this._buildCss(['monte-chart', this.opts.css, this.opts.chartCss]), true);
 
     // SVG Defs element
     this.defs = this.bound.append('defs');
 
     // Drawing area path clipping
     this.clip = this.defs.append('clipPath').attr('id', chartClipPathId(this.getChartId()));
-
     this.clipRect = this.clip.append('rect').attr('x', 0).attr('y', 0);
 
     this._initLayers();
@@ -302,7 +296,11 @@ export class Chart {
     };
   }
 
-  // Manually invoke the resize strategy (if any).
+  /*
+   * Manually invoke the resize strategy (if any).
+   *
+   * @Chainable
+   */
   checkSize() {
     if (this._resizeHandler) {
       this._resizeHandler();
@@ -374,11 +372,13 @@ export class Chart {
       return [this.opts.boundingWidth, this.opts.boundingHeight];
     }
 
-    const minWidth = this.option('margin.left') + this.option('margin.right');
-    if (width < minWidth) { width = minWidth; }
-    this.opts.boundingWidth = width;
+    if (arguments.length >= 1 && isDefined(width)) {
+      const minWidth = this.option('margin.left') + this.option('margin.right');
+      if (width < minWidth) { width = minWidth; }
+      this.opts.boundingWidth = width;
+    }
 
-    if (arguments.length === 2) {
+    if (arguments.length === 2 && isDefined(height)) {
       const minHeight = this.option('margin.top') + this.option('margin.bottom');
       if (height < minHeight) { height = minHeight; }
       this.opts.boundingHeight = height;
@@ -415,6 +415,8 @@ export class Chart {
    * 'selectionrect:'; to match all selection events to match only selection events (including
    * selectionStart, selectionMove, etc...) use 'selectionrect:selection'; to match the changed
    * event use 'selectionrect:selectionChanged'.
+   *
+   * @Chainable <setter>
    */
   onExt(eventLead, callback) {
     if (arguments.length < 2) {
@@ -463,7 +465,8 @@ export class Chart {
   /**
    * Get or set a chart option.
    *
-   * NOTE: Does not invoke the "Update cycle" except for margin changes. To apply option changes call `update`.
+   * NOTE: Does not invoke the "Update cycle" except for margin changes. To apply option changes
+   *       call `update`.
    *
    * @Chainable
    */
@@ -627,6 +630,11 @@ export class Chart {
 
   /**
    * Reads a scale bound property from a datum and returns the scaled value.
+   *
+   * Examples:
+   *   `this.getScaledProp('x', d);` which is equivilent to `this.getScaledProp('x', 'x', d);`
+   *   `this.getScaledProp('x', 'xInner', d);`
+   *   `this.getScaledProp('y', 'y2', d)`;
    *
    * @param {string} scaleName The scale used for scaling
    * @param {string} [propPrefix=<scaleName>] The property to be scaled. Defaults to the scale's property.
@@ -792,9 +800,9 @@ export class Chart {
 
   _transitionSettings(...levels) {
     const transitionSettings = this.tryInvoke(this.opts.transition);
-    const duration = getTreeSetting(transitionSettings, levels, 'duration', TRANSITION_DURATION_MS);
-    const delay = getTreeSetting(transitionSettings, levels, 'delay', TRANSITION_DELAY_MS);
-    const ease = getTreeSetting(transitionSettings, levels, 'ease', TRANSITION_EASE);
+    const duration = getTreeSetting(transitionSettings, levels, 'duration', defaultTransition.duration);
+    const delay = getTreeSetting(transitionSettings, levels, 'delay', defaultTransition.delay);
+    const ease = getTreeSetting(transitionSettings, levels, 'ease', defaultTransition.ease);
 
     if (this.developerMode && this.opts.developerOptions.transitions) {
       console.log('Transition: ' + levels.join('.')); // eslint-disable-line no-console
@@ -810,7 +818,7 @@ export class Chart {
    * A convenience method that is roughly equivalent to `<chart>.bound.attr(<name>, <value>)`,
    * but returns the chart instead of the `<chart>.bound` selection.
    *
-   * @Chainable
+   * @Chainable <setter>
    */
   attr(name, value) {
     if (value === UNDEF) {
@@ -828,7 +836,7 @@ export class Chart {
    * A convenience method that is roughly equivalent to `<chart>.bound.style(<name>, <value>)`,
    * but returns the chart instead of the `<chart>.bound` selection.
    *
-   * @Chainable
+   * @Chainable <setter>
    */
   style(name, value) {
     if (value === UNDEF) {
@@ -879,7 +887,7 @@ export class Chart {
   /**
    * Set the data for the chart to display and trigger the "Update cycle".
    *
-   * @Chainable
+   * @Chainable <setter>
    */
   data(data, isUpdate=false, suppressUpdate=false) {
     if (data === UNDEF) {
@@ -974,7 +982,8 @@ export class Chart {
    * @Chainable
    */
   update() {
-    if (!this.data()) { return; } // Don't allow update if data has not been set.
+    if (!this.data()) { return this; } // Don't allow update if data has not been set.
+
     if (!this.hasRendered) {
       this.__notify(EV.BEFORE_RENDER);
       this._render();
@@ -1033,10 +1042,10 @@ export class Chart {
 
     if (cssAction) {
       if (cssAction.action === 'add') {
-        node.classList.add(cssAction.css);
+        d3.select(node).classed(cssAction.css, true);
       }
       else if (cssAction.action === 'remove') {
-        node.classList.remove(cssAction.css);
+        d3.select(node).classed(cssAction.css, false);
       }
     }
 

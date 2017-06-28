@@ -1,4 +1,4 @@
-import { EXIT, UPDATE } from '../../const/d3';
+import { EXIT, SYMBOL_SIZE, UPDATE } from '../../const/d3';
 import { AxesChart } from './AxesChart';
 import { MonteError } from '../../support/MonteError';
 import { commonEventNames } from '../../tools/commonEventNames';
@@ -64,7 +64,7 @@ const ICON_ARRAY_DEFAULTS = {
   iconCssScale: noop,
   iconCssScaleAccessor: AxesChart.generateScaleAccessor('iconCssScale', 'icon'),
   iconCss: 'icon',
-  iconSize: 24,
+  iconSize: SYMBOL_SIZE,
   iconSymbol: (symbol) => symbol.type(d3.symbolCircle),
   iconMode: ICON_MODE.D3_SYMBOL,
   iconDefId: 'svgIcon',

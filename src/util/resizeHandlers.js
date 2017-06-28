@@ -27,13 +27,23 @@ export class Resizer {
     this.opts[prop] = value;
   }
 
-  resize() {
+  resize(chart) {
+    const el = chart.bound.node().parentElement;
+
+    // Only resize the element if it's in the DOM. This helps avoid an IE11 'Unspecified Error'
+    // issue and helps that resizes only apply to elemnts that can actually be measured.
+    if (document.body.contains(el)) {
+      this.checkResize(chart);
+    }
+  }
+
+  checkResize() {
     throw MonteError.UnimplementedMethod('Resize', 'resize');
   }
 }
 
 export class HorizontalResizer extends Resizer {
-  resize(chart) {
+  checkResize(chart) {
     const el = chart.bound.node().parentElement;
     const s = getStyle(el);
 
@@ -42,7 +52,7 @@ export class HorizontalResizer extends Resizer {
 }
 
 export class HorizontalRatioResizer extends Resizer {
-  resize(chart) {
+  checkResize(chart) {
     const el = chart.bound.node().parentElement;
     const s = getStyle(el);
     const width = s.rect.width - s.pl - s.pr;
@@ -53,7 +63,7 @@ export class HorizontalRatioResizer extends Resizer {
 }
 
 export class AutoResizer extends Resizer {
-  resize(chart) {
+  checkResize(chart) {
     const el = chart.bound.node().parentElement;
     const s = getStyle(el);
 
@@ -62,7 +72,7 @@ export class AutoResizer extends Resizer {
 }
 
 export class VerticalResizer extends Resizer {
-  resize(chart) {
+  checkResize(chart) {
     const el = chart.bound.node().parentElement;
     const s = getStyle(el);
 

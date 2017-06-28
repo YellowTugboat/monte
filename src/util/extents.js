@@ -1,7 +1,9 @@
+// Create an extent that begins at zero and extends to the max value.
 export function extentFromZero(extent) {
   return [0, extent[1]];
 }
 
+// Create an extent that chooses the maximum using absolute value and
 export function extentBalanced(extent) {
   const min = extent[0];
   const max = extent[1];
@@ -20,6 +22,7 @@ export function extentBalanced(extent) {
   return [-extreme, extreme];
 }
 
+// Create a fixed extent from zero to a given `max`.
 export function extentGeneratorZeroToMax(max) {
   return function() {
     return [0, max];

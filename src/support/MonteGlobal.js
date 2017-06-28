@@ -14,8 +14,28 @@ class MonteGlobal {
     return this.chartId++; // Post-increment so counts start at zero.
   }
 
+  // WARNING:
+  //   Resetting IDs may result in unexpected behavior if multiple chart instances recieve the same
+  //   ID... use cautiously and sparingly.
+  //
+  //   Resetting the chart IDs should rarely be done and should have very specific motivation. In
+  //   general, the IDs should be allowed to grow over the course of an application's life span.
+  resetChartCount() {
+    this.chartId = 0;
+  }
+
   getNextExtensionId() {
     return this.extensionId++; // Post-increment so counts start at zero.
+  }
+
+  // WARNING:
+  //   Resetting IDs may result in unexpected behavior if multiple extension instances recieve the
+  //   same ID... use cautiously and sparingly.
+  //
+  //   Resetting the extension IDs should rarely be done and should have very specific motivation.
+  //   In general, the IDs should be allowed to grow over the course of an application's life span.
+  resetExtensionCount() {
+    this.extensionId = 0;
   }
 
   getResizeWatcher() {
@@ -50,6 +70,6 @@ class MonteGlobal {
 
 export const global = new MonteGlobal();
 
-if (window) {
+if (typeof window === 'object') {
   window.MonteGlobal = global;
 }

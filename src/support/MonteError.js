@@ -1,9 +1,11 @@
 // Based on `ExtendableError` from
 // http://stackoverflow.com/questions/31089801/extending-error-in-javascript-with-es6-syntax
 
+const DEFAULT_MSG = 'An error has occurred, but no specific message was provided. Please use the stacktrace to debug.';
+
 export class MonteError extends Error {
   constructor(message, ...msgs) {
-    const msg = [message, ...msgs].join(' ');
+    const msg = [message || DEFAULT_MSG, ...msgs].join(' ');
     super(msg);
     this.name = this.constructor.name;
     this.message = msg;

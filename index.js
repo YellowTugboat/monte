@@ -17,6 +17,8 @@ export { SimpleBarChart } from './src/chart/axesChart/SimpleBarChart';
 export { HorizontalSimpleBarChart } from './src/chart/axesChart/SimpleHorizontalBarChart';
 export { SegmentBarChart } from './src/chart/axesChart/SegmentBarChart';
 export { HorizontalSegmentBarChart } from './src/chart/axesChart/HorizontalSegmentBarChart';
+export { VerticalSpanChart } from './src/chart/axesChart/VerticalSpanChart';
+export { HorizontalSpanChart } from './src/chart/axesChart/HorizontalSpanChart';
 
 export { ScatterPlot } from './src/chart/axesChart/ScatterPlotChart';
 export {
@@ -42,6 +44,7 @@ export {
   InstanceGroup,
   MonteError,
   MonteOptionError,
+  global,
 } from './src/support/';
 
 // Extensions
@@ -49,6 +52,7 @@ export { Extension } from './src/extension/Extension';
 export { Arc as ExtArc } from './src/extension/Arc';
 export { AxisTickTransform as ExtAxisTickTransform } from './src/extension/AxisTickTransform';
 export { AxisLabelWrap as ExtAxisLabelWrap } from './src/extension/AxisLabelWrap';
+export { AxisLabelTruncate as ExtAxisLabelTruncate } from './src/extension/AxisLabelTruncate';
 export { Crosshair as ExtCrosshair } from './src/extension/Crosshair';
 export { Frame as ExtFrame } from './src/extension/Frame';
 
@@ -116,9 +120,11 @@ export {
   polarLabelCentroid,
   polarLabelInner,
   polarLabelInnerAdjust,
+  polarLabelInnerEdge,
   polarLabelInnerFactor,
   polarLabelOuter,
   polarLabelOuterAdjust,
+  polarLabelOuterEdge,
   polarLabelOuterFactor,
 } from './src/util/polarLabels';
 
@@ -144,6 +150,10 @@ export {
   Resizer,
   VerticalResizer,
 } from './src/util/resizeHandlers';
+
+export {
+  transitionSettings,
+} from './src/util/transitionSettings';
 
 export {
   arcSimpleTween,

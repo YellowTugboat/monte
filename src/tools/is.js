@@ -1,8 +1,12 @@
-export const undef = void 0;
+import { UNDEF } from '../const/undef';
 import { noop } from './noop';
 
 export function isNumeric(v) {
   return typeof v === 'number' && isFinite(v);
+}
+
+export function isNumberLike(v) {
+  return isNumeric(v) || (isString(v) && isNumeric(+v));
 }
 
 export function isString(v) {
@@ -18,7 +22,7 @@ export function isNoop(v) {
 }
 
 export function isObject(v) {
-  return v !== null && typeof v === 'object';
+  return v !== null && typeof v === 'object' && !isArray(v);
 }
 
 export function isArray(v) {
@@ -26,9 +30,9 @@ export function isArray(v) {
 }
 
 export function isDefined(v) {
-  return v !== null && v !== undef;
+  return v !== null && v !== UNDEF;
 }
 
 export function isFuncDefined(v) {
-  return isDefined(v) && isFunc(v) && !isNoop;
+  return isDefined(v) && isFunc(v) && !isNoop(v);
 }
