@@ -1,6 +1,6 @@
 {
   "name": "monte",
-  "version": "0.0.0-alpha27",
+  "version": "0.0.0-alpha28",
   "author": {
     "name": "Yellow Tugboat",
     "url": "http://www.yellowtugboat.com"
@@ -56,10 +56,10 @@
     "lodash": "4",
     "lodash-es": "4",
     "nodemon": "^1.9",
-    "rollup": "^0.41",
+    "rollup": "^0.43",
     "rollup-plugin-babel": "2",
-    "rollup-plugin-node-resolve": "2",
-    "rollup-plugin-uglify": "1",
+    "rollup-plugin-node-resolve": "3",
+    "rollup-plugin-uglify": "2",
     "tape": "^4.6.0",
     "tape-run": "^2.1.4"
   },

@@ -9,6 +9,7 @@ subject to change before a formal release occurs.
 ## Bar
 * Standard with vertical and horizontal. Has support for positive and negative values.
 * Grouped & Stacked with vertical and horizontal.
+* Span with vertical and horizontal. Provides base for Waterfall, Gantt, and related charts.
 
 ## Line
 * Common line chart
@@ -43,6 +44,9 @@ events can be bound.
 
 # Extension Types
 * Arc: Draws an arbitrary Arc. Useful for arc fills on gauges, multilevel donuts, etc...
+* Axis Label Truncate: Limits size of axis tick labels.
+* Axis Label Wrap: Wraps labels at a given width.
+* Axis Tick Transform: Controls translation, rotation, and other transforms for axis tick lavels.
 * Bar Bg: Draws background rectangles on bar charts. Useful for comparing previous values or goals.
 * Crosshair: Connects a point to the edges of a chart with reference lines. Helps map points to
 specific axes values.
@@ -55,6 +59,8 @@ used) at the specified distances.
 * Polar Line: Draws a line based on given inner and outer radii for a particular angle.
 * Polar Ticks: Like polar line, but draws a series of lines at a given interval.
 * Reference Line: Draws a line given two coordinates and places a corresponding label.
+* Selection Rect: Implements the D3 brushing technique for selecting areas of a chart. Can be
+restricted to X or Y axes; otherwise XY selection is allowed.
 * Vertical Lines: Special case of Grid that draws only vertical lines.
 
 # License
