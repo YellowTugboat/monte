@@ -44,6 +44,8 @@ const AXES_CHART_DEFAULTS = {
 
   xLabelCustomize: noop,
 
+  xTickLabelCustomize: noop,
+
   /*************************************************************************************************
    *
    * "Y"-related Options
@@ -71,6 +73,8 @@ const AXES_CHART_DEFAULTS = {
   yLabel: null,
 
   yLabelCustomize: noop,
+
+  yTickLabelCustomize: noop,
 };
 
 export class AxesChart extends Chart {

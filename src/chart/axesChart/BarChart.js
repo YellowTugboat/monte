@@ -136,7 +136,7 @@ export class BarChart extends AxesChart {
 
   _updateBars() {
     const barGrps = this.draw.selectAll('.monte-bar-grp')
-      .data(this.displayData, this.opts.dataKey); // TODO: Add custom key function support.
+      .data(this.displayData, this.opts.dataKey);
 
     const barX = this._barX.bind(this);
     const barY = this._barY.bind(this);
@@ -172,22 +172,26 @@ export class BarChart extends AxesChart {
           .call((t) => this.fnInvoke(this.opts.barEnterTransitionCustomize, t));
 
     // Update existing bar groups
-    barGrps.select('rect')
-      .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
+    barGrps
       .attr('class', (d, i) => this._buildCss([
-        'monte-bar',
-        this.opts.barCss,
-        this.opts.barCssScaleAccessor,
-        d.css], d, i))
-      .call((sel) => this.fnInvoke(this.opts.barUpdateSelectionCustomize, sel))
-      .transition()
-        .call(this._transitionSetup(BAR, UPDATE))
-        .attr('x', barX)
-        .attr('y', barY)
-        .attr('width', barWidth)
-        .attr('height', barHeight)
-        .style('opacity', 1)
-        .call((t) => this.fnInvoke(this.opts.barUpdateTransitionCustomize, t));
+        'monte-bar-grp',
+        this.opts.barGrpCss], d, i))
+      .select('rect')
+        .style('fill', this.optionReaderFunc('barFillScaleAccessor'))
+        .attr('class', (d, i) => this._buildCss([
+          'monte-bar',
+          this.opts.barCss,
+          this.opts.barCssScaleAccessor,
+          d.css], d, i))
+        .call((sel) => this.fnInvoke(this.opts.barUpdateSelectionCustomize, sel))
+        .transition()
+          .call(this._transitionSetup(BAR, UPDATE))
+          .attr('x', barX)
+          .attr('y', barY)
+          .attr('width', barWidth)
+          .attr('height', barHeight)
+          .style('opacity', 1)
+          .call((t) => this.fnInvoke(this.opts.barUpdateTransitionCustomize, t));
 
     // Fade out removed lines.
     barGrps.exit()
